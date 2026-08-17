@@ -547,32 +547,75 @@ export interface GpuRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Throughput record (Section J)
+// Workflow pattern records (Section J)
 // ---------------------------------------------------------------------------
 
 /**
- * Section J: High-throughput workload characteristics.
- * Collected per-workload. Used by the committee to assess whether
- * a high-throughput QoS class is relevant.
+ * Section J — Block A: Independent jobs workflow pattern.
+ * Written only when the respondent selects 'independent' in J_workflow_types.
  */
-export interface ThroughputRecord {
-  workloadId: string
-  /** Approximate number of independent jobs in a typical campaign. */
-  independentJobCount?: number
-  /** Maximum number of jobs running concurrently in typical operation. */
-  typicalConcurrentJobs?: number
-  /** Total CPU/GPU hours consumed per year (range string). */
-  totalCpuGpuHoursPerYearRange?: string
-  /** Typical time between job submission and job completion (range string). */
-  typicalTurnaroundRange?: string
-  /** Approximate number of jobs waiting in the queue at any one time. */
-  typicalQueueDepth?: number
+export interface IndependentJobsRecord {
+  workloadId?: string
+  /** Approximate number of independent jobs run per year. */
+  jobCountPerYear?: number
+  /** Typical wall time per individual job. */
+  wallTimePerJob?: DurationValue
+  /** Number of jobs typically running concurrently. */
+  concurrentJobs?: number
+  /** Typical turnaround time range (submission to completion, including queue). */
+  turnaroundRange?: string
+  /** Total CPU/GPU hours per year (range string). */
+  totalCpuHoursRange?: string
+}
+
+/**
+ * Section J — Block B: Sequential pipeline workflow pattern.
+ * Written only when the respondent selects 'pipeline' in J_workflow_types.
+ */
+export interface PipelineRecord {
+  workloadId?: string
+  /** Number of stages in a typical pipeline run. */
+  stages?: number
+  /** Typical wall time per pipeline stage. */
+  stageWallTime?: DurationValue
+  /** Whether any stage can be divided into independent parallel jobs. */
+  stageParallelisable?: 'yes' | 'partly' | 'no' | 'dont_know'
+  /** Number of complete pipelines run per year. */
+  pipelinesPerYear?: number
+  /** Total elapsed time from first stage start to last stage completion. */
+  endToEndTime?: DurationValue
+  /** Total CPU/GPU hours per year (range string). */
+  totalCpuHoursRange?: string
+}
+
+/**
+ * Section J — Block C: Extended single-calculation workflow pattern.
+ * Written only when the respondent selects 'extended' in J_workflow_types.
+ * This block collects evidence that helps the committee assess whether
+ * extended/reservation-like access is genuinely required.
+ */
+export interface ExtendedCalcRecord {
+  workloadId?: string
+  /** Typical wall time required for one continuous calculation. */
+  wallTime?: DurationValue
+  /** Longest wall-time limit available to the group on any HPC system. */
+  longestAvailableWallTime?: DurationValue
   /**
-   * Whether all jobs in the campaign can be executed independently
-   * (i.e. no job depends on the output of another job in the same campaign).
+   * Whether this type of calculation has produced a valid result on any system.
+   * yes_single   — completed in a single uninterrupted run
+   * yes_restarts — completed via checkpoint-restart cycles
+   * no           — has not produced a valid result anywhere
+   * dont_know    — unknown
    */
-  jobsFullyIndependent: YesNoUncertain
-  notes?: string
+  completed?: 'yes_single' | 'yes_restarts' | 'no' | 'dont_know'
+  /** System name and wall-time limit under which the calculation completed. */
+  completedSystem?: string
+  /** Whether any part of the calculation can be saved and resumed. */
+  canCheckpoint?: 'yes' | 'no' | 'dont_know' | 'not_tested'
+  /** Number of such calculations run or attempted per year. */
+  countPerYear?: number
+  /** Total CPU/GPU hours per year (range string). */
+  totalCpuHoursRange?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -687,8 +730,14 @@ export interface Submission {
   /** Section I. GPU characteristics per workload. */
   gpuRecords: GpuRecord[]
 
-  /** Section J. Throughput characteristics per workload. */
-  throughputRecords: ThroughputRecord[]
+  /** Section J — Block A. Independent-jobs workflow pattern. */
+  independentJobsRecords: IndependentJobsRecord[]
+
+  /** Section J — Block B. Sequential pipeline workflow pattern. */
+  pipelineRecords: PipelineRecord[]
+
+  /** Section J — Block C. Extended single-calculation workflow pattern. */
+  extendedCalcRecords: ExtendedCalcRecord[]
 
   /** Section L. Benchmark evidence per workload. */
   benchmarkRecords: BenchmarkRecord[]

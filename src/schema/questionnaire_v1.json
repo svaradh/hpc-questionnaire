@@ -1968,140 +1968,232 @@
     },
     {
       "id": "J",
-      "title": "J. Throughput",
-      "description": "This section collects information about high-throughput workloads — situations where your group runs large numbers of independent jobs. Please report what is actually observed, not an ideal or projected throughput.",
+      "title": "J. Workflow patterns",
+      "description": "This section collects information about how your calculations are organised and submitted to the scheduler. HPC facilities serve many research groups simultaneously through time-sharing — jobs from different groups run concurrently and are each served as resources become available. This is different from laboratory instruments, which may need to be reserved exclusively for the duration of an experiment. Understanding the structure of your workflow helps the committee design scheduling policies that allow all groups to make steady research progress.",
       "questions": [
         {
-          "id": "J_code_name",
-          "type": "text",
-          "label": "Application or code this throughput information applies to (optional)",
+          "id": "J_workflow_types",
+          "type": "checkbox",
+          "label": "Which of the following patterns describe how your calculations are organised? Select all that apply.",
           "required": false,
-          "placeholder": "e.g. VASP, GROMACS, in-house scripts — or leave blank if general",
-          "helpText": "If different codes have very different throughput characteristics, complete this section for the code with the most distinctive pattern."
+          "helpText": "Select every pattern that applies — your group may use more than one.",
+          "options": [
+            { "value": "independent", "label": "Independent jobs — each job runs separately without depending on the output of other jobs" },
+            { "value": "pipeline",    "label": "Sequential pipeline — each step requires the output of the previous step before it can run" },
+            { "value": "extended",    "label": "Extended single calculations — one calculation that runs continuously as a single job for an extended period" }
+          ]
         },
         {
-          "id": "J_independent_job_count",
+          "id": "J_ind_job_count",
           "type": "number",
-          "label": "Approximately how many jobs do you run per research question or per year?",
+          "label": "How many independent jobs do you run per year?",
           "required": false,
-          "placeholder": "e.g. 500",
           "unit": "jobs",
-          "min": 1,
-          "helpText": "For example, running 500 geometry optimisations to screen a set of molecules counts as 500 jobs."
+          "helpText": "A rough estimate is sufficient.",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
         },
         {
-          "id": "J_jobs_fully_independent",
+          "id": "J_ind_wall_time",
+          "type": "duration",
+          "label": "Typical wall time per job",
+          "required": false,
+          "units": ["seconds", "minutes", "hours", "days"],
+          "defaultUnit": "hours",
+          "helpText": "How long does a single independent job typically run?",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
+          "id": "J_ind_concurrent",
+          "type": "number",
+          "label": "How many independent jobs typically run at the same time?",
+          "required": false,
+          "unit": "jobs",
+          "helpText": "The number running concurrently, not the total submitted.",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
+          "id": "J_ind_turnaround",
+          "type": "select",
+          "label": "Typical time between submitting a job and it completing (including queue wait)?",
+          "required": false,
+          "options": [
+            { "value": "lt_1h",      "label": "Less than 1 hour" },
+            { "value": "1h_6h",      "label": "1 – 6 hours" },
+            { "value": "6h_24h",     "label": "6 – 24 hours" },
+            { "value": "1d_3d",      "label": "1 – 3 days" },
+            { "value": "3d_7d",      "label": "3 – 7 days" },
+            { "value": "gt_7d",      "label": "More than 7 days" },
+            { "value": "dont_know",  "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
+          "id": "J_ind_cpu_hours",
+          "type": "select",
+          "label": "Total CPU-hours or GPU-hours from independent jobs per year?",
+          "required": false,
+          "options": [
+            { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
+            { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
+            { "value": "10000_99999",    "label": "10,000 – 99,999 core-hours" },
+            { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
+            { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
+            { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "dont_know",      "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
+          "id": "J_pip_stages",
+          "type": "number",
+          "label": "How many steps or stages does a typical pipeline have?",
+          "required": false,
+          "unit": "stages",
+          "helpText": "A stage is a step that must wait for the previous step to finish before it can start.",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
+        },
+        {
+          "id": "J_pip_stage_wall_time",
+          "type": "duration",
+          "label": "Typical wall time per stage",
+          "required": false,
+          "units": ["seconds", "minutes", "hours", "days"],
+          "defaultUnit": "hours",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
+        },
+        {
+          "id": "J_pip_stage_parallel",
           "type": "radio",
-          "label": "Are those jobs fully independent of each other?",
-          "required": true,
-          "helpText": "Fully independent means no job depends on the output of another job in the same set. For example: 500 separate geometry optimisations of different molecules are fully independent. A workflow where step 2 uses the output of step 1 is not fully independent.",
+          "label": "Can any stage of the pipeline be divided into independent parallel jobs?",
+          "required": false,
+          "helpText": "For example, if step 3 involves 50 independent calculations that can all run at once, that stage is parallelisable.",
           "options": [
-            { "value": "yes",      "label": "Yes — all jobs are fully independent" },
-            { "value": "mostly",   "label": "Mostly independent — a few dependencies exist" },
-            { "value": "workflow", "label": "No — jobs form a workflow with dependencies" },
-            { "value": "dont_know","label": "Don't know" }
-          ]
+            { "value": "yes",       "label": "Yes" },
+            { "value": "partly",    "label": "Partly" },
+            { "value": "no",        "label": "No" },
+            { "value": "dont_know", "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
         },
         {
-          "id": "J_concurrent_jobs",
+          "id": "J_pip_count_per_year",
           "type": "number",
-          "label": "Approximately how many of those jobs run concurrently in typical operation?",
+          "label": "How many complete pipelines do you run per year?",
           "required": false,
-          "placeholder": "e.g. 50",
-          "unit": "jobs",
-          "min": 1,
-          "helpText": "The number of jobs typically running at the same time, not the total submitted."
+          "unit": "pipelines",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
         },
         {
-          "id": "J_total_cpu_gpu_hours_range",
+          "id": "J_pip_end_to_end",
+          "type": "duration",
+          "label": "Typical total time from starting the first stage to completing the last stage",
+          "required": false,
+          "units": ["hours", "days"],
+          "defaultUnit": "days",
+          "helpText": "The total calendar time for one complete pipeline run, including queue waiting between stages.",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
+        },
+        {
+          "id": "J_pip_cpu_hours",
           "type": "select",
-          "label": "Total CPU-hours or GPU-hours consumed per year (across all jobs)",
+          "label": "Total CPU-hours or GPU-hours from pipeline jobs per year?",
           "required": false,
-          "helpText": "Total core-hours per year for this workload. A rough estimate is sufficient.",
           "options": [
-            {
-              "value": "lt_1000",
-              "label": "Less than 1,000 core-hours"
-            },
-            {
-              "value": "1000_9999",
-              "label": "1,000 – 9,999 core-hours"
-            },
-            {
-              "value": "10000_99999",
-              "label": "10,000 – 99,999 core-hours"
-            },
-            {
-              "value": "100000_499999",
-              "label": "100,000 – 499,999 core-hours"
-            },
-            {
-              "value": "500000_999999",
-              "label": "500,000 – 999,999 core-hours"
-            },
-            {
-              "value": "1000000_plus",
-              "label": "1,000,000 or more core-hours"
-            },
-            {
-              "value": "dont_know",
-              "label": "Don't know"
-            }
-          ]
+            { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
+            { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
+            { "value": "10000_99999",    "label": "10,000 – 99,999 core-hours" },
+            { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
+            { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
+            { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "dont_know",      "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
         },
         {
-          "id": "J_typical_turnaround_range",
-          "type": "select",
-          "label": "Typical time between job submission and job completion (turnaround time)",
+          "id": "J_ext_wall_time",
+          "type": "duration",
+          "label": "Typical wall time for one such calculation",
           "required": false,
-          "helpText": "This includes queue waiting time. Note: the committee is interested in the observed turnaround, not whether it is acceptable — please just report what you experience.",
-          "options": [
-            {
-              "value": "lt_1h",
-              "label": "Less than 1 hour"
-            },
-            {
-              "value": "1h_6h",
-              "label": "1 – 6 hours"
-            },
-            {
-              "value": "6h_24h",
-              "label": "6 – 24 hours"
-            },
-            {
-              "value": "1d_3d",
-              "label": "1 – 3 days"
-            },
-            {
-              "value": "3d_7d",
-              "label": "3 – 7 days"
-            },
-            {
-              "value": "gt_7d",
-              "label": "More than 7 days"
-            },
-            {
-              "value": "dont_know",
-              "label": "Don't know"
-            }
-          ]
+          "units": ["hours", "days"],
+          "defaultUnit": "hours",
+          "helpText": "How long does a single continuous calculation typically need to run?",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
         },
         {
-          "id": "J_typical_queue_depth",
+          "id": "J_ext_longest_available",
+          "type": "duration",
+          "label": "What is the longest wall-time limit you have been able to request on any HPC system?",
+          "required": false,
+          "units": ["hours", "days"],
+          "defaultUnit": "hours",
+          "helpText": "The maximum wall time available to you on any system you have access to, including national facilities or collaborator clusters.",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
+        },
+        {
+          "id": "J_ext_completed",
+          "type": "radio",
+          "label": "Has this type of calculation produced a valid, usable result on any HPC system?",
+          "required": false,
+          "helpText": "'Valid result' means the calculation completed and produced usable output — not just that the job reached the end of its time slot.",
+          "options": [
+            { "value": "yes_single",   "label": "Yes — in a single uninterrupted run" },
+            { "value": "yes_restarts", "label": "Yes — through a series of checkpoint-restart cycles" },
+            { "value": "no",           "label": "No — has not produced a valid result anywhere" },
+            { "value": "dont_know",    "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
+        },
+        {
+          "id": "J_ext_completed_system",
+          "type": "text",
+          "label": "If completed, on which system and under what wall-time limit?",
+          "required": false,
+          "placeholder": "e.g. PARAM Shakti (7-day limit), collaborator cluster at IIT Delhi",
+          "conditionalOn": { "questionId": "J_ext_completed", "values": ["yes_single", "yes_restarts"] }
+        },
+        {
+          "id": "J_ext_can_checkpoint",
+          "type": "radio",
+          "label": "Can any part of this calculation be saved and resumed from that point?",
+          "required": false,
+          "helpText": "If yes, the calculation may be completable through a series of shorter jobs even if no single job can run for the full required duration. See also Section F.",
+          "options": [
+            { "value": "yes",        "label": "Yes" },
+            { "value": "no",         "label": "No" },
+            { "value": "dont_know",  "label": "Don't know" },
+            { "value": "not_tested", "label": "Not tested" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
+        },
+        {
+          "id": "J_ext_count_per_year",
           "type": "number",
-          "label": "Approximately how many jobs are typically waiting in the queue at any one time?",
+          "label": "How many such calculations do you run or attempt per year?",
           "required": false,
-          "placeholder": "e.g. 20",
-          "unit": "jobs",
-          "min": 0,
-          "helpText": "The number of submitted jobs that are waiting (not yet running). Leave blank if not known."
+          "unit": "calculations",
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
+        },
+        {
+          "id": "J_ext_cpu_hours",
+          "type": "select",
+          "label": "Total CPU-hours or GPU-hours from extended calculations per year?",
+          "required": false,
+          "options": [
+            { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
+            { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
+            { "value": "10000_99999",    "label": "10,000 – 99,999 core-hours" },
+            { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
+            { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
+            { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "dont_know",      "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
         },
         {
           "id": "J_notes",
           "type": "textarea",
-          "label": "Additional notes on throughput (optional)",
-          "required": false,
-          "placeholder": "Any additional information about your throughput workload patterns."
+          "label": "Additional notes on your workflow patterns (optional)",
+          "required": false
         }
       ]
     },

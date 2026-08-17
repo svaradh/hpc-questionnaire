@@ -98,10 +98,24 @@ var SHEET_DEFINITIONS = [
     ]
   },
   {
-    name: 'Throughput',
+    name: 'IndependentJobs',
     headers: [
-      'submission_id', 'pi_name', 'code_name', 'independent_job_count', 'concurrent_jobs',
-      'total_hours_range', 'turnaround_range', 'queue_depth', 'fully_independent', 'notes'
+      'submission_id', 'pi_name', 'job_count_per_year', 'wall_time_hours',
+      'concurrent_jobs', 'turnaround_range', 'cpu_hours_range'
+    ]
+  },
+  {
+    name: 'PipelineJobs',
+    headers: [
+      'submission_id', 'pi_name', 'stages', 'stage_wall_time_hours',
+      'stage_parallelisable', 'pipelines_per_year', 'end_to_end_hours', 'cpu_hours_range'
+    ]
+  },
+  {
+    name: 'ExtendedCalcs',
+    headers: [
+      'submission_id', 'pi_name', 'wall_time_hours', 'longest_available_hours',
+      'completed', 'completed_system', 'can_checkpoint', 'count_per_year', 'cpu_hours_range'
     ]
   },
   {
@@ -256,7 +270,9 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
   writeScalingInfo(submissionId, piName, answers);
   writeMemoryInfo(submissionId, piName, answers);
   writeGpuInfo(submissionId, piName, answers);
-  writeThroughput(submissionId, piName, answers);
+  writeIndependentJobs(submissionId, piName, answers);
+  writePipelineJobs(submissionId, piName, answers);
+  writeExtendedCalcs(submissionId, piName, answers);
   writeEvidenceRecords(submissionId, piName, answers);
   writeBenchmarkInfo(submissionId, piName, answers);
   writeWorkflowInfo(submissionId, piName, answers);
@@ -493,17 +509,42 @@ function writeGpuInfo(submissionId, piName, answers) {
   });
 }
 
-function writeThroughput(submissionId, piName, answers) {
-  appendRow('Throughput', [
+function writeIndependentJobs(submissionId, piName, answers) {
+  if (getArr(answers, 'J_workflow_types').indexOf('independent') === -1) return;
+  appendRow('IndependentJobs', [
     submissionId, piName,
-    val(answers, 'J_code_name'),
-    val(answers, 'J_independent_job_count'),
-    val(answers, 'J_concurrent_jobs'),
-    val(answers, 'J_total_cpu_gpu_hours_range'),
-    val(answers, 'J_typical_turnaround_range'),
-    val(answers, 'J_typical_queue_depth'),
-    val(answers, 'J_jobs_fully_independent'),
-    val(answers, 'J_notes')
+    val(answers, 'J_ind_job_count'),
+    durationToHours(answers, 'J_ind_wall_time'),
+    val(answers, 'J_ind_concurrent'),
+    val(answers, 'J_ind_turnaround'),
+    val(answers, 'J_ind_cpu_hours')
+  ]);
+}
+
+function writePipelineJobs(submissionId, piName, answers) {
+  if (getArr(answers, 'J_workflow_types').indexOf('pipeline') === -1) return;
+  appendRow('PipelineJobs', [
+    submissionId, piName,
+    val(answers, 'J_pip_stages'),
+    durationToHours(answers, 'J_pip_stage_wall_time'),
+    val(answers, 'J_pip_stage_parallel'),
+    val(answers, 'J_pip_count_per_year'),
+    durationToHours(answers, 'J_pip_end_to_end'),
+    val(answers, 'J_pip_cpu_hours')
+  ]);
+}
+
+function writeExtendedCalcs(submissionId, piName, answers) {
+  if (getArr(answers, 'J_workflow_types').indexOf('extended') === -1) return;
+  appendRow('ExtendedCalcs', [
+    submissionId, piName,
+    durationToHours(answers, 'J_ext_wall_time'),
+    durationToHours(answers, 'J_ext_longest_available'),
+    val(answers, 'J_ext_completed'),
+    val(answers, 'J_ext_completed_system'),
+    val(answers, 'J_ext_can_checkpoint'),
+    val(answers, 'J_ext_count_per_year'),
+    val(answers, 'J_ext_cpu_hours')
   ]);
 }
 
