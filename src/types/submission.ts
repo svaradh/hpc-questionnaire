@@ -412,8 +412,13 @@ export interface WallTimeTerminationRecord {
   terminatedWallTime?: DurationValue
   /** Computed: terminatedCores × terminatedWallTime in hours. */
   terminatedCpuHours?: number
-  /** Whether the calculation has been successfully completed on any system. */
-  completedAnywhere?: 'yes_same' | 'yes_different' | 'no' | 'dont_know'
+  /**
+   * Whether the calculation has produced a valid result on any system.
+   * yes_same_single   — current IISER cluster, single uninterrupted run
+   * yes_same_restarts — current IISER cluster, via checkpoint-restart cycles
+   * yes_different     — a different HPC system
+   */
+  completedAnywhere?: 'yes_same_single' | 'yes_same_restarts' | 'yes_different' | 'no' | 'dont_know'
   /** Name and wall-time limit of the system where it completed (if different). */
   completedSystem?: string
   /** CPU cores used in the successful run. */

@@ -908,32 +908,16 @@
         {
           "id": "E_completed_anywhere",
           "type": "radio",
-          "label": "Has the same calculation been successfully completed on any HPC system?",
+          "label": "Has the same calculation produced a valid, usable result on any HPC system?",
           "required": false,
-          "conditionalOn": {
-            "questionId": "E_terminated",
-            "values": [
-              "yes"
-            ]
-          },
-          "helpText": "Select the most relevant option. 'Same cluster, different configuration' includes cases where more cores were used so the job finished within the time limit.",
+          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
+          "helpText": "'Successfully completed' means the calculation produced a valid, usable result — not just that the job reached the end of its time slot without being killed. If the calculation required multiple checkpoint-restart cycles to finish, that still counts as completion.",
           "options": [
-            {
-              "value": "yes_same",
-              "label": "Yes — on the current IISER cluster, with a different configuration"
-            },
-            {
-              "value": "yes_different",
-              "label": "Yes — on a different HPC system"
-            },
-            {
-              "value": "no",
-              "label": "No — this calculation has not completed anywhere"
-            },
-            {
-              "value": "dont_know",
-              "label": "Don't know"
-            }
+            { "value": "yes_same_single",   "label": "Yes — on the current IISER cluster, in a single uninterrupted run" },
+            { "value": "yes_same_restarts", "label": "Yes — on the current IISER cluster, through a series of checkpoint-restart cycles" },
+            { "value": "yes_different",     "label": "Yes — on a different HPC system" },
+            { "value": "no",                "label": "No — this calculation has not produced a valid result anywhere" },
+            { "value": "dont_know",         "label": "Don't know" }
           ]
         },
         {
@@ -941,12 +925,7 @@
           "type": "text",
           "label": "Which system was this, and what wall-time limit was available?",
           "required": false,
-          "conditionalOn": {
-            "questionId": "E_completed_anywhere",
-            "values": [
-              "yes_different"
-            ]
-          },
+          "conditionalOn": { "questionId": "E_completed_anywhere", "values": ["yes_different"] },
           "placeholder": "e.g. PARAM Shakti (7-day limit), collaborator cluster at IIT Delhi (5-day limit)",
           "helpText": "The name of the system and, if known, the wall-time limit available on that system."
         },
@@ -957,10 +936,7 @@
           "required": false,
           "conditionalOn": {
             "questionId": "E_completed_anywhere",
-            "values": [
-              "yes_same",
-              "yes_different"
-            ]
+            "values": ["yes_same_single", "yes_same_restarts", "yes_different"]
           },
           "placeholder": "e.g. 128",
           "unit": "cores",
@@ -974,10 +950,7 @@
           "required": false,
           "conditionalOn": {
             "questionId": "E_completed_anywhere",
-            "values": [
-              "yes_same",
-              "yes_different"
-            ]
+            "values": ["yes_same_single", "yes_same_restarts", "yes_different"]
           },
           "units": [
             "seconds",
