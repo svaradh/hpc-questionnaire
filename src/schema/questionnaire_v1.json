@@ -1457,37 +1457,31 @@
               "entryLabel": "configuration"
             },
             {
-              "id": "G_node_count_affects_runtime",
+              "id": "G_scaling_behaviour",
               "type": "radio",
-              "label": "Does increasing the number of cores or nodes reduce the wall-clock time for a single job?",
+              "label": "Which of the following best describes the observed parallel scaling of this code?",
               "required": false,
-              "helpText": "This is asking about parallel speedup for a single calculation — not about running more jobs simultaneously.",
+              "helpText": "Select the option that most closely matches what has actually been observed when running this code at different core or node counts. These are factual descriptions of scaling patterns, not quality judgements.",
               "options": [
-                {
-                  "value": "yes_significant",
-                  "label": "Yes — significant speedup observed (roughly linear or better)"
-                },
-                {
-                  "value": "yes_moderate",
-                  "label": "Yes — moderate speedup, but not linear (diminishing returns)"
-                },
-                {
-                  "value": "yes_limited",
-                  "label": "Yes — limited speedup (only a small improvement)"
-                },
-                {
-                  "value": "no",
-                  "label": "No — the calculation runs on a single core/node and cannot be parallelised"
-                },
-                {
-                  "value": "not_tested",
-                  "label": "Not tested"
-                },
-                {
-                  "value": "dont_know",
-                  "label": "Don't know"
-                }
+                { "value": "linear", "label": "Approximately linear — wall time roughly halves when cores double" },
+                { "value": "sublinear", "label": "Sub-linear — more cores reduce wall time but with diminishing returns" },
+                { "value": "plateau", "label": "Plateau observed — performance stops improving beyond a certain core count" },
+                { "value": "regression", "label": "Regression observed — performance degrades beyond a certain core count" },
+                { "value": "none", "label": "No parallel scaling — code runs effectively on a single core or thread" },
+                { "value": "not_tested", "label": "Not tested across different core counts" },
+                { "value": "dont_know", "label": "Don't know" }
               ]
+            },
+            {
+              "id": "G_scaling_limit_cores",
+              "type": "number",
+              "label": "Approximately at how many total CPU cores does performance stop improving or begin to degrade?",
+              "required": false,
+              "conditionalOn": { "questionId": "G_scaling_behaviour", "values": ["plateau", "regression"] },
+              "placeholder": "e.g. 64",
+              "unit": "cores",
+              "min": 1,
+              "helpText": "Sometimes called the 'strong scaling limit' or 'sweet spot'. Beyond this core count, adding more cores gives little or no benefit for a single job. Leave blank if not known."
             },
             {
               "id": "G_min_nodes",

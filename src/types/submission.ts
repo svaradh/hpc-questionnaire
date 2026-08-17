@@ -369,10 +369,13 @@ export interface ScalingInfo {
   /** Observed (config, runtime, evidence) tuples from scaling tests. */
   runtimeByConfig: ScalingDataPoint[]
   /**
-   * Whether increasing node/core count reduces wall-clock runtime
-   * for a single job.
+   * Observed parallel scaling pattern: linear | sublinear | plateau |
+   * regression | none | not_tested | dont_know.
+   * Replaces the former binary nodeCountAffectsRuntime field.
    */
-  nodeCountAffectsRuntime: YesNoUncertain
+  scalingBehaviour?: string
+  /** Core count at which performance stops improving or begins to degrade. */
+  scalingLimitCores?: number
   /** Smallest resource config at which the job has been observed to complete. */
   practicalMinNodes?: number
   /**

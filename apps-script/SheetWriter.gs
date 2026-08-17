@@ -76,7 +76,7 @@ var SHEET_DEFINITIONS = [
     name: 'ScalingInfo',
     headers: [
       'submission_id', 'pi_name', 'code_name', 'independent_jobs', 'independent_jobs_notes',
-      'node_count_affects_runtime', 'min_nodes', 'max_nodes_tested', 'code_notes',
+      'scaling_behaviour', 'scaling_limit_cores', 'min_nodes', 'max_nodes_tested', 'code_notes',
       'resource_config', 'wall_time_hours', 'evidence_source', 'evidence_level',
       'benchmark_reference', 'config_notes'
     ]
@@ -412,14 +412,15 @@ function writeCheckpointInfo(submissionId, piName, answers) {
 function writeScalingInfo(submissionId, piName, answers) {
   var outerRecords = getArr(answers, 'G_scaling_records');
   if (outerRecords.length === 0) {
-    appendRow('ScalingInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    appendRow('ScalingInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     return;
   }
   outerRecords.forEach(function(codeEntry) {
     var codeName   = codeEntry['G_code_name'] || '';
     var indJobs    = codeEntry['G_independent_jobs'] || '';
     var indNotes   = codeEntry['G_independent_jobs_notes'] || '';
-    var nodeEffect = codeEntry['G_node_count_affects_runtime'] || '';
+    var scalingBehaviour = codeEntry['G_scaling_behaviour'] || '';
+    var scalingLimitCores = codeEntry['G_scaling_limit_cores'] || '';
     var minNodes   = codeEntry['G_min_nodes'] || '';
     var maxNodes   = codeEntry['G_max_nodes_tested'] || '';
     var codeNotes  = codeEntry['G_notes'] || '';
@@ -428,14 +429,14 @@ function writeScalingInfo(submissionId, piName, answers) {
     if (innerData.length === 0) {
       appendRow('ScalingInfo', [
         submissionId, piName, codeName,
-        indJobs, indNotes, nodeEffect, minNodes, maxNodes, codeNotes,
+        indJobs, indNotes, scalingBehaviour, scalingLimitCores, minNodes, maxNodes, codeNotes,
         '', '', '', '', '', ''
       ]);
     } else {
       innerData.forEach(function(cfg) {
         appendRow('ScalingInfo', [
           submissionId, piName, codeName,
-          indJobs, indNotes, nodeEffect, minNodes, maxNodes, codeNotes,
+          indJobs, indNotes, scalingBehaviour, scalingLimitCores, minNodes, maxNodes, codeNotes,
           cfg['G_sd_resource_config'] || '',
           cfg['G_sd_wall_time_hours'] || '',
           cfg['G_sd_evidence_source'] || '',
