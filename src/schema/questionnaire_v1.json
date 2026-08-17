@@ -719,12 +719,12 @@
             {
               "id": "D_rt_num_similar_jobs",
               "type": "number",
-              "label": "Number of similar jobs in a typical campaign",
+              "label": "Number of similar jobs in a typical set of jobs",
               "required": false,
               "placeholder": "e.g. 50",
               "unit": "jobs",
               "min": 1,
-              "helpText": "Approximately how many jobs of this type do you run in a typical production campaign or per year?"
+              "helpText": "Approximately how many jobs of this type do you run per year or per research question?"
             },
             {
               "id": "D_rt_evidence_source",
@@ -1982,9 +1982,9 @@
         {
           "id": "J_jobs_fully_independent",
           "type": "radio",
-          "label": "Are the jobs in a typical campaign fully independent of each other?",
+          "label": "Are the jobs in a typical set of jobs fully independent of each other?",
           "required": true,
-          "helpText": "Fully independent means no job depends on the output of another job in the same campaign. For example: 500 separate geometry optimisations of different molecules are fully independent. A workflow where step 2 uses the output of step 1 is not fully independent.",
+          "helpText": "Fully independent means no job depends on the output of another job in the same set. For example: 500 separate geometry optimisations of different molecules are fully independent. A workflow where step 2 uses the output of step 1 is not fully independent.",
           "options": [
             {
               "value": "yes",
@@ -2007,12 +2007,12 @@
         {
           "id": "J_independent_job_count",
           "type": "number",
-          "label": "Approximately how many independent jobs are in a typical campaign?",
+          "label": "Approximately how many independent jobs do you run per research question or per year?",
           "required": false,
           "placeholder": "e.g. 500",
           "unit": "jobs",
           "min": 1,
-          "helpText": "A 'campaign' is a set of related jobs submitted together to answer one research question."
+          "helpText": "For example, running 500 independent geometry optimisations to screen a set of molecules counts as 500 jobs."
         },
         {
           "id": "J_concurrent_jobs",
@@ -2022,7 +2022,7 @@
           "placeholder": "e.g. 50",
           "unit": "jobs",
           "min": 1,
-          "helpText": "The number of jobs that are typically running at the same time, not the total in the campaign."
+          "helpText": "The number of jobs that are typically running at the same time, not the total submitted."
         },
         {
           "id": "J_total_cpu_gpu_hours_range",
