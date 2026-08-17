@@ -330,25 +330,34 @@ export interface CheckpointInfo {
 
 /**
  * A single data point in a parallel scaling study.
+ * Now includes evidence metadata so the committee can assess source quality.
  */
 export interface ScalingDataPoint {
   /** Resource configuration description (cores, nodes, etc.). */
   resourceConfig: string
   /** Observed wall-clock time in hours. */
   wallTimeHours?: number
-  /** Notes on this configuration (e.g. "memory-bound above 16 cores"). */
+  /** Where this scaling observation comes from. */
+  evidenceSource?: EvidenceSource
+  /** Confidence level for this observation. */
+  evidenceLevel?: EvidenceLevel
+  /** Published benchmark or documentation reference, if applicable. */
+  benchmarkReference?: string
+  /** Notes on this configuration (e.g. "memory-bound above 32 cores"). */
   notes?: string
 }
 
 /**
- * Section G: Parallel scaling observations for a workload.
+ * Section G: Parallel scaling observations for one code.
+ * The section is now a repeatable (one ScalingInfo per code).
  * The committee uses this to assess whether multi-node resources
  * are technically necessary or merely convenient.
  *
  * Users are NOT asked whether they "require" a particular node count.
- * They report what was observed.
+ * They report what was observed or is documented.
  */
 export interface ScalingInfo {
+  /** Code name (corresponds to G_code_name; may be empty if general). */
   workloadId: string
   /**
    * Whether the workload can be divided into fully independent jobs.
@@ -357,7 +366,7 @@ export interface ScalingInfo {
    */
   independentJobs: YesNoUncertain
   independentJobsNotes?: string
-  /** Observed (config, runtime) pairs from scaling tests. */
+  /** Observed (config, runtime, evidence) tuples from scaling tests. */
   runtimeByConfig: ScalingDataPoint[]
   /**
    * Whether increasing node/core count reduces wall-clock runtime
@@ -464,9 +473,14 @@ export interface CommitteeAssessment {
 // ---------------------------------------------------------------------------
 
 /**
- * Section H: Memory usage characteristics for a workload.
+ * Section H: Memory usage characteristics for one code.
+ * The section is now a repeatable (one MemoryRecord per code).
+ * Now includes evidence metadata so the committee can assess source quality.
  */
 export interface MemoryRecord {
+  /** Local UUID for this record. */
+  id: string
+  /** Code name (corresponds to H_code_name; may be empty if general). */
   workloadId: string
   /** Typical memory used per node in GB. */
   typicalMemoryPerNodeGB?: number
@@ -478,12 +492,16 @@ export interface MemoryRecord {
    * Whether the job's memory is confined to a single node (per-node)
    * or distributed across nodes (MPI/distributed shared memory).
    */
-  memoryDistribution?: 'per_node' | 'distributed' | 'dont_know'
+  memoryDistribution?: 'per_node' | 'distributed' | 'either' | 'dont_know'
   /**
    * Whether the workload has been tested on nodes with the standard
    * memory configuration of the current cluster.
    */
   standardNodesTested: YesNoUncertain
+  /** Where this memory information comes from. */
+  evidenceSource?: EvidenceSource
+  /** Confidence level for this memory information. */
+  evidenceLevel?: EvidenceLevel
   notes?: string
 }
 
@@ -492,14 +510,18 @@ export interface MemoryRecord {
 // ---------------------------------------------------------------------------
 
 /**
- * Section I: GPU and specialised hardware characteristics.
- * This section is conditionally shown based on B_uses_gpu or
- * I_uses_gpu_initial answers.
+ * Section I: GPU and specialised hardware characteristics for one code.
+ * The section is now a repeatable (one GpuRecord per code).
+ * No section-level gate — users who don't use GPUs simply add no entries.
+ * Evidence level is NOT collected for GPU records (only evidence source).
  */
 export interface GpuRecord {
+  /** Local UUID for this record. */
+  id: string
+  /** Code name (corresponds to I_code_name). */
   workloadId: string
-  /** Whether GPU acceleration is used for this workload. */
-  gpuUsed: YesNoUncertain
+  /** Whether GPU acceleration is used or has been investigated for this code. */
+  gpuUsed: 'yes_currently' | 'yes_investigated' | 'no' | 'dont_know'
   /** GPU model/product name (e.g. "NVIDIA A100 80 GB"). */
   gpuModel?: string
   /** GPU-enabled frameworks or libraries used. */
@@ -510,6 +532,11 @@ export interface GpuRecord {
    */
   performanceWithGpu?: string
   performanceWithoutGpu?: string
+  /**
+   * Where the GPU performance information comes from.
+   * Note: no evidenceLevel for GPU records — only evidenceSource.
+   */
+  evidenceSource?: EvidenceSource
   /** Whether the workload requires a high-speed interconnect (e.g. NVLink, InfiniBand). */
   specialisedInterconnectRequired: YesNoUncertain
   specialisedInterconnectDescription?: string

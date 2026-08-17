@@ -764,301 +764,424 @@
     {
       "id": "G",
       "title": "G. Parallel Scaling",
-      "description": "This section collects factual observations about how your workloads perform when run on different numbers of cores or nodes. You are not being asked whether you 'require' a particular number of nodes — please just describe what has been observed.",
+      "description": "This section collects factual observations about how your workloads perform when run on different numbers of cores or nodes. Add one entry per code. You are not being asked whether you 'require' a particular number of nodes — please describe what has been observed or is documented.",
       "questions": [
         {
-          "id": "G_scaling_workload",
-          "type": "text",
-          "label": "Application or code this scaling information applies to",
-          "required": false,
-          "placeholder": "e.g. VASP, or leave blank if general"
-        },
-        {
-          "id": "G_independent_jobs",
-          "type": "radio",
-          "label": "Can the workload be divided into independent jobs that do not communicate with each other during execution?",
-          "required": true,
-          "helpText": "For example, running 100 independent molecular dynamics trajectories as 100 separate jobs is a highly decomposable workload. In contrast, a single quantum chemistry calculation that uses MPI across 64 cores is tightly coupled.",
-          "options": [
-            { "value": "yes", "label": "Yes — the workload naturally divides into independent jobs" },
-            { "value": "partly", "label": "Partly — some steps are independent, others are coupled" },
-            { "value": "no", "label": "No — the workload consists of a single tightly coupled calculation" },
-            { "value": "dont_know", "label": "Don't know" }
-          ]
-        },
-        {
-          "id": "G_independent_jobs_notes",
-          "type": "textarea",
-          "label": "Notes on job independence (optional)",
-          "required": false,
-          "placeholder": "Describe how the workload is structured if 'partly' or if there is a mixture."
-        },
-        {
-          "id": "G_scaling_data",
+          "id": "G_scaling_records",
           "type": "repeatable",
-          "label": "Observed runtimes at different resource configurations",
+          "label": "Scaling observations by code",
           "required": false,
-          "helpText": "If you have run the same calculation on different numbers of cores or nodes, record the results here. This helps the committee understand how your workload scales.",
-          "googleFormsNote": "GOOGLE FORMS LIMITATION: Repeatable groups require a separate linked Google Form or fixed-row approach.",
+          "helpText": "Add one entry per application or code. For each code you may record multiple resource configurations in the nested scaling data table.",
+          "googleFormsNote": "GOOGLE FORMS LIMITATION: Repeatable groups (and nested repeatable groups) require separate linked Google Forms.",
           "subQuestions": [
             {
-              "id": "G_sd_resource_config",
+              "id": "G_code_name",
               "type": "text",
-              "label": "Resource configuration",
-              "required": true,
-              "placeholder": "e.g. '8 cores (1 node)', '32 cores (1 node)', '64 cores (2 nodes)'"
+              "label": "Application or code",
+              "required": false,
+              "placeholder": "e.g. VASP, GROMACS — or leave blank if general"
             },
             {
-              "id": "G_sd_wall_time_hours",
+              "id": "G_independent_jobs",
+              "type": "radio",
+              "label": "Can the workload be divided into independent jobs that do not communicate with each other during execution?",
+              "required": false,
+              "helpText": "For example, running 100 independent molecular dynamics trajectories as 100 separate jobs is a highly decomposable workload. In contrast, a single quantum chemistry calculation that uses MPI across 64 cores is tightly coupled.",
+              "options": [
+                { "value": "yes", "label": "Yes — the workload naturally divides into independent jobs" },
+                { "value": "partly", "label": "Partly — some steps are independent, others are coupled" },
+                { "value": "no", "label": "No — the workload consists of a single tightly coupled calculation" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "G_independent_jobs_notes",
+              "type": "textarea",
+              "label": "Notes on job independence (optional)",
+              "required": false,
+              "placeholder": "Describe how the workload is structured if 'partly' or if there is a mixture."
+            },
+            {
+              "id": "G_scaling_data",
+              "type": "repeatable",
+              "label": "Observed runtimes at different resource configurations",
+              "required": false,
+              "helpText": "If you have run the same calculation on different numbers of cores or nodes, record the results here. This helps the committee understand how your workload scales.",
+              "subQuestions": [
+                {
+                  "id": "G_sd_resource_config",
+                  "type": "text",
+                  "label": "Resource configuration",
+                  "required": true,
+                  "placeholder": "e.g. '8 cores (1 node)', '32 cores (1 node)'"
+                },
+                {
+                  "id": "G_sd_wall_time_hours",
+                  "type": "number",
+                  "label": "Observed wall-clock time (hours)",
+                  "required": false,
+                  "placeholder": "e.g. 24",
+                  "unit": "hours",
+                  "min": 0
+                },
+                {
+                  "id": "G_sd_evidence_source",
+                  "type": "select",
+                  "label": "Source of this scaling data",
+                  "required": true,
+                  "helpText": "Evidence from any system is valid — published benchmarks and developer documentation are accepted sources.",
+                  "options": [
+                    { "value": "current_iiser_hpc", "label": "Current IISER HPC cluster" },
+                    { "value": "historical_iiser_hpc", "label": "Historical / earlier IISER HPC cluster" },
+                    { "value": "external_hpc_national", "label": "External or national HPC facility (e.g. PARAM, C-DAC)" },
+                    { "value": "previous_production", "label": "Previous production calculation (same group)" },
+                    { "value": "collaborator_institutional", "label": "Collaborator's or another institution's cluster" },
+                    { "value": "standardised_benchmark", "label": "Standardised benchmark run" },
+                    { "value": "published_software_benchmark", "label": "Published or software benchmark" },
+                    { "value": "developer_vendor_documentation", "label": "Developer or vendor documentation" },
+                    { "value": "projected_workload", "label": "Projected / estimated (no direct measurement)" },
+                    { "value": "other", "label": "Other" }
+                  ]
+                },
+                {
+                  "id": "G_sd_evidence_level",
+                  "type": "select",
+                  "label": "Evidence confidence level",
+                  "required": true,
+                  "helpText": "Select the level that best describes the confidence in this scaling observation. These levels indicate evidence quality — they are not used to rank users.\n\nLevel 1: Direct production observation — actual jobs with documented resource use and runtime.\nLevel 2: Reproducible benchmark — a representative calculation on known hardware.\nLevel 3: Historical/external production evidence — actual production on another HPC system.\nLevel 4: Software/scaling evidence — published, developer, or vendor information.\nLevel 5: Projection — estimated future workload without direct measurements.",
+                  "options": [
+                    { "value": "1", "label": "Level 1 — Direct production observation (actual production jobs)" },
+                    { "value": "2", "label": "Level 2 — Reproducible benchmark (representative calculation on known hardware)" },
+                    { "value": "3", "label": "Level 3 — Historical/external production evidence (another HPC system)" },
+                    { "value": "4", "label": "Level 4 — Software/scaling evidence (developer or vendor information)" },
+                    { "value": "5", "label": "Level 5 — Projection (estimated; no direct measurement)" }
+                  ]
+                },
+                {
+                  "id": "G_sd_benchmark_reference",
+                  "type": "text",
+                  "label": "Published benchmark or documentation reference (if applicable)",
+                  "required": false,
+                  "placeholder": "e.g. VASP benchmark suite URL, GROMACS paper DOI, developer website",
+                  "helpText": "Many codes have published scaling benchmarks from developers or literature. If you are using published data, provide the reference here."
+                },
+                {
+                  "id": "G_sd_notes",
+                  "type": "text",
+                  "label": "Notes on this configuration",
+                  "required": false,
+                  "placeholder": "e.g. 'memory-bound above 32 cores', 'communication overhead significant'"
+                }
+              ]
+            },
+            {
+              "id": "G_node_count_affects_runtime",
+              "type": "radio",
+              "label": "Does increasing the number of cores or nodes reduce the wall-clock time for a single job?",
+              "required": false,
+              "helpText": "This is asking about parallel speedup for a single calculation — not about running more jobs simultaneously.",
+              "options": [
+                { "value": "yes_significant", "label": "Yes — significant speedup observed (roughly linear or better)" },
+                { "value": "yes_moderate", "label": "Yes — moderate speedup, but not linear (diminishing returns)" },
+                { "value": "yes_limited", "label": "Yes — limited speedup (only a small improvement)" },
+                { "value": "no", "label": "No — the calculation runs on a single core/node and cannot be parallelised" },
+                { "value": "not_tested", "label": "Not tested" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "G_min_nodes",
               "type": "number",
-              "label": "Observed wall-clock time (hours)",
+              "label": "What is the smallest resource configuration on which the job has been observed to complete successfully?",
               "required": false,
-              "placeholder": "e.g. 24",
-              "unit": "hours",
-              "min": 0
+              "placeholder": "e.g. 1",
+              "unit": "nodes",
+              "min": 1,
+              "helpText": "The minimum number of nodes (or cores) at which the calculation has actually completed. Leave blank if not known."
             },
             {
-              "id": "G_sd_notes",
-              "type": "text",
-              "label": "Notes on this configuration",
+              "id": "G_max_nodes_tested",
+              "type": "number",
+              "label": "What is the largest resource configuration that has been tested?",
               "required": false,
-              "placeholder": "e.g. 'memory-bound above 32 cores', 'communication overhead significant'"
+              "placeholder": "e.g. 16",
+              "unit": "nodes",
+              "min": 1,
+              "helpText": "The largest configuration actually tested — not the ideal or requested maximum."
+            },
+            {
+              "id": "G_notes",
+              "type": "textarea",
+              "label": "Additional notes on parallel scaling (optional)",
+              "required": false,
+              "placeholder": "Any other relevant observations about how your workload scales with resources."
             }
           ]
-        },
-        {
-          "id": "G_node_count_affects_runtime",
-          "type": "radio",
-          "label": "Does increasing the number of cores or nodes reduce the wall-clock time for a single job?",
-          "required": true,
-          "helpText": "This is asking about parallel speedup for a single calculation — not about running more jobs simultaneously.",
-          "options": [
-            { "value": "yes_significant", "label": "Yes — significant speedup observed (roughly linear or better)" },
-            { "value": "yes_moderate", "label": "Yes — moderate speedup, but not linear (diminishing returns)" },
-            { "value": "yes_limited", "label": "Yes — limited speedup (only a small improvement)" },
-            { "value": "no", "label": "No — the calculation runs on a single core/node and cannot be parallelised" },
-            { "value": "not_tested", "label": "Not tested" },
-            { "value": "dont_know", "label": "Don't know" }
-          ]
-        },
-        {
-          "id": "G_min_nodes",
-          "type": "number",
-          "label": "What is the smallest resource configuration on which the job has been observed to complete successfully?",
-          "required": false,
-          "placeholder": "e.g. 1",
-          "unit": "nodes",
-          "min": 1,
-          "helpText": "The minimum number of nodes (or cores) at which the calculation has actually completed. Leave blank if not known."
-        },
-        {
-          "id": "G_max_nodes_tested",
-          "type": "number",
-          "label": "What is the largest resource configuration that has been tested?",
-          "required": false,
-          "placeholder": "e.g. 16",
-          "unit": "nodes",
-          "min": 1,
-          "helpText": "The largest configuration actually tested — not the ideal or requested maximum."
-        },
-        {
-          "id": "G_notes",
-          "type": "textarea",
-          "label": "Additional notes on parallel scaling (optional)",
-          "required": false,
-          "placeholder": "Any other relevant observations about how your workload scales with resources."
         }
       ]
     },
     {
       "id": "H",
       "title": "H. Memory Requirements",
-      "description": "This section collects factual information about the memory (RAM) used by your workloads. Please report observed values where possible.",
+      "description": "This section collects factual information about the memory (RAM) used by your workloads. Add one entry per application or code. Please report observed values where possible.",
       "questions": [
         {
-          "id": "H_memory_workload",
-          "type": "text",
-          "label": "Application or code this memory information applies to",
+          "id": "H_memory_records",
+          "type": "repeatable",
+          "label": "Memory information by code",
           "required": false,
-          "placeholder": "e.g. VASP, or leave blank if general"
-        },
-        {
-          "id": "H_typical_memory_gb",
-          "type": "number",
-          "label": "Typical memory used per node",
-          "required": false,
-          "placeholder": "e.g. 64",
-          "unit": "GB",
-          "min": 0,
-          "helpText": "The RAM typically used by the job on each node during a typical production run."
-        },
-        {
-          "id": "H_peak_memory_gb",
-          "type": "number",
-          "label": "Observed peak memory per node",
-          "required": false,
-          "placeholder": "e.g. 110",
-          "unit": "GB",
-          "min": 0,
-          "helpText": "The maximum RAM observed at any point during a run. This may be higher than the typical usage. Leave blank if unknown."
-        },
-        {
-          "id": "H_minimum_workable_gb",
-          "type": "number",
-          "label": "Minimum memory at which the workload has been observed to run",
-          "required": false,
-          "placeholder": "e.g. 32",
-          "unit": "GB",
-          "min": 0,
-          "helpText": "The smallest amount of RAM on which the calculation has actually completed. If the calculation has only ever been run on one memory configuration, enter that value."
-        },
-        {
-          "id": "H_memory_distribution",
-          "type": "radio",
-          "label": "Is the memory usage confined to a single node, or distributed across multiple nodes?",
-          "required": false,
-          "helpText": "Per-node: the entire job's memory fits within one node (e.g. a serial or shared-memory parallel job). Distributed: the job uses MPI or similar to spread its memory across many nodes (common in large-scale simulations).",
-          "options": [
-            { "value": "per_node", "label": "Per-node — the job fits entirely within a single node's memory" },
-            { "value": "distributed", "label": "Distributed — the job requires multiple nodes and cannot fit in one node's memory" },
-            { "value": "either", "label": "Either — the job can run on one node but may benefit from distributed memory" },
-            { "value": "dont_know", "label": "Don't know" }
+          "helpText": "Add one entry per application or code. If all your codes have similar memory requirements, one entry is sufficient.",
+          "googleFormsNote": "GOOGLE FORMS LIMITATION: Repeatable groups require a separate linked Google Form.",
+          "subQuestions": [
+            {
+              "id": "H_code_name",
+              "type": "text",
+              "label": "Application or code",
+              "required": false,
+              "placeholder": "e.g. VASP — or leave blank if general"
+            },
+            {
+              "id": "H_typical_memory_gb",
+              "type": "number",
+              "label": "Typical memory used per node",
+              "required": false,
+              "placeholder": "e.g. 64",
+              "unit": "GB",
+              "min": 0,
+              "helpText": "The RAM typically used by the job on each node during a typical production run."
+            },
+            {
+              "id": "H_peak_memory_gb",
+              "type": "number",
+              "label": "Observed peak memory per node",
+              "required": false,
+              "placeholder": "e.g. 110",
+              "unit": "GB",
+              "min": 0,
+              "helpText": "The maximum RAM observed at any point during a run. This may be higher than the typical usage. Leave blank if unknown."
+            },
+            {
+              "id": "H_minimum_workable_gb",
+              "type": "number",
+              "label": "Minimum memory at which the workload has been observed to run",
+              "required": false,
+              "placeholder": "e.g. 32",
+              "unit": "GB",
+              "min": 0,
+              "helpText": "The smallest amount of RAM on which the calculation has actually completed. If the calculation has only ever been run on one memory configuration, enter that value."
+            },
+            {
+              "id": "H_memory_distribution",
+              "type": "radio",
+              "label": "Is the memory usage confined to a single node, or distributed across multiple nodes?",
+              "required": false,
+              "helpText": "Per-node: the entire job's memory fits within one node (e.g. a serial or shared-memory parallel job). Distributed: the job uses MPI or similar to spread its memory across many nodes (common in large-scale simulations).",
+              "options": [
+                { "value": "per_node", "label": "Per-node — the job fits entirely within a single node's memory" },
+                { "value": "distributed", "label": "Distributed — the job requires multiple nodes and cannot fit in one node's memory" },
+                { "value": "either", "label": "Either — the job can run on one node but may benefit from distributed memory" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "H_standard_nodes_tested",
+              "type": "radio",
+              "label": "Has the workload been run on nodes with the standard memory configuration of the current IISER HPC cluster?",
+              "required": false,
+              "helpText": "The standard nodes on the current cluster have [standard memory size — to be inserted]. Has the workload been run (or attempted) on nodes with this memory size?",
+              "options": [
+                { "value": "yes", "label": "Yes, and it worked" },
+                { "value": "yes_failed", "label": "Yes, but the job failed due to insufficient memory (OOM)" },
+                { "value": "no", "label": "No, not tested on standard nodes" },
+                { "value": "not_applicable", "label": "Not applicable" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "H_evidence_source",
+              "type": "select",
+              "label": "Source of this memory information",
+              "required": false,
+              "helpText": "Where does this memory information come from? Observed job output, OOM failures, developer documentation, and published benchmarks are all valid sources.",
+              "options": [
+                { "value": "current_iiser_hpc", "label": "Current IISER HPC cluster" },
+                { "value": "historical_iiser_hpc", "label": "Historical / earlier IISER HPC cluster" },
+                { "value": "external_hpc_national", "label": "External or national HPC facility (e.g. PARAM, C-DAC)" },
+                { "value": "previous_production", "label": "Previous production calculation (same group)" },
+                { "value": "collaborator_institutional", "label": "Collaborator's or another institution's cluster" },
+                { "value": "standardised_benchmark", "label": "Standardised benchmark run" },
+                { "value": "published_software_benchmark", "label": "Published or software benchmark" },
+                { "value": "developer_vendor_documentation", "label": "Developer or vendor documentation" },
+                { "value": "projected_workload", "label": "Projected / estimated (no direct measurement)" },
+                { "value": "other", "label": "Other" }
+              ]
+            },
+            {
+              "id": "H_evidence_level",
+              "type": "select",
+              "label": "Evidence confidence level",
+              "required": false,
+              "helpText": "Select the level that best describes the confidence in this memory information. These levels indicate evidence quality — they are not used to rank users.\n\nLevel 1: Direct production observation — actual jobs with documented resource use and runtime.\nLevel 2: Reproducible benchmark — a representative calculation on known hardware.\nLevel 3: Historical/external production evidence — actual production on another HPC system.\nLevel 4: Software/scaling evidence — published, developer, or vendor information.\nLevel 5: Projection — estimated future workload without direct measurements.",
+              "options": [
+                { "value": "1", "label": "Level 1 — Direct production observation (actual production jobs)" },
+                { "value": "2", "label": "Level 2 — Reproducible benchmark (representative calculation on known hardware)" },
+                { "value": "3", "label": "Level 3 — Historical/external production evidence (another HPC system)" },
+                { "value": "4", "label": "Level 4 — Software/scaling evidence (developer or vendor information)" },
+                { "value": "5", "label": "Level 5 — Projection (estimated; no direct measurement)" }
+              ]
+            },
+            {
+              "id": "H_notes",
+              "type": "textarea",
+              "label": "Additional notes on memory requirements (optional)",
+              "required": false,
+              "placeholder": "e.g. 'Memory usage grows with system size — a 200-atom system uses ~50 GB, a 500-atom system uses ~250 GB'."
+            }
           ]
-        },
-        {
-          "id": "H_standard_nodes_tested",
-          "type": "radio",
-          "label": "Has the workload been run on nodes with the standard memory configuration of the current IISER HPC cluster?",
-          "required": true,
-          "helpText": "The standard nodes on the current cluster have [standard memory size — to be inserted]. Has the workload been run (or attempted) on nodes with this memory size?",
-          "options": [
-            { "value": "yes", "label": "Yes, and it worked" },
-            { "value": "yes_failed", "label": "Yes, but the job failed due to insufficient memory (OOM)" },
-            { "value": "no", "label": "No, not tested on standard nodes" },
-            { "value": "not_applicable", "label": "Not applicable" },
-            { "value": "dont_know", "label": "Don't know" }
-          ]
-        },
-        {
-          "id": "H_notes",
-          "type": "textarea",
-          "label": "Additional notes on memory requirements (optional)",
-          "required": false,
-          "placeholder": "e.g. 'Memory usage grows with system size — a 200-atom system uses ~50 GB, a 500-atom system uses ~250 GB'."
         }
       ]
     },
     {
       "id": "I",
       "title": "I. GPU and Specialised Resources",
-      "description": "This section collects factual information about your use of GPUs and other specialised hardware. If your workloads do not use GPUs, you may skip this section.",
+      "description": "This section collects factual information about GPU use and performance. Add one entry per application or code that uses, or has been investigated for, GPU acceleration. If none of your workloads use GPUs, this section can be left empty.",
       "questions": [
         {
-          "id": "I_uses_gpu",
-          "type": "radio",
-          "label": "Does any of your workloads currently use, or have you investigated using, GPU acceleration?",
-          "required": true,
-          "helpText": "GPUs (Graphics Processing Units) are used to accelerate many computational codes, particularly in molecular dynamics, machine learning, and quantum chemistry.",
-          "options": [
-            { "value": "yes_currently", "label": "Yes — GPUs are currently used in production" },
-            { "value": "yes_investigated", "label": "Yes — GPU use has been investigated but not yet in production" },
-            { "value": "no", "label": "No" },
-            { "value": "dont_know", "label": "Don't know if GPUs are relevant to our workloads" }
+          "id": "I_gpu_records",
+          "type": "repeatable",
+          "label": "GPU information by code",
+          "required": false,
+          "helpText": "Add one entry per application or code. If a code does not use GPUs, you do not need to add an entry for it.",
+          "googleFormsNote": "GOOGLE FORMS LIMITATION: Repeatable groups require a separate linked Google Form.",
+          "subQuestions": [
+            {
+              "id": "I_code_name",
+              "type": "text",
+              "label": "Application or code",
+              "required": false,
+              "placeholder": "e.g. GROMACS, NAMD, PyTorch"
+            },
+            {
+              "id": "I_uses_gpu",
+              "type": "radio",
+              "label": "Does this application use or could it use GPU acceleration?",
+              "required": false,
+              "helpText": "GPUs (Graphics Processing Units) are used to accelerate many computational codes, particularly in molecular dynamics, machine learning, and quantum chemistry.",
+              "options": [
+                { "value": "yes_currently", "label": "Yes — GPUs are currently used in production" },
+                { "value": "yes_investigated", "label": "Yes — GPU use has been investigated but not yet in production" },
+                { "value": "no", "label": "No" },
+                { "value": "dont_know", "label": "Don't know if GPUs are relevant to this code" }
+              ]
+            },
+            {
+              "id": "I_gpu_model",
+              "type": "text",
+              "label": "GPU model(s) used or tested",
+              "required": false,
+              "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
+              "placeholder": "e.g. NVIDIA A100 80 GB, RTX 3090, V100",
+              "helpText": "The GPU hardware used in the observations below. Leave blank if not known."
+            },
+            {
+              "id": "I_gpu_frameworks",
+              "type": "checkbox",
+              "label": "GPU-enabled frameworks or libraries used",
+              "required": false,
+              "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
+              "options": [
+                { "value": "cuda", "label": "CUDA" },
+                { "value": "opencl", "label": "OpenCL" },
+                { "value": "pytorch", "label": "PyTorch" },
+                { "value": "tensorflow", "label": "TensorFlow" },
+                { "value": "jax", "label": "JAX" },
+                { "value": "cupy", "label": "CuPy" },
+                { "value": "gromacs_gpu", "label": "GROMACS GPU offload" },
+                { "value": "namd_gpu", "label": "NAMD GPU acceleration" },
+                { "value": "amber_gpu", "label": "AMBER GPU acceleration" },
+                { "value": "lammps_gpu", "label": "LAMMPS GPU package" },
+                { "value": "qe_gpu", "label": "Quantum ESPRESSO GPU" },
+                { "value": "cp2k_gpu", "label": "CP2K GPU" },
+                { "value": "other", "label": "Other" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "I_gpu_frameworks_other",
+              "type": "text",
+              "label": "GPU frameworks (if 'Other')",
+              "required": false,
+              "conditionalOn": { "questionId": "I_gpu_frameworks", "values": ["other"] },
+              "placeholder": "Please specify"
+            },
+            {
+              "id": "I_performance_with_gpu",
+              "type": "textarea",
+              "label": "Observed performance with GPU (if available)",
+              "required": false,
+              "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
+              "placeholder": "e.g. 'GROMACS 100ns/day on 1× A100; 10ns/day on 32 CPU cores'. Include resources and runtime.",
+              "helpText": "Describe the observed performance when running with GPU. Include the GPU model, number of GPUs, and observed throughput or wall time."
+            },
+            {
+              "id": "I_performance_without_gpu",
+              "type": "textarea",
+              "label": "Observed performance without GPU (CPU-only), for comparison (if available)",
+              "required": false,
+              "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
+              "placeholder": "e.g. '10ns/day on 32 CPU cores (same system size)'. Include resources and runtime.",
+              "helpText": "If you have a CPU-only performance figure for the same workload, enter it here. This allows the committee to assess the practical speedup."
+            },
+            {
+              "id": "I_evidence_source",
+              "type": "select",
+              "label": "Source of this GPU performance information",
+              "required": false,
+              "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
+              "helpText": "Where does this GPU performance information come from? Published benchmarks, developer documentation, and your own production observations are all valid.",
+              "options": [
+                { "value": "current_iiser_hpc", "label": "Current IISER HPC cluster" },
+                { "value": "historical_iiser_hpc", "label": "Historical / earlier IISER HPC cluster" },
+                { "value": "external_hpc_national", "label": "External or national HPC facility (e.g. PARAM, C-DAC)" },
+                { "value": "previous_production", "label": "Previous production calculation (same group)" },
+                { "value": "collaborator_institutional", "label": "Collaborator's or another institution's cluster" },
+                { "value": "standardised_benchmark", "label": "Standardised benchmark run" },
+                { "value": "published_software_benchmark", "label": "Published or software benchmark" },
+                { "value": "developer_vendor_documentation", "label": "Developer or vendor documentation" },
+                { "value": "projected_workload", "label": "Projected / estimated (no direct measurement)" },
+                { "value": "other", "label": "Other" }
+              ]
+            },
+            {
+              "id": "I_specialised_interconnect",
+              "type": "radio",
+              "label": "Does the workload require a specialised high-speed interconnect between GPUs or nodes?",
+              "required": false,
+              "helpText": "For example, NVLink (between GPUs on the same node) or InfiniBand (between nodes for multi-node GPU jobs). Most GPU workloads do not require this.",
+              "options": [
+                { "value": "yes", "label": "Yes" },
+                { "value": "no", "label": "No" },
+                { "value": "dont_know", "label": "Don't know" },
+                { "value": "not_applicable", "label": "Not applicable" },
+                { "value": "not_tested", "label": "Not tested" }
+              ]
+            },
+            {
+              "id": "I_specialised_interconnect_description",
+              "type": "text",
+              "label": "If yes, describe the interconnect requirement",
+              "required": false,
+              "conditionalOn": { "questionId": "I_specialised_interconnect", "values": ["yes"] },
+              "placeholder": "e.g. 'NVLink between GPUs on the same node', 'InfiniBand HDR for multi-node NCCL communication'"
+            },
+            {
+              "id": "I_notes",
+              "type": "textarea",
+              "label": "Additional notes on GPU or specialised hardware use (optional)",
+              "required": false,
+              "placeholder": "Any other relevant information about GPU or specialised hardware requirements."
+            }
           ]
-        },
-        {
-          "id": "I_gpu_codes",
-          "type": "text",
-          "label": "Which application(s) use or would use GPU acceleration?",
-          "required": false,
-          "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
-          "placeholder": "e.g. GROMACS, NAMD, TensorFlow/PyTorch"
-        },
-        {
-          "id": "I_gpu_model",
-          "type": "text",
-          "label": "GPU model(s) used or tested",
-          "required": false,
-          "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
-          "placeholder": "e.g. NVIDIA A100 80 GB, RTX 3090, V100",
-          "helpText": "The GPU hardware used in the observations below. Leave blank if not known."
-        },
-        {
-          "id": "I_gpu_frameworks",
-          "type": "checkbox",
-          "label": "GPU-enabled frameworks or libraries used",
-          "required": false,
-          "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
-          "options": [
-            { "value": "cuda", "label": "CUDA" },
-            { "value": "opencl", "label": "OpenCL" },
-            { "value": "pytorch", "label": "PyTorch" },
-            { "value": "tensorflow", "label": "TensorFlow" },
-            { "value": "jax", "label": "JAX" },
-            { "value": "cupy", "label": "CuPy" },
-            { "value": "gromacs_gpu", "label": "GROMACS GPU offload" },
-            { "value": "namd_gpu", "label": "NAMD GPU acceleration" },
-            { "value": "amber_gpu", "label": "AMBER GPU acceleration" },
-            { "value": "lammps_gpu", "label": "LAMMPS GPU package" },
-            { "value": "qe_gpu", "label": "Quantum ESPRESSO GPU" },
-            { "value": "cp2k_gpu", "label": "CP2K GPU" },
-            { "value": "other", "label": "Other" },
-            { "value": "dont_know", "label": "Don't know" }
-          ]
-        },
-        {
-          "id": "I_gpu_frameworks_other",
-          "type": "text",
-          "label": "GPU frameworks (if 'Other')",
-          "required": false,
-          "placeholder": "Please specify"
-        },
-        {
-          "id": "I_performance_with_gpu",
-          "type": "textarea",
-          "label": "Observed performance with GPU (if available)",
-          "required": false,
-          "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
-          "placeholder": "e.g. 'GROMACS 100ns/day on 1× A100; 10ns/day on 32 CPU cores'. Include resources and runtime.",
-          "helpText": "Describe the observed performance when running with GPU. Include the GPU model, number of GPUs, and observed throughput or wall time."
-        },
-        {
-          "id": "I_performance_without_gpu",
-          "type": "textarea",
-          "label": "Observed performance without GPU (CPU-only), for comparison (if available)",
-          "required": false,
-          "conditionalOn": { "questionId": "I_uses_gpu", "values": ["yes_currently", "yes_investigated"] },
-          "placeholder": "e.g. '10ns/day on 32 CPU cores (same system size)'. Include resources and runtime.",
-          "helpText": "If you have a CPU-only performance figure for the same workload, enter it here. This allows the committee to assess the practical speedup."
-        },
-        {
-          "id": "I_specialised_interconnect",
-          "type": "radio",
-          "label": "Does the workload require a specialised high-speed interconnect between GPUs or nodes?",
-          "required": false,
-          "helpText": "For example, NVLink (between GPUs on the same node) or InfiniBand (between nodes for multi-node GPU jobs). Most GPU workloads do not require this.",
-          "options": [
-            { "value": "yes", "label": "Yes" },
-            { "value": "no", "label": "No" },
-            { "value": "dont_know", "label": "Don't know" },
-            { "value": "not_applicable", "label": "Not applicable" },
-            { "value": "not_tested", "label": "Not tested" }
-          ]
-        },
-        {
-          "id": "I_specialised_interconnect_description",
-          "type": "text",
-          "label": "If yes, describe the interconnect requirement",
-          "required": false,
-          "conditionalOn": { "questionId": "I_specialised_interconnect", "values": ["yes"] },
-          "placeholder": "e.g. 'NVLink between GPUs on the same node', 'InfiniBand HDR for multi-node NCCL communication'"
-        },
-        {
-          "id": "I_notes",
-          "type": "textarea",
-          "label": "Additional notes on GPU or specialised hardware use (optional)",
-          "required": false,
-          "placeholder": "Any other relevant information about GPU or specialised hardware requirements."
         }
       ]
     },
@@ -1068,11 +1191,12 @@
       "description": "This section collects information about high-throughput workloads — situations where your group runs large numbers of independent jobs. Please report what is actually observed, not an ideal or projected throughput.",
       "questions": [
         {
-          "id": "J_throughput_workload",
+          "id": "J_code_name",
           "type": "text",
-          "label": "Application or code this throughput information applies to",
+          "label": "Application or code this throughput information applies to (optional)",
           "required": false,
-          "placeholder": "e.g. VASP, in-house Python scripts, or leave blank if general"
+          "placeholder": "e.g. VASP, GROMACS, in-house scripts — or leave blank if general",
+          "helpText": "If different codes have very different throughput characteristics, complete this section for the code with the most distinctive pattern."
         },
         {
           "id": "J_jobs_fully_independent",

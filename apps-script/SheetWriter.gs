@@ -73,28 +73,32 @@ var SHEET_DEFINITIONS = [
   {
     name: 'ScalingInfo',
     headers: [
-      'submission_id', 'pi_name', 'independent_jobs', 'configs_tested',
-      'node_count_affects_runtime', 'min_nodes', 'max_nodes', 'notes'
+      'submission_id', 'pi_name', 'code_name', 'independent_jobs', 'independent_jobs_notes',
+      'node_count_affects_runtime', 'min_nodes', 'max_nodes_tested', 'code_notes',
+      'resource_config', 'wall_time_hours', 'evidence_source', 'evidence_level',
+      'benchmark_reference', 'config_notes'
     ]
   },
   {
     name: 'MemoryInfo',
     headers: [
-      'submission_id', 'pi_name', 'typical_memory_gb', 'peak_memory_gb',
-      'min_workable_gb', 'memory_distribution', 'standard_nodes_tested', 'notes'
+      'submission_id', 'pi_name', 'code_name', 'typical_memory_gb', 'peak_memory_gb',
+      'min_workable_gb', 'memory_distribution', 'standard_nodes_tested',
+      'evidence_source', 'evidence_level', 'notes'
     ]
   },
   {
     name: 'GpuInfo',
     headers: [
-      'submission_id', 'pi_name', 'gpu_used', 'gpu_model', 'frameworks',
-      'performance_with_gpu', 'performance_without_gpu', 'specialised_interconnect', 'notes'
+      'submission_id', 'pi_name', 'code_name', 'uses_gpu', 'gpu_model', 'frameworks',
+      'performance_with_gpu', 'performance_without_gpu', 'evidence_source',
+      'specialised_interconnect', 'notes'
     ]
   },
   {
     name: 'Throughput',
     headers: [
-      'submission_id', 'pi_name', 'independent_job_count', 'concurrent_jobs',
+      'submission_id', 'pi_name', 'code_name', 'independent_job_count', 'concurrent_jobs',
       'total_hours_range', 'turnaround_range', 'queue_depth', 'fully_independent', 'notes'
     ]
   },
@@ -385,50 +389,92 @@ function writeCheckpointInfo(submissionId, piName, answers) {
 }
 
 function writeScalingInfo(submissionId, piName, answers) {
-  var scalingData = getArr(answers, 'G_scaling_data');
-  var configsSummary = scalingData.map(function(pt) {
-    return (pt['G_sd_resource_config'] || '') + ': ' + (pt['G_sd_wall_time_hours'] || '?') + 'h';
-  }).join('; ');
+  var outerRecords = getArr(answers, 'G_scaling_records');
+  if (outerRecords.length === 0) {
+    appendRow('ScalingInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    return;
+  }
+  outerRecords.forEach(function(codeEntry) {
+    var codeName   = codeEntry['G_code_name'] || '';
+    var indJobs    = codeEntry['G_independent_jobs'] || '';
+    var indNotes   = codeEntry['G_independent_jobs_notes'] || '';
+    var nodeEffect = codeEntry['G_node_count_affects_runtime'] || '';
+    var minNodes   = codeEntry['G_min_nodes'] || '';
+    var maxNodes   = codeEntry['G_max_nodes_tested'] || '';
+    var codeNotes  = codeEntry['G_notes'] || '';
+    var innerData  = Array.isArray(codeEntry['G_scaling_data']) ? codeEntry['G_scaling_data'] : [];
 
-  appendRow('ScalingInfo', [
-    submissionId, piName,
-    val(answers, 'G_independent_jobs'),
-    configsSummary,
-    val(answers, 'G_node_count_affects_runtime'),
-    val(answers, 'G_min_nodes'),
-    val(answers, 'G_max_nodes_tested'),
-    val(answers, 'G_notes')
-  ]);
+    if (innerData.length === 0) {
+      appendRow('ScalingInfo', [
+        submissionId, piName, codeName,
+        indJobs, indNotes, nodeEffect, minNodes, maxNodes, codeNotes,
+        '', '', '', '', '', ''
+      ]);
+    } else {
+      innerData.forEach(function(cfg) {
+        appendRow('ScalingInfo', [
+          submissionId, piName, codeName,
+          indJobs, indNotes, nodeEffect, minNodes, maxNodes, codeNotes,
+          cfg['G_sd_resource_config'] || '',
+          cfg['G_sd_wall_time_hours'] || '',
+          cfg['G_sd_evidence_source'] || '',
+          cfg['G_sd_evidence_level'] || '',
+          cfg['G_sd_benchmark_reference'] || '',
+          cfg['G_sd_notes'] || ''
+        ]);
+      });
+    }
+  });
 }
 
 function writeMemoryInfo(submissionId, piName, answers) {
-  appendRow('MemoryInfo', [
-    submissionId, piName,
-    val(answers, 'H_typical_memory_gb'),
-    val(answers, 'H_peak_memory_gb'),
-    val(answers, 'H_minimum_workable_gb'),
-    val(answers, 'H_memory_distribution'),
-    val(answers, 'H_standard_nodes_tested'),
-    val(answers, 'H_notes')
-  ]);
+  var records = getArr(answers, 'H_memory_records');
+  if (records.length === 0) {
+    appendRow('MemoryInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '']);
+    return;
+  }
+  records.forEach(function(entry) {
+    appendRow('MemoryInfo', [
+      submissionId, piName,
+      entry['H_code_name'] || '',
+      entry['H_typical_memory_gb'] || '',
+      entry['H_peak_memory_gb'] || '',
+      entry['H_minimum_workable_gb'] || '',
+      entry['H_memory_distribution'] || '',
+      entry['H_standard_nodes_tested'] || '',
+      entry['H_evidence_source'] || '',
+      entry['H_evidence_level'] || '',
+      entry['H_notes'] || ''
+    ]);
+  });
 }
 
 function writeGpuInfo(submissionId, piName, answers) {
-  appendRow('GpuInfo', [
-    submissionId, piName,
-    val(answers, 'I_uses_gpu'),
-    val(answers, 'I_gpu_model'),
-    joinArr(answers['I_gpu_frameworks']),
-    val(answers, 'I_performance_with_gpu'),
-    val(answers, 'I_performance_without_gpu'),
-    val(answers, 'I_specialised_interconnect'),
-    val(answers, 'I_notes')
-  ]);
+  var records = getArr(answers, 'I_gpu_records');
+  if (records.length === 0) {
+    appendRow('GpuInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '']);
+    return;
+  }
+  records.forEach(function(entry) {
+    appendRow('GpuInfo', [
+      submissionId, piName,
+      entry['I_code_name'] || '',
+      entry['I_uses_gpu'] || '',
+      entry['I_gpu_model'] || '',
+      joinArr(entry['I_gpu_frameworks']),
+      entry['I_performance_with_gpu'] || '',
+      entry['I_performance_without_gpu'] || '',
+      entry['I_evidence_source'] || '',
+      entry['I_specialised_interconnect'] || '',
+      entry['I_notes'] || ''
+    ]);
+  });
 }
 
 function writeThroughput(submissionId, piName, answers) {
   appendRow('Throughput', [
     submissionId, piName,
+    val(answers, 'J_code_name'),
     val(answers, 'J_independent_job_count'),
     val(answers, 'J_concurrent_jobs'),
     val(answers, 'J_total_cpu_gpu_hours_range'),
