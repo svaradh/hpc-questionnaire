@@ -94,6 +94,37 @@ Likewise:
 
 "Computationally important research" must NOT automatically imply "long-wall-time queue."
 
+### 1.5 Neutral and constructive framing
+
+The questionnaire must be presented as a constructive workload-characterisation exercise to help the institute understand the diversity of computational workloads and design appropriate services for all users.
+
+It must not appear to be:
+- a test of whether someone deserves HPC access;
+- an adversarial challenge to users' claims;
+- a mechanism for ranking research importance or identifying privileged groups;
+- a disguised core/peripheral or computational/non-computational classification exercise.
+
+The form should communicate:
+
+> "Help us understand your workload so that appropriate services can be designed."
+
+It should not communicate:
+
+> "Prove that you deserve this service."
+
+Even questions intended to establish evidence for unusual requirements must be neutrally and helpfully worded.
+
+### 1.6 Do not ask users to judge scientific importance
+
+Everyone's research is important to them, and faster turnaround benefits all users.
+
+Do not include questions that invite subjective assessments such as:
+- "How important is this computation to your research?"
+- "How essential is HPC to your research programme?"
+- "How critical is a long queue to your work?"
+
+Instead collect operational evidence from which the committee can draw inferences.
+
 ---
 
 # 2. Evidence sources
@@ -128,6 +159,8 @@ Possible evidence sources:
 The form must explicitly state:
 
 "Lack of current-cluster usage is not, by itself, evidence of lack of computational requirement."
+
+Do not turn absence of records into evidence of absence of need. Where exact data cannot be provided, allow approximate historical information, representative examples, benchmark evidence, external evidence, or explicitly marked estimates. "Data unavailable" is a valid response and must not be treated as a negative finding.
 
 ---
 
@@ -209,6 +242,8 @@ The questionnaire should use simple questions with checkboxes/radio buttons wher
 Technical questions should have short examples/help text.
 
 Examples should help respondents recognise the appropriate answer rather than teach HPC theory.
+
+Examples should not be framed as warnings, challenges, or attempts to catch incorrect answers.
 
 Example:
 
@@ -340,6 +375,8 @@ Collect:
 - whether currently used
 
 If unknown, allow "Don't know."
+
+Do not ask whether checkpoint/restart "solves" the user's wall-time problem. The committee infers the significance.
 
 ## G. Parallel scaling
 
@@ -483,6 +520,12 @@ Examples:
 
 The system should help identify Category 2 and Category 3 cases.
 
+Category 3 examination must be framed constructively, not adversarially. The neutral principle is:
+
+> Unusual service requirements should be supported by appropriate evidence, just as ordinary service requirements are characterised by evidence.
+
+This is not an attempt to disprove users. It is an attempt to ensure that evidence is proportionate to the service characteristics being considered.
+
 ---
 
 # 9. No automatic entitlement scoring
@@ -540,6 +583,8 @@ The form should be:
 - usable by researchers with limited HPC expertise
 - accessible on desktop and tablet
 - clear about optional vs required information
+
+The questionnaire should have a small mandatory core and detailed optional sections. Do not require respondents to provide technical information that is irrelevant to their workload. The goal is simple completion for ordinary users, with detailed evidence sections available for unusual or contested requirements.
 
 Use progressive disclosure where appropriate.
 
@@ -608,6 +653,8 @@ When I provide additional specifications, modify the architecture rather than cr
 
 Before implementing major changes, briefly explain the proposed change and identify any implications for the existing data model or questionnaire logic.
 
+The questionnaire must remain extensible so that additional evidence modules can later be added for specific service characteristics (e.g. long-wall-time, highly parallel, high-memory, GPU, high-throughput workloads). These modules should share the common evidence model rather than becoming unrelated forms.
+
 ---
 
 # 14. Current design principle
@@ -619,5 +666,9 @@ The most important principle for the entire project is:
 The form must never turn into a self-declared entitlement application.
 
 The eventual objective is a transparent and technically defensible way of matching workload characteristics to appropriate HPC Quality-of-Service, while ensuring that lack of technical expertise, lack of current-cluster access, or historical policy constraints do not themselves disadvantage a research group.
+
+The underlying message to respondents is:
+
+> We are not asking you to defend your research. We are asking for enough factual information to understand the diversity of workloads and design fair, technically appropriate services for everyone.
 
 Build the project so that this philosophy remains visible in both the implementation and the user interface.
