@@ -113,7 +113,7 @@ export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupPro
         className="btn-add-row"
         onClick={handleAddRow}
       >
-        + Add {rows.length === 0 ? 'entry' : 'another entry'}
+        + Add {rows.length === 0 ? '' : 'another '}{question.entryLabel ?? 'entry'}
       </button>
 
       {question.googleFormsNote && (

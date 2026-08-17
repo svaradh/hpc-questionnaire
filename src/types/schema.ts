@@ -126,6 +126,12 @@ export interface Question {
   /** Default unit shown when the question is first rendered. */
   defaultUnit?: string
   /**
+   * For 'repeatable' type: the singular noun used in the Add button.
+   * e.g. "code" → "+ Add code" / "+ Add another code"
+   * Defaults to "entry" if omitted.
+   */
+  entryLabel?: string
+  /**
    * Minimum value for number inputs (inclusive).
    */
   min?: number
