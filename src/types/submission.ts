@@ -286,34 +286,40 @@ export interface EvidenceRecord {
 // ---------------------------------------------------------------------------
 
 /**
+ * A duration value entered via the 'duration' question type.
+ * Stored as the raw user input; normalised to hours by the Apps Script on write.
+ *
+ * TODO (future harmonisation): wall-time fields in Section D and other
+ * time-valued fields currently store a plain number in hours. When those
+ * sections are revised, adopt DurationValue throughout so the Apps Script
+ * can normalise all time fields consistently.
+ */
+export interface DurationValue {
+  value: number | ''
+  unit: 'seconds' | 'minutes' | 'hours' | 'days'
+}
+
+/**
  * Section F: Checkpoint and restart characteristics of a workload.
  * Collected per-workload. "Don't know" is always valid.
  */
 export interface CheckpointInfo {
   workloadId: string
-  /**
-   * Whether the application supports checkpoint/restart.
-   * "If a job can be stopped and later resumed without repeating
-   * completed computation, this is restartable execution."
-   */
   supported: YesNoUncertain
-  /** Whether the checkpoint mechanism is built-in or external. */
   checkpointType?: CheckpointType
-  /** Approximate checkpoint interval (free text, e.g. "every 2 hours"). */
-  checkpointInterval?: string
-  /**
-   * Description of restart behaviour (e.g. "restarts from last
-   * checkpoint; partial step is discarded").
-   */
-  restartBehaviour?: string
-  /**
-   * Estimated computational work lost if a job is interrupted
-   * between checkpoints (e.g. "up to 2 hours of CPU time").
-   */
-  computationalLossOnInterruption?: string
-  /** Whether checkpoint/restart has been tested on this system. */
-  tested: YesNoUncertain
-  /** Whether checkpoint/restart is currently used in production. */
+  /** How often checkpoints are written. Normalised to hours on export. */
+  checkpointInterval?: DurationValue
+  /** Whether the job restarts automatically without manual steps. */
+  restartAutomatic?: 'yes' | 'no' | 'dont_know'
+  /** Time to reinitialise or reload data after a restart. Normalised to hours on export. */
+  restartOverhead?: DurationValue
+  /** Whether restarted runs have produced incorrect or unexpected results. */
+  restartErrors?: 'yes' | 'no' | 'not_tested' | 'dont_know'
+  /** Whether checkpointing was attempted in production and later abandoned. */
+  checkpointAbandoned?: 'yes' | 'no' | 'dont_know'
+  /** Reason checkpointing was abandoned, if applicable. */
+  abandonedReason?: 'overhead_too_large' | 'results_unreliable' | 'too_complex' | 'not_compatible' | 'other'
+  abandonedReasonOther?: string
   currentlyUsed: YesNoUncertain
   notes?: string
 }

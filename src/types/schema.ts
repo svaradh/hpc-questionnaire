@@ -33,6 +33,7 @@ export type QuestionType =
   | 'select'
   | 'repeatable'
   | 'info'
+  | 'duration'
 
 /** A single selectable option within a radio, checkbox, or select question. */
 export interface QuestionOption {
@@ -109,6 +110,21 @@ export interface Question {
    * The field remains visible but is disabled in that state.
    */
   mirrorFromPI?: boolean
+  /**
+   * For 'duration' type: ordered list of time units the user can select.
+   * e.g. ["seconds", "minutes", "hours", "days"]
+   * Value stored as { value: number, unit: string }.
+   * The Apps Script normalises to hours on write.
+   *
+   * TODO (future harmonisation): wall-time fields in Section D and other
+   * time-valued fields currently use a plain number (hours). When those
+   * sections are revised, adopt this same duration type throughout so that
+   * the Apps Script can normalise all time fields to a single unit (hours)
+   * consistently.
+   */
+  units?: string[]
+  /** Default unit shown when the question is first rendered. */
+  defaultUnit?: string
   /**
    * Minimum value for number inputs (inclusive).
    */

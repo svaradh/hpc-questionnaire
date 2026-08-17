@@ -650,41 +650,85 @@
         },
         {
           "id": "F_checkpoint_interval",
-          "type": "text",
+          "type": "duration",
           "label": "How frequently are checkpoints written?",
           "required": false,
           "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
-          "placeholder": "e.g. 'every 2 hours', 'every 1000 steps', 'configurable — currently set to 4 hours'",
-          "helpText": "How often does the code save a checkpoint from which it could be restarted?"
+          "units": ["seconds", "minutes", "hours", "days"],
+          "defaultUnit": "minutes",
+          "helpText": "How often does the code save a checkpoint from which it could be restarted? Enter a number and select the time unit."
         },
         {
-          "id": "F_restart_behaviour",
-          "type": "textarea",
-          "label": "How does the application behave when restarted from a checkpoint?",
-          "required": false,
-          "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
-          "placeholder": "e.g. 'Restarts from the last complete checkpoint; any partial step is discarded and repeated.'"
-        },
-        {
-          "id": "F_computational_loss",
-          "type": "textarea",
-          "label": "If the job is interrupted between checkpoints, how much computational work is lost?",
-          "required": false,
-          "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
-          "placeholder": "e.g. 'Up to 2 hours of CPU time, depending on when the interruption occurs.'"
-        },
-        {
-          "id": "F_tested",
+          "id": "F_restart_automatic",
           "type": "radio",
-          "label": "Has checkpoint/restart been tested for this workload?",
-          "required": true,
+          "label": "Does the job restart automatically from the checkpoint without manual intervention?",
+          "required": false,
+          "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
+          "helpText": "Manual intervention might include editing input files, copying checkpoint files to a new directory, or running a separate restart script.",
           "options": [
-            { "value": "yes", "label": "Yes, tested and works" },
-            { "value": "yes_with_issues", "label": "Yes, tested but with problems" },
-            { "value": "not_tested", "label": "Not tested" },
-            { "value": "dont_know", "label": "Don't know" },
-            { "value": "not_applicable", "label": "Not applicable" }
+            { "value": "yes", "label": "Yes — restarts automatically" },
+            { "value": "no", "label": "No — manual steps are required" },
+            { "value": "dont_know", "label": "Don't know" }
           ]
+        },
+        {
+          "id": "F_restart_overhead",
+          "type": "duration",
+          "label": "Approximately how long does the job take to reinitialise or reload data after a restart?",
+          "required": false,
+          "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
+          "units": ["seconds", "minutes", "hours", "days"],
+          "defaultUnit": "minutes",
+          "helpText": "Some codes must reload large datasets or reinitialise memory after a restart before productive computation resumes. This overhead is in addition to any work lost since the last checkpoint. Enter 0 or leave blank if negligible."
+        },
+        {
+          "id": "F_restart_errors",
+          "type": "radio",
+          "label": "Have restarted jobs produced incorrect or unexpected results?",
+          "required": false,
+          "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
+          "helpText": "For example: numerical instabilities, incorrect energies, or results that differ from an uninterrupted run of the same calculation.",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" },
+            { "value": "not_tested", "label": "Not tested" },
+            { "value": "dont_know", "label": "Don't know" }
+          ]
+        },
+        {
+          "id": "F_checkpoint_abandoned",
+          "type": "radio",
+          "label": "Has checkpointing been attempted in production and subsequently abandoned?",
+          "required": false,
+          "conditionalOn": { "questionId": "F_supported", "values": ["yes"] },
+          "helpText": "Select 'Yes' if your group has tried using checkpoint/restart in practice but stopped using it.",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" },
+            { "value": "dont_know", "label": "Don't know" }
+          ]
+        },
+        {
+          "id": "F_abandoned_reason",
+          "type": "select",
+          "label": "Why was checkpointing abandoned?",
+          "required": false,
+          "conditionalOn": { "questionId": "F_checkpoint_abandoned", "values": ["yes"] },
+          "options": [
+            { "value": "overhead_too_large", "label": "Restart overhead too large relative to job runtime" },
+            { "value": "results_unreliable", "label": "Restarted runs produced incorrect or unreliable results" },
+            { "value": "too_complex", "label": "Implementation too complex or error-prone" },
+            { "value": "not_compatible", "label": "Not compatible with the job scheduler or cluster configuration" },
+            { "value": "other", "label": "Other" }
+          ]
+        },
+        {
+          "id": "F_abandoned_reason_other",
+          "type": "text",
+          "label": "If other, please describe",
+          "required": false,
+          "conditionalOn": { "questionId": "F_abandoned_reason", "values": ["other"] },
+          "placeholder": "Please describe why checkpointing was abandoned"
         },
         {
           "id": "F_currently_used",

@@ -655,6 +655,10 @@ Before implementing major changes, briefly explain the proposed change and ident
 
 The questionnaire must remain extensible so that additional evidence modules can later be added for specific service characteristics (e.g. long-wall-time, highly parallel, high-memory, GPU, high-throughput workloads). These modules should share the common evidence model rather than becoming unrelated forms.
 
+### Time unit harmonisation (future task)
+
+Section F uses a structured `duration` question type (`{ value, unit }`) that the Apps Script normalises to hours on write. Other time-valued fields (notably Section D wall-time, CPU/GPU hours) currently store a plain number in hours. When those sections are revised, adopt the same `duration` type throughout so that all time fields are entered and normalised consistently.
+
 ---
 
 # 14. Current design principle

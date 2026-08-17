@@ -252,6 +252,51 @@ export function QuestionRenderer({
   }
 
   // -------------------------------------------------------------------------
+  // duration — number input + unit dropdown, stored as { value, unit }
+  // Normalised to hours by the Apps Script on write.
+  // -------------------------------------------------------------------------
+  if (question.type === 'duration') {
+    const units = question.units ?? ['seconds', 'minutes', 'hours', 'days']
+    const defaultUnit = question.defaultUnit ?? units[0]
+    const durVal = (value != null && typeof value === 'object')
+      ? (value as { value: number | ''; unit: string })
+      : { value: '' as const, unit: defaultUnit }
+
+    return (
+      <div className="question-block">
+        {renderLabel()}
+        {renderHelpText()}
+        <div className="duration-input">
+          <input
+            id={fieldId}
+            type="number"
+            value={durVal.value === '' ? '' : durVal.value}
+            onChange={e => {
+              const v = e.target.value
+              onChange({ ...durVal, value: v === '' ? '' : Number(v) })
+            }}
+            min={0}
+            step="any"
+            placeholder="e.g. 30"
+            className={`question-input duration-number${disabled ? ' input-disabled' : ''}`}
+            disabled={disabled}
+          />
+          <select
+            value={durVal.unit}
+            onChange={e => onChange({ ...durVal, unit: e.target.value })}
+            className={`question-select duration-unit${disabled ? ' input-disabled' : ''}`}
+            disabled={disabled}
+          >
+            {units.map(u => (
+              <option key={u} value={u}>{u}</option>
+            ))}
+          </select>
+        </div>
+      </div>
+    )
+  }
+
+  // -------------------------------------------------------------------------
   // text (default)
   // -------------------------------------------------------------------------
   const strVal = typeof value === 'string' ? value : ''

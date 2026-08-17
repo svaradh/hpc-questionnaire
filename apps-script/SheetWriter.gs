@@ -64,8 +64,10 @@ var SHEET_DEFINITIONS = [
   {
     name: 'CheckpointInfo',
     headers: [
-      'submission_id', 'pi_name', 'supported', 'checkpoint_type', 'interval',
-      'restart_behaviour', 'computational_loss', 'tested', 'currently_used', 'notes'
+      'submission_id', 'pi_name', 'workload_ref', 'supported', 'checkpoint_type',
+      'checkpoint_interval_hours', 'restart_automatic', 'restart_overhead_hours',
+      'restart_errors', 'checkpoint_abandoned', 'abandoned_reason', 'abandoned_reason_other',
+      'currently_used', 'notes'
     ]
   },
   {
@@ -177,6 +179,29 @@ function val(answers, key) {
   if (v === undefined || v === null) return '';
   if (Array.isArray(v)) return v.join('; ');
   return String(v);
+}
+
+/**
+ * Converts a duration question value { value, unit } to hours.
+ * Stores 6 decimal places to preserve precision down to 10 seconds
+ * (10 s = 0.002778 h). Returns '' if value is absent or not a number.
+ *
+ * TODO (future harmonisation): wall-time fields in Section D currently
+ * store a plain number in hours. When those sections are revised, route
+ * them through this function for consistent normalisation.
+ */
+function durationToHours(answers, key) {
+  var v = answers[key];
+  if (!v || typeof v !== 'object') return '';
+  var num = parseFloat(v.value);
+  if (isNaN(num) || v.value === '' || v.value === undefined) return '';
+  switch (String(v.unit)) {
+    case 'seconds': return parseFloat((num / 3600).toFixed(6));
+    case 'minutes': return parseFloat((num / 60).toFixed(6));
+    case 'hours':   return parseFloat(num.toFixed(6));
+    case 'days':    return parseFloat((num * 24).toFixed(6));
+    default:        return parseFloat(num.toFixed(6));
+  }
 }
 
 function joinArr(v) {
@@ -337,12 +362,16 @@ function writeWallTimeTerminations(submissionId, piName, answers) {
 function writeCheckpointInfo(submissionId, piName, answers) {
   appendRow('CheckpointInfo', [
     submissionId, piName,
+    val(answers, 'F_checkpoint_workload'),
     val(answers, 'F_supported'),
     val(answers, 'F_checkpoint_type'),
-    val(answers, 'F_checkpoint_interval'),
-    val(answers, 'F_restart_behaviour'),
-    val(answers, 'F_computational_loss'),
-    val(answers, 'F_tested'),
+    durationToHours(answers, 'F_checkpoint_interval'),
+    val(answers, 'F_restart_automatic'),
+    durationToHours(answers, 'F_restart_overhead'),
+    val(answers, 'F_restart_errors'),
+    val(answers, 'F_checkpoint_abandoned'),
+    val(answers, 'F_abandoned_reason'),
+    val(answers, 'F_abandoned_reason_other'),
     val(answers, 'F_currently_used'),
     val(answers, 'F_notes')
   ]);
