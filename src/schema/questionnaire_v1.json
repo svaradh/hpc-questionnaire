@@ -1464,7 +1464,7 @@
               "placeholder": "e.g. 8",
               "unit": "cores",
               "min": 1,
-              "helpText": "Total cores across all nodes (e.g. 2 nodes × 32 cores = 64 cores). This is the smallest allocation at which the calculation has actually produced a result. Leave blank if not known."
+              "helpText": "Total cores across all nodes (e.g. 2 nodes × 32 cores = 64 cores). 'Completed' means the calculation produced a valid, usable result — whether in a single uninterrupted run or through a series of checkpoint-restart cycles. Leave blank if not known."
             },
             {
               "id": "G_max_cores_tested",
