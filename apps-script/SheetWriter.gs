@@ -360,21 +360,28 @@ function writeWallTimeTerminations(submissionId, piName, answers) {
 }
 
 function writeCheckpointInfo(submissionId, piName, answers) {
-  appendRow('CheckpointInfo', [
-    submissionId, piName,
-    val(answers, 'F_checkpoint_workload'),
-    val(answers, 'F_supported'),
-    val(answers, 'F_checkpoint_type'),
-    durationToHours(answers, 'F_checkpoint_interval'),
-    val(answers, 'F_restart_automatic'),
-    durationToHours(answers, 'F_restart_overhead'),
-    val(answers, 'F_restart_errors'),
-    val(answers, 'F_checkpoint_abandoned'),
-    val(answers, 'F_abandoned_reason'),
-    val(answers, 'F_abandoned_reason_other'),
-    val(answers, 'F_currently_used'),
-    val(answers, 'F_notes')
-  ]);
+  var records = getArr(answers, 'F_checkpoint_records');
+  if (records.length === 0) {
+    appendRow('CheckpointInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '']);
+    return;
+  }
+  records.forEach(function(entry, idx) {
+    appendRow('CheckpointInfo', [
+      submissionId, piName,
+      entry['F_checkpoint_workload'] || '',
+      entry['F_supported'] || '',
+      entry['F_checkpoint_type'] || '',
+      durationToHours(entry, 'F_checkpoint_interval'),
+      entry['F_restart_automatic'] || '',
+      durationToHours(entry, 'F_restart_overhead'),
+      entry['F_restart_errors'] || '',
+      entry['F_checkpoint_abandoned'] || '',
+      entry['F_abandoned_reason'] || '',
+      entry['F_abandoned_reason_other'] || '',
+      entry['F_currently_used'] || '',
+      entry['F_notes'] || ''
+    ]);
+  });
 }
 
 function writeScalingInfo(submissionId, piName, answers) {

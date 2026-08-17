@@ -1,75 +1,100 @@
 /**
  * useFormState — localStorage-backed form state hook.
  *
- * Stores all answers as a flat Record<questionId, unknown> under the
- * key 'hpc_questionnaire_draft' in localStorage.
- *
- * For repeatable questions the value is an array of row objects:
- *   Array<Record<subQuestionId, unknown>>
- *
- * The draft is auto-saved on every answer change.
+ * Draft answers are stored under 'hpc_questionnaire_draft'.
+ * After a successful submission, the submission is stored under
+ * 'hpc_questionnaire_submitted' so the user can return to edit it
+ * on the same device.
  */
 
 import { useState, useCallback, useEffect } from 'react'
 
-const STORAGE_KEY = 'hpc_questionnaire_draft'
+const DRAFT_KEY     = 'hpc_questionnaire_draft'
+const SUBMITTED_KEY = 'hpc_questionnaire_submitted'
+
+export interface SubmittedRecord {
+  submissionId: string
+  answers: Record<string, unknown>
+  submittedAt: string
+}
 
 export interface FormStateHook {
   answers: Record<string, unknown>
   setAnswer: (questionId: string, value: unknown) => void
   clearAll: () => void
   lastSaved: Date | null
+  /** Previous submission stored on this device, if any. */
+  previousSubmission: SubmittedRecord | null
+  /** Loads a previous submission into the form for editing. */
+  loadForEditing: (record: SubmittedRecord) => void
+  /** Saves a completed submission to localStorage. */
+  saveSubmission: (submissionId: string, answers: Record<string, unknown>) => void
+  /** Clears the stored submission (e.g. after window closes). */
+  clearSubmission: () => void
 }
 
-function loadFromStorage(): Record<string, unknown> {
+function load<T>(key: string): T | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return {}
-    const parsed = JSON.parse(raw) as unknown
-    if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
-      return parsed as Record<string, unknown>
-    }
-    return {}
+    const raw = localStorage.getItem(key)
+    if (!raw) return null
+    return JSON.parse(raw) as T
   } catch {
-    return {}
+    return null
   }
 }
 
-function saveToStorage(answers: Record<string, unknown>): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(answers))
-  } catch {
-    // localStorage may be unavailable (private browsing, quota exceeded, etc.)
-    // Silently degrade — the in-memory state is still functional.
-  }
+function save(key: string, value: unknown): void {
+  try { localStorage.setItem(key, JSON.stringify(value)) } catch { /* ignore */ }
+}
+
+function remove(key: string): void {
+  try { localStorage.removeItem(key) } catch { /* ignore */ }
 }
 
 export function useFormState(): FormStateHook {
-  const [answers, setAnswers] = useState<Record<string, unknown>>(() => loadFromStorage())
+  const [answers, setAnswers] = useState<Record<string, unknown>>(
+    () => load<Record<string, unknown>>(DRAFT_KEY) ?? {}
+  )
   const [lastSaved, setLastSaved] = useState<Date | null>(null)
+  const [previousSubmission, setPreviousSubmission] = useState<SubmittedRecord | null>(
+    () => load<SubmittedRecord>(SUBMITTED_KEY)
+  )
 
-  // Persist to localStorage whenever answers change.
   useEffect(() => {
-    saveToStorage(answers)
+    save(DRAFT_KEY, answers)
     setLastSaved(new Date())
   }, [answers])
 
   const setAnswer = useCallback((questionId: string, value: unknown) => {
-    setAnswers(prev => ({
-      ...prev,
-      [questionId]: value,
-    }))
+    setAnswers(prev => ({ ...prev, [questionId]: value }))
   }, [])
 
   const clearAll = useCallback(() => {
     setAnswers({})
-    try {
-      localStorage.removeItem(STORAGE_KEY)
-    } catch {
-      // ignore
-    }
+    remove(DRAFT_KEY)
     setLastSaved(null)
   }, [])
 
-  return { answers, setAnswer, clearAll, lastSaved }
+  const saveSubmission = useCallback((submissionId: string, submittedAnswers: Record<string, unknown>) => {
+    const record: SubmittedRecord = {
+      submissionId,
+      answers: submittedAnswers,
+      submittedAt: new Date().toISOString(),
+    }
+    save(SUBMITTED_KEY, record)
+    setPreviousSubmission(record)
+  }, [])
+
+  const loadForEditing = useCallback((record: SubmittedRecord) => {
+    setAnswers(record.answers)
+    save(DRAFT_KEY, record.answers)
+    setLastSaved(new Date())
+  }, [])
+
+  const clearSubmission = useCallback(() => {
+    remove(SUBMITTED_KEY)
+    setPreviousSubmission(null)
+  }, [])
+
+  return { answers, setAnswer, clearAll, lastSaved, previousSubmission, loadForEditing, saveSubmission, clearSubmission }
 }
