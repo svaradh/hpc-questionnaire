@@ -56,9 +56,11 @@ var SHEET_DEFINITIONS = [
   {
     name: 'WallTimeTerminations',
     headers: [
-      'submission_id', 'pi_name', 'entry_index', 'has_been_terminated', 'frequency',
-      'requested_wall_time_hrs', 'actual_run_time_hrs', 'was_restarted',
-      'work_lost', 'eventually_completed', 'completed_different_config', 'notes'
+      'submission_id', 'pi_name', 'has_been_terminated', 'frequency',
+      'terminated_cores', 'terminated_wall_time_hours', 'terminated_cpu_hours',
+      'completed_anywhere', 'completed_system',
+      'completed_cores', 'completed_wall_time_hours', 'completed_cpu_hours',
+      'notes'
     ]
   },
   {
@@ -208,6 +210,19 @@ function durationToHours(answers, key) {
   }
 }
 
+/**
+ * Computes CPU-hours = cores × wall_time_hours.
+ * Returns '' if either value is absent or not a valid number.
+ */
+function computeCpuHours(cores, wallTimeHours) {
+  if (cores === '' || cores === undefined || cores === null) return '';
+  if (wallTimeHours === '' || wallTimeHours === undefined || wallTimeHours === null) return '';
+  var c = parseFloat(String(cores));
+  var h = parseFloat(String(wallTimeHours));
+  if (isNaN(c) || isNaN(h)) return '';
+  return parseFloat((c * h).toFixed(4));
+}
+
 function joinArr(v) {
   if (Array.isArray(v)) return v.join('; ');
   if (v === undefined || v === null) return '';
@@ -348,18 +363,24 @@ function writeRuntimeRecords(submissionId, piName, answers) {
 }
 
 function writeWallTimeTerminations(submissionId, piName, answers) {
+  var terminatedWallTimeHours = durationToHours(answers, 'E_terminated_wall_time');
+  var terminatedCores         = val(answers, 'E_terminated_cores');
+  var completedWallTimeHours  = durationToHours(answers, 'E_completed_wall_time');
+  var completedCores          = val(answers, 'E_completed_cores');
+
   appendRow('WallTimeTerminations', [
     submissionId, piName,
-    1,
     val(answers, 'E_terminated'),
     val(answers, 'E_frequency'),
-    val(answers, 'E_requested_wall_time_hours'),
-    val(answers, 'E_actual_run_time_hours'),
-    val(answers, 'E_was_restarted'),
-    val(answers, 'E_work_lost_description'),
-    val(answers, 'E_eventually_completed'),
-    val(answers, 'E_completed_different_config'),
-    val(answers, 'E_additional_notes')
+    terminatedCores,
+    terminatedWallTimeHours,
+    computeCpuHours(terminatedCores, terminatedWallTimeHours),
+    val(answers, 'E_completed_anywhere'),
+    val(answers, 'E_completed_system'),
+    completedCores,
+    completedWallTimeHours,
+    computeCpuHours(completedCores, completedWallTimeHours),
+    val(answers, 'E_notes')
   ]);
 }
 

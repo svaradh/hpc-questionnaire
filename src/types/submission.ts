@@ -391,36 +391,34 @@ export interface ScalingInfo {
  * Section E: Factual record of a wall-time termination event.
  * Users report what happened; the committee draws inferences.
  * Users are NOT asked whether they "need" a longer wall time.
+ *
+ * CPU-hours fields are computed by the Apps Script:
+ *   terminatedCpuHours = terminatedCores × terminatedWallTime (in hours)
+ *   completedCpuHours  = completedCores  × completedWallTime  (in hours)
+ * This allows direct comparison of the two resource configurations.
  */
 export interface WallTimeTerminationRecord {
   id: string
-  workloadId: string
   /** Has at least one job been killed by a wall-time limit? */
   hasBeenTerminated: YesNoUncertain
-  /**
-   * Approximate frequency of terminations
-   * (e.g. "rarely", "occasionally", "frequently", "most jobs").
-   */
-  frequency?: string
-  /** Wall time that was requested at submission (hours). */
-  requestedWallTimeHours?: number
-  /** How long the job had actually been running when killed (hours). */
-  actualRunTimeHours?: number
-  /** Was the job subsequently restarted? */
-  wasRestarted: YesNoUncertain
-  /**
-   * Description of how much work was lost as a result of termination
-   * (e.g. "approximately 3 days of computation", "none — checkpointed").
-   */
-  workLostDescription?: string
-  /** Did the workload eventually complete successfully? */
-  eventuallyCompleted: YesNoUncertain
-  /**
-   * Was the same workload successfully completed using a different
-   * resource configuration or system?
-   */
-  completedUnderDifferentConfig: YesNoUncertain
-  differentConfigDescription?: string
+  /** Whether this is an isolated occurrence or a recurring pattern. */
+  frequency?: 'isolated' | 'recurring' | 'dont_know'
+  /** CPU cores allocated when the job was terminated. */
+  terminatedCores?: number
+  /** Wall-time limit requested when the job was terminated. */
+  terminatedWallTime?: DurationValue
+  /** Computed: terminatedCores × terminatedWallTime in hours. */
+  terminatedCpuHours?: number
+  /** Whether the calculation has been successfully completed on any system. */
+  completedAnywhere?: 'yes_same' | 'yes_different' | 'no' | 'dont_know'
+  /** Name and wall-time limit of the system where it completed (if different). */
+  completedSystem?: string
+  /** CPU cores used in the successful run. */
+  completedCores?: number
+  /** Wall-time limit available in the successful run. */
+  completedWallTime?: DurationValue
+  /** Computed: completedCores × completedWallTime in hours. */
+  completedCpuHours?: number
   notes?: string
 }
 

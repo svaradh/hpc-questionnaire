@@ -494,7 +494,7 @@
     {
       "id": "E",
       "title": "E. Wall-Time Termination",
-      "description": "This section asks factual questions about whether any of your jobs have been stopped because they exceeded a wall-time limit. You are not being asked whether you 'need' a longer wall time — please just describe what happened.",
+      "description": "This section collects factual information about jobs that were stopped by the scheduler because they exceeded the wall-time limit. You are not being asked whether you 'need' a longer wall time — please describe what happened. The committee uses the resource configuration and CPU-hours to assess the nature of the constraint.",
       "questions": [
         {
           "id": "E_terminated",
@@ -510,97 +510,84 @@
         },
         {
           "id": "E_frequency",
-          "type": "select",
-          "label": "How frequently does wall-time termination occur?",
+          "type": "radio",
+          "label": "Is wall-time termination an isolated occurrence or a recurring pattern?",
           "required": false,
           "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
+          "helpText": "Isolated: one or two cases. Recurring: happens regularly to jobs of this type.",
           "options": [
-            { "value": "rarely", "label": "Rarely (one or two isolated cases)" },
-            { "value": "occasionally", "label": "Occasionally (a few times per year)" },
-            { "value": "frequently", "label": "Frequently (multiple times per month)" },
-            { "value": "most_jobs", "label": "Most jobs are terminated before completion" },
+            { "value": "isolated", "label": "Isolated — one or two cases" },
+            { "value": "recurring", "label": "Recurring — happens regularly" },
             { "value": "dont_know", "label": "Don't know" }
           ]
         },
         {
-          "id": "E_requested_wall_time_hours",
+          "id": "E_terminated_cores",
           "type": "number",
-          "label": "What wall time was requested at job submission (hours)?",
+          "label": "How many CPU cores were allocated when the job was terminated?",
           "required": false,
           "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
-          "placeholder": "e.g. 120",
-          "unit": "hours",
-          "min": 0,
-          "helpText": "The wall-time limit that was specified when the job was submitted to the scheduler."
+          "placeholder": "e.g. 32",
+          "unit": "cores",
+          "min": 1,
+          "helpText": "The number of CPU cores your job was using when it was killed. You can usually find this in your job submission script (e.g. --ntasks or --cpus-per-task × nodes) or in the scheduler's job report. Leave blank if not known."
         },
         {
-          "id": "E_actual_run_time_hours",
+          "id": "E_terminated_wall_time",
+          "type": "duration",
+          "label": "What wall-time limit was requested at submission?",
+          "required": false,
+          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
+          "units": ["seconds", "minutes", "hours", "days"],
+          "defaultUnit": "hours",
+          "helpText": "The wall-time limit that was set when the job was submitted to the scheduler — not how long it actually ran, but the limit it was given."
+        },
+        {
+          "id": "E_completed_anywhere",
+          "type": "radio",
+          "label": "Has the same calculation been successfully completed on any HPC system?",
+          "required": false,
+          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
+          "helpText": "Select the most relevant option. 'Same cluster, different configuration' includes cases where more cores were used so the job finished within the time limit.",
+          "options": [
+            { "value": "yes_same", "label": "Yes — on the current IISER cluster, with a different configuration" },
+            { "value": "yes_different", "label": "Yes — on a different HPC system" },
+            { "value": "no", "label": "No — this calculation has not completed anywhere" },
+            { "value": "dont_know", "label": "Don't know" }
+          ]
+        },
+        {
+          "id": "E_completed_system",
+          "type": "text",
+          "label": "Which system was this, and what wall-time limit was available?",
+          "required": false,
+          "conditionalOn": { "questionId": "E_completed_anywhere", "values": ["yes_different"] },
+          "placeholder": "e.g. PARAM Shakti (7-day limit), collaborator cluster at IIT Delhi (5-day limit)",
+          "helpText": "The name of the system and, if known, the wall-time limit available on that system."
+        },
+        {
+          "id": "E_completed_cores",
           "type": "number",
-          "label": "How long had the job actually been running when it was terminated (hours)?",
+          "label": "How many CPU cores were used in the successful run?",
           "required": false,
-          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
-          "placeholder": "e.g. 118",
-          "unit": "hours",
-          "min": 0,
-          "helpText": "The elapsed wall-clock time at the point the job was killed. This may be the same as the requested wall time if the job ran to the limit."
+          "conditionalOn": { "questionId": "E_completed_anywhere", "values": ["yes_same", "yes_different"] },
+          "placeholder": "e.g. 128",
+          "unit": "cores",
+          "min": 1,
+          "helpText": "Leave blank if not known."
         },
         {
-          "id": "E_was_restarted",
-          "type": "radio",
-          "label": "Was the job restarted after termination?",
+          "id": "E_completed_wall_time",
+          "type": "duration",
+          "label": "What wall-time limit was used or available in the successful run?",
           "required": false,
-          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
-          "options": [
-            { "value": "yes", "label": "Yes" },
-            { "value": "no", "label": "No" },
-            { "value": "dont_know", "label": "Don't know" }
-          ]
+          "conditionalOn": { "questionId": "E_completed_anywhere", "values": ["yes_same", "yes_different"] },
+          "units": ["seconds", "minutes", "hours", "days"],
+          "defaultUnit": "hours",
+          "helpText": "The wall-time limit on the system or queue where the calculation completed successfully."
         },
         {
-          "id": "E_work_lost_description",
-          "type": "textarea",
-          "label": "How much computational work was lost as a result of the termination?",
-          "required": false,
-          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
-          "placeholder": "e.g. 'Approximately 5 days of computation had to be repeated', 'None — the code checkpointed every 4 hours', 'The entire calculation was lost'.",
-          "helpText": "Describe the practical impact of the termination in terms of computation that had to be repeated or was lost."
-        },
-        {
-          "id": "E_eventually_completed",
-          "type": "radio",
-          "label": "Did the calculation eventually complete successfully?",
-          "required": false,
-          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
-          "options": [
-            { "value": "yes", "label": "Yes, it eventually completed" },
-            { "value": "no", "label": "No, it has not completed" },
-            { "value": "dont_know", "label": "Don't know" }
-          ]
-        },
-        {
-          "id": "E_completed_different_config",
-          "type": "radio",
-          "label": "Was the same calculation successfully completed using a different configuration or on a different system?",
-          "required": false,
-          "conditionalOn": { "questionId": "E_terminated", "values": ["yes"] },
-          "helpText": "For example, was it run on a system with a longer wall-time limit, or on more nodes so that it completed within the time limit?",
-          "options": [
-            { "value": "yes", "label": "Yes" },
-            { "value": "no", "label": "No" },
-            { "value": "dont_know", "label": "Don't know" },
-            { "value": "not_applicable", "label": "Not applicable" }
-          ]
-        },
-        {
-          "id": "E_different_config_description",
-          "type": "textarea",
-          "label": "If yes, describe the configuration or system on which it completed",
-          "required": false,
-          "conditionalOn": { "questionId": "E_completed_different_config", "values": ["yes"] },
-          "placeholder": "e.g. 'Completed on national facility (PARAM) with 7-day wall-time limit using 64 cores'."
-        },
-        {
-          "id": "E_additional_notes",
+          "id": "E_notes",
           "type": "textarea",
           "label": "Additional notes on wall-time termination (optional)",
           "required": false,
