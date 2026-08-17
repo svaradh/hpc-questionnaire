@@ -1980,49 +1980,37 @@
           "helpText": "If different codes have very different throughput characteristics, complete this section for the code with the most distinctive pattern."
         },
         {
-          "id": "J_jobs_fully_independent",
-          "type": "radio",
-          "label": "Are the jobs in a typical set of jobs fully independent of each other?",
-          "required": true,
-          "helpText": "Fully independent means no job depends on the output of another job in the same set. For example: 500 separate geometry optimisations of different molecules are fully independent. A workflow where step 2 uses the output of step 1 is not fully independent.",
-          "options": [
-            {
-              "value": "yes",
-              "label": "Yes — all jobs are fully independent"
-            },
-            {
-              "value": "mostly",
-              "label": "Mostly independent — a few dependencies exist"
-            },
-            {
-              "value": "workflow",
-              "label": "No — jobs form a workflow with dependencies"
-            },
-            {
-              "value": "dont_know",
-              "label": "Don't know"
-            }
-          ]
-        },
-        {
           "id": "J_independent_job_count",
           "type": "number",
-          "label": "Approximately how many independent jobs do you run per research question or per year?",
+          "label": "Approximately how many jobs do you run per research question or per year?",
           "required": false,
           "placeholder": "e.g. 500",
           "unit": "jobs",
           "min": 1,
-          "helpText": "For example, running 500 independent geometry optimisations to screen a set of molecules counts as 500 jobs."
+          "helpText": "For example, running 500 geometry optimisations to screen a set of molecules counts as 500 jobs."
+        },
+        {
+          "id": "J_jobs_fully_independent",
+          "type": "radio",
+          "label": "Are those jobs fully independent of each other?",
+          "required": true,
+          "helpText": "Fully independent means no job depends on the output of another job in the same set. For example: 500 separate geometry optimisations of different molecules are fully independent. A workflow where step 2 uses the output of step 1 is not fully independent.",
+          "options": [
+            { "value": "yes",      "label": "Yes — all jobs are fully independent" },
+            { "value": "mostly",   "label": "Mostly independent — a few dependencies exist" },
+            { "value": "workflow", "label": "No — jobs form a workflow with dependencies" },
+            { "value": "dont_know","label": "Don't know" }
+          ]
         },
         {
           "id": "J_concurrent_jobs",
           "type": "number",
-          "label": "Approximately how many jobs run concurrently in typical operation?",
+          "label": "Approximately how many of those jobs run concurrently in typical operation?",
           "required": false,
           "placeholder": "e.g. 50",
           "unit": "jobs",
           "min": 1,
-          "helpText": "The number of jobs that are typically running at the same time, not the total submitted."
+          "helpText": "The number of jobs typically running at the same time, not the total submitted."
         },
         {
           "id": "J_total_cpu_gpu_hours_range",
