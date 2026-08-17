@@ -76,7 +76,7 @@ var SHEET_DEFINITIONS = [
     name: 'ScalingInfo',
     headers: [
       'submission_id', 'pi_name', 'code_name', 'independent_jobs', 'independent_jobs_notes',
-      'scaling_behaviour', 'scaling_limit_cores', 'min_nodes', 'max_nodes_tested', 'code_notes',
+      'scaling_behaviour', 'scaling_limit_cores', 'min_cores', 'max_cores_tested', 'code_notes',
       'resource_config', 'wall_time_hours', 'evidence_source', 'evidence_level',
       'benchmark_reference', 'config_notes'
     ]
@@ -421,22 +421,22 @@ function writeScalingInfo(submissionId, piName, answers) {
     var indNotes   = codeEntry['G_independent_jobs_notes'] || '';
     var scalingBehaviour = codeEntry['G_scaling_behaviour'] || '';
     var scalingLimitCores = codeEntry['G_scaling_limit_cores'] || '';
-    var minNodes   = codeEntry['G_min_nodes'] || '';
-    var maxNodes   = codeEntry['G_max_nodes_tested'] || '';
+    var minCores   = codeEntry['G_min_cores'] || '';
+    var maxCores   = codeEntry['G_max_cores_tested'] || '';
     var codeNotes  = codeEntry['G_notes'] || '';
     var innerData  = Array.isArray(codeEntry['G_scaling_data']) ? codeEntry['G_scaling_data'] : [];
 
     if (innerData.length === 0) {
       appendRow('ScalingInfo', [
         submissionId, piName, codeName,
-        indJobs, indNotes, scalingBehaviour, scalingLimitCores, minNodes, maxNodes, codeNotes,
+        indJobs, indNotes, scalingBehaviour, scalingLimitCores, minCores, maxCores, codeNotes,
         '', '', '', '', '', ''
       ]);
     } else {
       innerData.forEach(function(cfg) {
         appendRow('ScalingInfo', [
           submissionId, piName, codeName,
-          indJobs, indNotes, scalingBehaviour, scalingLimitCores, minNodes, maxNodes, codeNotes,
+          indJobs, indNotes, scalingBehaviour, scalingLimitCores, minCores, maxCores, codeNotes,
           cfg['G_sd_resource_config'] || '',
           cfg['G_sd_wall_time_hours'] || '',
           cfg['G_sd_evidence_source'] || '',

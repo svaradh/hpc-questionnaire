@@ -1457,24 +1457,24 @@
               "helpText": "Sometimes called the 'strong scaling limit' or 'sweet spot'. Beyond this core count, adding more cores gives little or no benefit for a single job. Leave blank if not known."
             },
             {
-              "id": "G_min_nodes",
+              "id": "G_min_cores",
               "type": "number",
-              "label": "What is the smallest resource configuration on which the job has been observed to complete successfully?",
+              "label": "What is the smallest total number of CPU cores at which this job has been observed to complete?",
               "required": false,
-              "placeholder": "e.g. 1",
-              "unit": "nodes",
+              "placeholder": "e.g. 8",
+              "unit": "cores",
               "min": 1,
-              "helpText": "The minimum number of nodes (or cores) at which the calculation has actually completed. Leave blank if not known."
+              "helpText": "Total cores across all nodes (e.g. 2 nodes × 32 cores = 64 cores). This is the smallest allocation at which the calculation has actually produced a result. Leave blank if not known."
             },
             {
-              "id": "G_max_nodes_tested",
+              "id": "G_max_cores_tested",
               "type": "number",
-              "label": "What is the largest resource configuration that has been tested?",
+              "label": "What is the largest total number of CPU cores that has been tested?",
               "required": false,
-              "placeholder": "e.g. 16",
-              "unit": "nodes",
+              "placeholder": "e.g. 256",
+              "unit": "cores",
               "min": 1,
-              "helpText": "The largest configuration actually tested — not the ideal or requested maximum."
+              "helpText": "Total cores in the largest configuration actually tested — not an ideal or desired maximum. Leave blank if only one configuration has been tried."
             },
             {
               "id": "G_notes",

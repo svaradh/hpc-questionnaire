@@ -376,13 +376,10 @@ export interface ScalingInfo {
   scalingBehaviour?: string
   /** Core count at which performance stops improving or begins to degrade. */
   scalingLimitCores?: number
-  /** Smallest resource config at which the job has been observed to complete. */
-  practicalMinNodes?: number
-  /**
-   * Largest resource config tested (not "maximum required" — just
-   * the largest actually tested).
-   */
-  practicalMaxNodesTested?: number
+  /** Smallest total CPU core count at which the job has been observed to complete. */
+  practicalMinCores?: number
+  /** Largest total CPU core count actually tested (not a desired maximum). */
+  practicalMaxCoresTested?: number
   notes?: string
 }
 
