@@ -1197,3 +1197,25 @@ body {
 }
 
 .validation-list li { margin: 0.2rem 0; }
+
+/* ── Conditional block headings (Section J workflow type blocks) ─────────── */
+
+.question-block-heading {
+  margin: 1.75rem 0 0.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--color-primary);
+}
+
+.block-heading-text {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.block-heading-sub {
+  font-size: 0.82rem;
+  color: var(--color-text-muted);
+  margin-top: 0.25rem;
+}

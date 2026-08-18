@@ -1984,6 +1984,13 @@
           ]
         },
         {
+          "id": "J_ind_heading",
+          "type": "heading",
+          "label": "Independent Jobs",
+          "required": false,
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
           "id": "J_ind_job_count",
           "type": "number",
           "label": "How many independent jobs do you run per year?",
@@ -2042,6 +2049,13 @@
             { "value": "dont_know",      "label": "Don't know" }
           ],
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
+          "id": "J_pip_heading",
+          "type": "heading",
+          "label": "Sequential Pipeline",
+          "required": false,
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
         },
         {
           "id": "J_pip_stages",
@@ -2108,6 +2122,13 @@
             { "value": "dont_know",      "label": "Don't know" }
           ],
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
+        },
+        {
+          "id": "J_ext_heading",
+          "type": "heading",
+          "label": "Extended Single Calculations",
+          "required": false,
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
         },
         {
           "id": "J_ext_wall_time",

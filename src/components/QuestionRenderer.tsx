@@ -51,6 +51,18 @@ export function QuestionRenderer({
     ) : null
 
   // -------------------------------------------------------------------------
+  // heading — block heading with separator, used for conditional sub-sections
+  // -------------------------------------------------------------------------
+  if (question.type === 'heading') {
+    return (
+      <div className="question-block-heading">
+        <h3 className="block-heading-text">{question.label}</h3>
+        {question.helpText && <p className="block-heading-sub">{question.helpText}</p>}
+      </div>
+    )
+  }
+
+  // -------------------------------------------------------------------------
   // info — styled callout box
   // -------------------------------------------------------------------------
   if (question.type === 'info') {

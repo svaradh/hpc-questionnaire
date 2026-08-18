@@ -34,6 +34,7 @@ export type QuestionType =
   | 'repeatable'
   | 'info'
   | 'duration'
+  | 'heading'
 
 /** A single selectable option within a radio, checkbox, or select question. */
 export interface QuestionOption {
