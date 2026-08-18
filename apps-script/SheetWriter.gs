@@ -101,21 +101,21 @@ var SHEET_DEFINITIONS = [
     name: 'IndependentJobs',
     headers: [
       'submission_id', 'pi_name', 'job_count_per_year', 'wall_time_hours',
-      'concurrent_jobs', 'turnaround_range', 'cpu_hours_range'
+      'concurrent_jobs', 'turnaround_range', 'cpu_hours_used', 'cpu_hours_needed'
     ]
   },
   {
     name: 'PipelineJobs',
     headers: [
       'submission_id', 'pi_name', 'stages', 'stage_wall_time_hours',
-      'stage_parallelisable', 'pipelines_per_year', 'end_to_end_hours', 'cpu_hours_range'
+      'stage_parallelisable', 'pipelines_per_year', 'end_to_end_hours', 'cpu_hours_used', 'cpu_hours_needed'
     ]
   },
   {
     name: 'ExtendedCalcs',
     headers: [
       'submission_id', 'pi_name', 'wall_time_hours', 'longest_available_hours',
-      'completed', 'completed_system', 'can_checkpoint', 'count_per_year', 'cpu_hours_range'
+      'completed', 'completed_system', 'can_checkpoint', 'count_per_year', 'cpu_hours_used', 'cpu_hours_needed'
     ]
   },
   {
@@ -499,7 +499,8 @@ function writeIndependentJobs(submissionId, piName, answers) {
     durationToHours(answers, 'J_ind_wall_time'),
     val(answers, 'J_ind_concurrent'),
     val(answers, 'J_ind_turnaround'),
-    val(answers, 'J_ind_cpu_hours')
+    val(answers, 'J_ind_cpu_hours_used'),
+    val(answers, 'J_ind_cpu_hours_needed')
   ]);
 }
 
@@ -512,7 +513,8 @@ function writePipelineJobs(submissionId, piName, answers) {
     val(answers, 'J_pip_stage_parallel'),
     val(answers, 'J_pip_count_per_year'),
     durationToHours(answers, 'J_pip_end_to_end'),
-    val(answers, 'J_pip_cpu_hours')
+    val(answers, 'J_pip_cpu_hours_used'),
+    val(answers, 'J_pip_cpu_hours_needed')
   ]);
 }
 
@@ -526,7 +528,8 @@ function writeExtendedCalcs(submissionId, piName, answers) {
     val(answers, 'J_ext_completed_system'),
     val(answers, 'J_ext_can_checkpoint'),
     val(answers, 'J_ext_count_per_year'),
-    val(answers, 'J_ext_cpu_hours')
+    val(answers, 'J_ext_cpu_hours_used'),
+    val(answers, 'J_ext_cpu_hours_needed')
   ]);
 }
 

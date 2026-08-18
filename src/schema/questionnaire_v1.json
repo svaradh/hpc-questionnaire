@@ -2130,10 +2130,11 @@
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
         },
         {
-          "id": "J_ind_cpu_hours",
+          "id": "J_ind_cpu_hours_used",
           "type": "select",
-          "label": "Total CPU-hours or GPU-hours from independent jobs per year?",
+          "label": "Total CPU-hours or GPU-hours from independent jobs actually used per year",
           "required": false,
+          "helpText": "The CPU-hours your group actually consumed — as recorded by the scheduler. This may be less than your actual need if access was limited by allocation or queue policies.",
           "options": [
             { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
             { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
@@ -2141,6 +2142,24 @@
             { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
             { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
             { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "dont_know",      "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
+        },
+        {
+          "id": "J_ind_cpu_hours_needed",
+          "type": "select",
+          "label": "Total CPU-hours or GPU-hours estimated to be needed per year, if resources were unconstrained",
+          "required": false,
+          "helpText": "Your best estimate of annual CPU-hour requirement. Where possible, derive this from Section D: multiply the CPU-hours per job by the number of similar jobs per year. The committee will cross-check this against your Section D data.",
+          "options": [
+            { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
+            { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
+            { "value": "10000_99999",    "label": "10,000 – 99,999 core-hours" },
+            { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
+            { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
+            { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "not_estimated",  "label": "Not estimated" },
             { "value": "dont_know",      "label": "Don't know" }
           ],
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
@@ -2203,10 +2222,11 @@
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
         },
         {
-          "id": "J_pip_cpu_hours",
+          "id": "J_pip_cpu_hours_used",
           "type": "select",
-          "label": "Total CPU-hours or GPU-hours from pipeline jobs per year?",
+          "label": "Total CPU-hours or GPU-hours from pipeline jobs actually used per year",
           "required": false,
+          "helpText": "The CPU-hours actually consumed by pipeline jobs as recorded by the scheduler.",
           "options": [
             { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
             { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
@@ -2214,6 +2234,24 @@
             { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
             { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
             { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "dont_know",      "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
+        },
+        {
+          "id": "J_pip_cpu_hours_needed",
+          "type": "select",
+          "label": "Total CPU-hours or GPU-hours from pipeline jobs estimated to be needed per year, if resources were unconstrained",
+          "required": false,
+          "helpText": "Your best estimate of annual CPU-hour requirement for pipeline workloads. Where possible, derive this from Section D data. The committee will cross-check this against your observed runtime records.",
+          "options": [
+            { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
+            { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
+            { "value": "10000_99999",    "label": "10,000 – 99,999 core-hours" },
+            { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
+            { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
+            { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "not_estimated",  "label": "Not estimated" },
             { "value": "dont_know",      "label": "Don't know" }
           ],
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["pipeline"] }
@@ -2290,10 +2328,11 @@
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
         },
         {
-          "id": "J_ext_cpu_hours",
+          "id": "J_ext_cpu_hours_used",
           "type": "select",
-          "label": "Total CPU-hours or GPU-hours from extended calculations per year?",
+          "label": "Total CPU-hours or GPU-hours from extended calculations actually used per year",
           "required": false,
+          "helpText": "The CPU-hours actually consumed by extended calculations as recorded by the scheduler.",
           "options": [
             { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
             { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
@@ -2301,6 +2340,24 @@
             { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
             { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
             { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "dont_know",      "label": "Don't know" }
+          ],
+          "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
+        },
+        {
+          "id": "J_ext_cpu_hours_needed",
+          "type": "select",
+          "label": "Total CPU-hours or GPU-hours from extended calculations estimated to be needed per year, if resources were unconstrained",
+          "required": false,
+          "helpText": "Your best estimate of annual CPU-hour requirement for extended calculations. Where possible, derive this from Section D: CPU-hours per job × number of such calculations per year. The committee will cross-check this against your observed runtime records.",
+          "options": [
+            { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
+            { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
+            { "value": "10000_99999",    "label": "10,000 – 99,999 core-hours" },
+            { "value": "100000_499999",  "label": "100,000 – 499,999 core-hours" },
+            { "value": "500000_999999",  "label": "500,000 – 999,999 core-hours" },
+            { "value": "1000000_plus",   "label": "1,000,000 or more core-hours" },
+            { "value": "not_estimated",  "label": "Not estimated" },
             { "value": "dont_know",      "label": "Don't know" }
           ],
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["extended"] }
