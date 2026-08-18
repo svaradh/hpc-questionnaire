@@ -693,8 +693,8 @@
               "type": "text",
               "label": "Resource configuration for this observation",
               "required": true,
-              "placeholder": "e.g. '1 node × 32 cores, 128 GB RAM', '4 nodes × 16 cores, InfiniBand'",
-              "helpText": "Describe the resources that were actually allocated when this runtime was observed."
+              "placeholder": "e.g. 1 node × 32 cores, 128 GB RAM",
+              "helpText": "Describe the resources that were actually allocated when this runtime was observed. Examples: '1 node × 32 cores, 128 GB RAM' — '4 nodes × 16 cores, 64 GB RAM/node, InfiniBand' — '1 node × 8 cores + 2 × A100 GPUs, 256 GB RAM'. Include nodes, cores, RAM, and GPUs where applicable."
             },
             {
               "id": "D_rt_wall_time_hours",
