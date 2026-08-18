@@ -240,45 +240,24 @@ export interface RuntimeRecord {
   numberOfJobs?: number
   evidenceSource: EvidenceSource
   evidenceLevel: EvidenceLevel
+  /** Hardware platform for external/historical observations. */
+  hardware?: string
   notes?: string
 }
 
 // ---------------------------------------------------------------------------
-// 5. Evidence records
+// 5. Benchmark request (Section D)
 // ---------------------------------------------------------------------------
 
 /**
- * Section K: Historical or external evidence records.
- * Allows evidence from any source — current cluster usage is NOT
- * the only valid evidence source.
- *
- * "Lack of current-cluster usage is not, by itself, evidence of
- *  lack of computational requirement."
+ * Records whether the group requests an HPC-team-run benchmark for any code.
+ * Replaces the former Section L BenchmarkRecord.
+ * Evidence from benchmarks run by the facility is accepted as Level 2 evidence.
  */
-export interface EvidenceRecord {
-  id: string
-  /** Optional reference to a WorkloadRecord.id. */
-  workloadId?: string
-  source: EvidenceSource
-  sourceOther?: string
-  confidenceLevel: EvidenceLevel
-  /** Application/code used in this evidence. */
-  code: string
-  /** Description of the workload type. */
-  workloadDescription: string
-  /** Hardware platform (e.g. "HPC cluster, Intel Xeon E5-2680v4"). */
-  hardware: string
-  /** Resource configuration string (e.g. "16 nodes × 28 cores"). */
-  resourceConfig: string
-  /** Observed wall-clock runtime (free text to allow ranges). */
-  runtime?: string
-  /** CPU-hours or GPU-hours. */
-  cpuGpuHours?: number
-  /** Number of jobs of this type. */
-  numberOfJobs?: number
-  /** Citation, URL, job-scheduler report reference, or document name. */
-  reference?: string
-  notes?: string
+export interface BenchmarkRequest {
+  status: 'yes' | 'no' | 'not_sure'
+  /** Application(s) the group would like benchmarked. */
+  codes?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -432,17 +411,21 @@ export interface WallTimeTerminationRecord {
 // ---------------------------------------------------------------------------
 
 /**
- * Section N: Observed operational problems reported by the group.
- * These are factual descriptions of what the group has experienced,
- * NOT requests for specific QoS entitlements.
- * The committee translates observed problems into QoS characteristics.
+ * Section N: Observed operational problems and workload characteristics
+ * reported by the group.
+ * These are factual descriptions of what the group has experienced and
+ * how their workloads are organised — NOT requests for specific QoS
+ * entitlements. The committee translates observed problems into QoS
+ * characteristics and uses workload characteristics to determine which
+ * follow-up sections to examine.
  */
 export interface QoSObservation {
   /** Factual operational problems that have been observed. */
   problemsExperienced: OperationalProblem[]
   /** Free-text description if 'other' is selected. */
   otherDescription?: string
-  notes?: string
+  /** Factual workload characteristics (N_workload_chars values). */
+  workloadCharacteristics: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -618,57 +601,6 @@ export interface ExtendedCalcRecord {
   totalCpuHoursRange?: string
 }
 
-// ---------------------------------------------------------------------------
-// Benchmark record (Section L)
-// ---------------------------------------------------------------------------
-
-/**
- * Section L: Benchmark evidence for a workload.
- */
-export interface BenchmarkRecord {
-  workloadId?: string
-  /**
-   * Status of benchmark evidence:
-   *   existing        — a benchmark already exists and is provided
-   *   user_provided   — the user is submitting a benchmark result
-   *   requested       — the user requests facility assistance with benchmarking
-   *   unavailable     — no benchmark is available or feasible
-   */
-  status: 'existing' | 'user_provided' | 'requested' | 'unavailable'
-  /** Description of the benchmark (input, system size, hardware, result). */
-  description?: string
-  /** Citation, URL, or document reference for the benchmark. */
-  reference?: string
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// Workflow and support record (Section M)
-// ---------------------------------------------------------------------------
-
-/**
- * Section M: Optimisation and workflow approaches investigated.
- * This section is factual — it records what has been investigated,
- * NOT whether failure to investigate disqualifies a user's requirement.
- */
-export interface WorkflowRecord {
-  workloadId?: string
-  /** Optimisation/workflow approaches that have been investigated. */
-  investigatedApproaches: (
-    | 'checkpoint_restart'
-    | 'job_decomposition'
-    | 'job_arrays'
-    | 'workflow_managers'
-    | 'scaling_analysis'
-    | 'memory_optimisation'
-    | 'gpu_acceleration'
-    | 'none_investigated'
-  )[]
-  /** Whether technical assistance from facility staff would be useful. */
-  technicalAssistanceUseful: YesNoUncertain
-  technicalAssistanceDescription?: string
-  notes?: string
-}
 
 // ---------------------------------------------------------------------------
 // Top-level Submission
@@ -712,8 +644,8 @@ export interface Submission {
   /** Section D. Observed (config, runtime) pairs. */
   runtimes: RuntimeRecord[]
 
-  /** Section K. Historical/external evidence records. */
-  evidenceRecords: EvidenceRecord[]
+  /** Section D. Optional benchmark request (D_benchmark_request / D_benchmark_codes). */
+  benchmarkRequest?: BenchmarkRequest
 
   /** Section F. Checkpoint/restart info per workload. */
   checkpointInfo: CheckpointInfo[]
@@ -739,13 +671,7 @@ export interface Submission {
   /** Section J — Block C. Extended single-calculation workflow pattern. */
   extendedCalcRecords: ExtendedCalcRecord[]
 
-  /** Section L. Benchmark evidence per workload. */
-  benchmarkRecords: BenchmarkRecord[]
-
-  /** Section M. Workflow and optimisation investigation. */
-  workflowRecords: WorkflowRecord[]
-
-  /** Section N. Observed operational problems (single record per submission). */
+  /** Section N. Observed operational problems and workload characteristics (single record per submission). */
   qosObservation?: Partial<QoSObservation>
 
   /**

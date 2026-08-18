@@ -156,14 +156,21 @@ export interface Section {
   description?: string
   /**
    * Progressive disclosure: the entire section is hidden unless the
-   * referenced question's value is one of the listed values.
+   * condition(s) are satisfied.
+   *
+   * Single condition: section shown when the referenced question's current
+   * value is one of the listed values.
+   *
+   * Array of conditions (OR logic): section shown when ANY condition is met.
+   * Each condition is independently evaluated; the section appears if at
+   * least one condition evaluates to true.
+   *
    * Used to hide GPU, long-wall-time, or other specialist sections
    * until triggered by earlier answers.
    */
-  conditionalOn?: {
-    questionId: string
-    values: string[]
-  }
+  conditionalOn?:
+    | { questionId: string; values: string[] }
+    | Array<{ questionId: string; values: string[] }>
   questions: Question[]
 }
 

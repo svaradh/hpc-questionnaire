@@ -50,7 +50,7 @@ var SHEET_DEFINITIONS = [
     headers: [
       'submission_id', 'pi_name', 'entry_index', 'workload_name', 'resource_config',
       'wall_time_hours', 'cpu_gpu_hours', 'num_similar_jobs',
-      'evidence_source', 'evidence_level', 'notes'
+      'evidence_source', 'evidence_level', 'hardware', 'notes'
     ]
   },
   {
@@ -119,30 +119,13 @@ var SHEET_DEFINITIONS = [
     ]
   },
   {
-    name: 'EvidenceRecords',
-    headers: [
-      'submission_id', 'pi_name', 'entry_index', 'source', 'confidence_level',
-      'code', 'workload_description', 'hardware', 'resource_config',
-      'runtime', 'cpu_gpu_hours', 'num_jobs', 'reference', 'notes'
-    ]
-  },
-  {
-    name: 'BenchmarkInfo',
-    headers: [
-      'submission_id', 'pi_name', 'status', 'description', 'reference', 'notes'
-    ]
-  },
-  {
-    name: 'WorkflowInfo',
-    headers: [
-      'submission_id', 'pi_name', 'investigated_approaches',
-      'technical_assistance_useful', 'notes'
-    ]
+    name: 'BenchmarkRequests',
+    headers: ['submission_id', 'pi_name', 'benchmark_requested', 'benchmark_codes']
   },
   {
     name: 'ServiceObservations',
     headers: [
-      'submission_id', 'pi_name', 'problems_experienced', 'other_description', 'notes'
+      'submission_id', 'pi_name', 'problems_experienced', 'other_problem_description', 'workload_characteristics'
     ]
   },
   {
@@ -265,6 +248,7 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
   writeWorkloads(submissionId, piName, answers);
   writeJobSetups(submissionId, piName, answers);
   writeRuntimeRecords(submissionId, piName, answers);
+  writeBenchmarkRequests(submissionId, piName, answers);
   writeWallTimeTerminations(submissionId, piName, answers);
   writeCheckpointInfo(submissionId, piName, answers);
   writeScalingInfo(submissionId, piName, answers);
@@ -273,9 +257,6 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
   writeIndependentJobs(submissionId, piName, answers);
   writePipelineJobs(submissionId, piName, answers);
   writeExtendedCalcs(submissionId, piName, answers);
-  writeEvidenceRecords(submissionId, piName, answers);
-  writeBenchmarkInfo(submissionId, piName, answers);
-  writeWorkflowInfo(submissionId, piName, answers);
   writeServiceObservations(submissionId, piName, answers);
   writeCommitteeAssessmentPlaceholder(submissionId, piName);
 }
@@ -359,7 +340,7 @@ function writeJobSetups(submissionId, piName, answers) {
 function writeRuntimeRecords(submissionId, piName, answers) {
   var records = getArr(answers, 'D_runtime_records');
   if (records.length === 0) {
-    appendRow('RuntimeRecords', [submissionId, piName, '', '', '', '', '', '', '', '', '']);
+    appendRow('RuntimeRecords', [submissionId, piName, '', '', '', '', '', '', '', '', '', '']);
     return;
   }
   records.forEach(function(entry, idx) {
@@ -373,6 +354,7 @@ function writeRuntimeRecords(submissionId, piName, answers) {
       entry['D_rt_num_similar_jobs'] || '',
       entry['D_rt_evidence_source'] || '',
       entry['D_rt_evidence_level'] || '',
+      entry['D_rt_hardware'] || '',
       entry['D_rt_notes'] || ''
     ]);
   });
@@ -548,56 +530,22 @@ function writeExtendedCalcs(submissionId, piName, answers) {
   ]);
 }
 
-function writeEvidenceRecords(submissionId, piName, answers) {
-  var records = getArr(answers, 'K_evidence_records');
-  if (records.length === 0) {
-    appendRow('EvidenceRecords', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '']);
-    return;
-  }
-  records.forEach(function(entry, idx) {
-    appendRow('EvidenceRecords', [
-      submissionId, piName,
-      idx + 1,
-      entry['K_er_source'] || '',
-      entry['K_er_confidence_level'] || '',
-      entry['K_er_code'] || '',
-      entry['K_er_workload_description'] || '',
-      entry['K_er_hardware'] || '',
-      entry['K_er_resource_config'] || '',
-      entry['K_er_runtime'] || '',
-      entry['K_er_cpu_gpu_hours'] || '',
-      entry['K_er_num_jobs'] || '',
-      entry['K_er_reference'] || '',
-      entry['K_er_notes'] || ''
-    ]);
-  });
-}
-
-function writeBenchmarkInfo(submissionId, piName, answers) {
-  appendRow('BenchmarkInfo', [
+function writeBenchmarkRequests(submissionId, piName, answers) {
+  var requested = val(answers, 'D_benchmark_request');
+  if (!requested || requested === 'no') return;
+  appendRow('BenchmarkRequests', [
     submissionId, piName,
-    val(answers, 'L_benchmark_status'),
-    val(answers, 'L_benchmark_description'),
-    val(answers, 'L_benchmark_reference'),
-    val(answers, 'L_benchmark_notes')
-  ]);
-}
-
-function writeWorkflowInfo(submissionId, piName, answers) {
-  appendRow('WorkflowInfo', [
-    submissionId, piName,
-    joinArr(answers['M_investigated_approaches']),
-    val(answers, 'M_technical_assistance'),
-    val(answers, 'M_optimisation_notes')
+    requested,
+    val(answers, 'D_benchmark_codes')
   ]);
 }
 
 function writeServiceObservations(submissionId, piName, answers) {
   appendRow('ServiceObservations', [
     submissionId, piName,
-    joinArr(answers['N_problems_experienced']),
-    val(answers, 'N_other_problem_description'),
-    val(answers, 'N_notes')
+    joinArr(answers['N_problems']),
+    val(answers, 'N_problems_other'),
+    joinArr(answers['N_workload_chars'])
   ]);
 }
 

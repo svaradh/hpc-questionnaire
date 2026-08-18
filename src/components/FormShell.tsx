@@ -49,11 +49,15 @@ function isSectionVisible(
   answers: Record<string, unknown>
 ): boolean {
   if (!section.conditionalOn) return true
-  const { questionId, values } = section.conditionalOn
-  const val = answers[questionId]
-  if (Array.isArray(val)) return (val as string[]).some(v => values.includes(v))
-  if (typeof val === 'string') return values.includes(val)
-  return false
+  const conditions = Array.isArray(section.conditionalOn)
+    ? section.conditionalOn
+    : [section.conditionalOn]
+  return conditions.some(cond => {
+    const val = answers[cond.questionId]
+    if (Array.isArray(val)) return (val as string[]).some(v => cond.values.includes(v))
+    if (typeof val === 'string') return cond.values.includes(val)
+    return false
+  })
 }
 
 function sectionProgress(

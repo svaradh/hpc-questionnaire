@@ -670,7 +670,7 @@
     {
       "id": "D",
       "title": "D. Runtime and Wall-Time Behaviour",
-      "description": "This section collects observed (resource configuration, wall-clock time) pairs for your workloads.\n\nIMPORTANT: 'Wall time' means the elapsed clock time while a job is actually running — it does NOT include time spent waiting in the queue. Runtime is affected by the resources allocated, so please record the resource configuration alongside each runtime observation.\n\nPlease do not enter a single 'required wall time' — instead, enter the wall time that was actually observed for a specific configuration. The committee will analyse these pairs.\n\nIf you have already described a typical job setup in Section C, you may cross-reference it here by noting the code and system name.",
+      "description": "This section collects observed (resource configuration, wall-clock time) pairs for your workloads.\n\nIMPORTANT: 'Wall time' means the elapsed clock time while a job is actually running — it does NOT include time spent waiting in the queue. Runtime is affected by the resources allocated, so please record the resource configuration alongside each runtime observation.\n\nPlease do not enter a single 'required wall time' — instead, enter the wall time that was actually observed for a specific configuration. The committee will analyse these pairs.\n\nIf you have already described a typical job setup in Section C, you may cross-reference it here by noting the code and system name.\n\nIf your group has not recently used the current IISER HPC cluster, evidence from past usage on other systems, national facilities, or published benchmarks is equally valid. Current cluster usage is not the only accepted source of evidence.",
       "questions": [
         {
           "id": "D_runtime_records",
@@ -805,6 +805,14 @@
               ]
             },
             {
+              "id": "D_rt_hardware",
+              "type": "text",
+              "label": "Hardware platform (if from an external or historical source)",
+              "required": false,
+              "placeholder": "e.g. Intel Xeon E5-2680v4, 28 cores/node, EDR InfiniBand",
+              "helpText": "The compute hardware on which this observation was made. Most relevant for external, national, or historical evidence. Leave blank for current IISER cluster observations."
+            },
+            {
               "id": "D_rt_notes",
               "type": "textarea",
               "label": "Notes on this runtime observation (optional)",
@@ -813,6 +821,72 @@
             }
           ],
           "entryLabel": "runtime record"
+        },
+        {
+          "id": "D_benchmark_request",
+          "type": "radio",
+          "label": "Would you like the HPC team to run a standard benchmark for any of your codes?",
+          "required": false,
+          "helpText": "The HPC facility can run representative benchmark calculations for common codes to provide objective performance data. This is particularly useful if you do not have access to runtime data from the current cluster.",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "no", "label": "No" },
+            { "value": "not_sure", "label": "Not sure" }
+          ]
+        },
+        {
+          "id": "D_benchmark_codes",
+          "type": "text",
+          "label": "Which application(s) would you like benchmarked?",
+          "required": false,
+          "conditionalOn": { "questionId": "D_benchmark_request", "values": ["yes", "not_sure"] },
+          "placeholder": "e.g. VASP, GROMACS, OpenFOAM"
+        }
+      ]
+    },
+    {
+      "id": "N",
+      "title": "N. Your Experience and Workload Characteristics",
+      "description": "Your answers here determine which follow-up sections the form will show. Only sections relevant to your workload will appear — you will not be asked to complete sections that do not apply. There is no disadvantage to reporting operational difficulties.",
+      "questions": [
+        {
+          "id": "N_problems",
+          "type": "checkbox",
+          "label": "Which of the following operational problems has your group experienced?",
+          "required": false,
+          "helpText": "Select all that apply. If you have not experienced any of these problems, select 'No problems observed'.",
+          "options": [
+            { "value": "wall_time_termination", "label": "Jobs terminated by the wall-time limit before completion" },
+            { "value": "excessive_queue_wait", "label": "Excessive waiting time in the queue" },
+            { "value": "insufficient_node_count", "label": "Unable to run at the node or core count the workload uses" },
+            { "value": "insufficient_memory", "label": "Jobs failing due to insufficient memory (out-of-memory errors)" },
+            { "value": "insufficient_gpu_access", "label": "Insufficient GPU access" },
+            { "value": "insufficient_total_capacity", "label": "Insufficient total capacity — unable to complete all planned calculations" },
+            { "value": "no_problems_observed", "label": "No problems observed — current access has been adequate", "exclusive": true },
+            { "value": "other", "label": "Other operational problem" }
+          ]
+        },
+        {
+          "id": "N_problems_other",
+          "type": "text",
+          "label": "If 'Other', describe the operational problem",
+          "required": false,
+          "conditionalOn": { "questionId": "N_problems", "values": ["other"] },
+          "placeholder": "Please describe"
+        },
+        {
+          "id": "N_workload_chars",
+          "type": "checkbox",
+          "label": "Which of the following workload characteristics apply to your group? Select all that apply.",
+          "required": false,
+          "helpText": "These are factual descriptions of how your calculations are organised — not claims about priority or entitlement. Select all that describe your workloads.",
+          "options": [
+            { "value": "char_scaling", "label": "Jobs that run across multiple nodes or cores and may benefit from more parallelism" },
+            { "value": "char_gpu", "label": "Use of, or interest in, GPU-accelerated computation" },
+            { "value": "char_throughput", "label": "Large numbers of independent jobs (e.g. parameter sweeps, screening calculations)" },
+            { "value": "char_pipeline", "label": "Sequential pipeline workflows where each step depends on the previous" },
+            { "value": "char_extended", "label": "Extended single calculations that run continuously for long periods" }
+          ]
         }
       ]
     },
@@ -820,6 +894,9 @@
       "id": "E",
       "title": "E. Wall-Time Termination",
       "description": "This section collects factual information about jobs that were stopped by the scheduler because they exceeded the wall-time limit. You are not being asked whether you 'need' a longer wall time — please describe what happened. The committee uses the resource configuration and CPU-hours to assess the nature of the constraint.",
+      "conditionalOn": [
+        { "questionId": "N_problems", "values": ["wall_time_termination"] }
+      ],
       "questions": [
         {
           "id": "E_terminated",
@@ -974,6 +1051,9 @@
       "id": "F",
       "title": "F. Checkpoint and Restart",
       "description": "Checkpoint/restart allows a job to be stopped and later resumed from a saved state, without repeating all completed computation. Add one entry per application or code — different codes may have very different checkpoint/restart capabilities. 'Don't know' is a valid answer for any question.",
+      "conditionalOn": [
+        { "questionId": "N_problems", "values": ["wall_time_termination"] }
+      ],
       "questions": [
         {
           "id": "F_checkpoint_records",
@@ -1262,6 +1342,10 @@
       "id": "G",
       "title": "G. Parallel Scaling",
       "description": "This section collects factual observations about how your workloads perform when run on different numbers of cores or nodes. Add one entry per code. You are not being asked whether you 'require' a particular number of nodes — please describe what has been observed or is documented.",
+      "conditionalOn": [
+        { "questionId": "N_problems", "values": ["insufficient_node_count"] },
+        { "questionId": "N_workload_chars", "values": ["char_scaling"] }
+      ],
       "questions": [
         {
           "id": "G_scaling_records",
@@ -1492,6 +1576,9 @@
       "id": "H",
       "title": "H. Memory Requirements",
       "description": "This section collects factual information about the memory (RAM) used by your workloads. Add one entry per application or code. Please report observed values where possible.",
+      "conditionalOn": [
+        { "questionId": "N_problems", "values": ["insufficient_memory"] }
+      ],
       "questions": [
         {
           "id": "H_memory_records",
@@ -1686,6 +1773,10 @@
       "id": "I",
       "title": "I. GPU and Specialised Resources",
       "description": "This section collects factual information about GPU use and performance. Add one entry per application or code that uses, or has been investigated for, GPU acceleration. If none of your workloads use GPUs, this section can be left empty.",
+      "conditionalOn": [
+        { "questionId": "N_problems", "values": ["insufficient_gpu_access"] },
+        { "questionId": "N_workload_chars", "values": ["char_gpu"] }
+      ],
       "questions": [
         {
           "id": "I_gpu_records",
@@ -1968,8 +2059,12 @@
     },
     {
       "id": "J",
-      "title": "J. Workflow patterns",
+      "title": "J. Workflow Patterns",
       "description": "This section collects information about how your calculations are organised and submitted to the scheduler. HPC facilities serve many research groups simultaneously through time-sharing — jobs from different groups run concurrently and are each served as resources become available. This is different from laboratory instruments, which may need to be reserved exclusively for the duration of an experiment. Understanding the structure of your workflow helps the committee design scheduling policies that allow all groups to make steady research progress.",
+      "conditionalOn": [
+        { "questionId": "N_problems", "values": ["excessive_queue_wait", "insufficient_total_capacity"] },
+        { "questionId": "N_workload_chars", "values": ["char_throughput", "char_pipeline", "char_extended"] }
+      ],
       "questions": [
         {
           "id": "J_workflow_types",
@@ -2215,429 +2310,6 @@
           "type": "textarea",
           "label": "Additional notes on your workflow patterns (optional)",
           "required": false
-        }
-      ]
-    },
-    {
-      "id": "K",
-      "title": "K. Historical and External Evidence",
-      "description": "This section allows you to record evidence from any HPC system or source. Evidence from external facilities, previous institutions, collaborators, or national facilities is equally valid.",
-      "questions": [
-        {
-          "id": "K_notice",
-          "type": "info",
-          "label": "Important notice",
-          "required": false,
-          "helpText": "Lack of current-cluster usage is not, by itself, evidence of lack of computational requirement. Evidence from external HPC facilities, previous institutional clusters, national facilities (such as PARAM or C-DAC), collaborator systems, and published benchmarks is fully accepted. Many groups have used the current IISER cluster less than their actual needs might suggest, due to historical policy constraints, queue policies, or lack of allocations. This section allows you to submit a complete picture of your group's computational experience."
-        },
-        {
-          "id": "K_evidence_records",
-          "type": "repeatable",
-          "label": "Evidence records",
-          "required": false,
-          "helpText": "Add one entry for each piece of evidence from an external or historical source. You may add as many records as you have.",
-          "googleFormsNote": "GOOGLE FORMS LIMITATION: Repeatable groups require a separate linked Google Form or fixed-row approach in Google Forms.",
-          "subQuestions": [
-            {
-              "id": "K_er_source",
-              "type": "select",
-              "label": "Evidence source",
-              "required": true,
-              "helpText": "Where does this evidence come from?",
-              "options": [
-                {
-                  "value": "current_iiser_hpc",
-                  "label": "Current IISER HPC cluster"
-                },
-                {
-                  "value": "historical_iiser_hpc",
-                  "label": "Historical / earlier IISER HPC cluster"
-                },
-                {
-                  "value": "external_hpc_national",
-                  "label": "External or national HPC facility (e.g. PARAM, C-DAC, TIFR)"
-                },
-                {
-                  "value": "previous_production",
-                  "label": "Previous production calculation (same group)"
-                },
-                {
-                  "value": "collaborator_institutional",
-                  "label": "Collaborator's or another institution's cluster"
-                },
-                {
-                  "value": "standardised_benchmark",
-                  "label": "Standardised benchmark run"
-                },
-                {
-                  "value": "published_software_benchmark",
-                  "label": "Published or software benchmark"
-                },
-                {
-                  "value": "developer_vendor_documentation",
-                  "label": "Developer or vendor documentation"
-                },
-                {
-                  "value": "projected_workload",
-                  "label": "Projected / estimated (no direct measurement)"
-                },
-                {
-                  "value": "other",
-                  "label": "Other"
-                }
-              ]
-            },
-            {
-              "id": "K_er_source_other",
-              "type": "text",
-              "label": "Evidence source (if 'Other')",
-              "required": false,
-              "placeholder": "Please specify"
-            },
-            {
-              "id": "K_er_confidence_level",
-              "type": "select",
-              "label": "Evidence confidence level",
-              "required": true,
-              "helpText": "Level 1: Direct production observation. Level 2: Reproducible benchmark. Level 3: Historical/external production. Level 4: Software/scaling evidence. Level 5: Projection.",
-              "options": [
-                {
-                  "value": "1",
-                  "label": "Level 1 — Direct production observation"
-                },
-                {
-                  "value": "2",
-                  "label": "Level 2 — Reproducible benchmark"
-                },
-                {
-                  "value": "3",
-                  "label": "Level 3 — Historical/external production evidence"
-                },
-                {
-                  "value": "4",
-                  "label": "Level 4 — Software/scaling evidence"
-                },
-                {
-                  "value": "5",
-                  "label": "Level 5 — Projection"
-                }
-              ]
-            },
-            {
-              "id": "K_er_code",
-              "type": "text",
-              "label": "Application / code",
-              "required": true,
-              "placeholder": "e.g. VASP 6.3, GROMACS 2023, in-house Fortran code"
-            },
-            {
-              "id": "K_er_workload_description",
-              "type": "text",
-              "label": "Workload description",
-              "required": true,
-              "placeholder": "e.g. 'DFT geometry optimisation of 128-atom Fe3O4 supercell'",
-              "helpText": "Brief description of the calculation or workload type."
-            },
-            {
-              "id": "K_er_hardware",
-              "type": "text",
-              "label": "Hardware platform",
-              "required": false,
-              "placeholder": "e.g. 'Intel Xeon E5-2680v4, 28 cores/node, EDR InfiniBand'",
-              "helpText": "The compute hardware on which this evidence was collected."
-            },
-            {
-              "id": "K_er_resource_config",
-              "type": "text",
-              "label": "Resource configuration",
-              "required": false,
-              "placeholder": "e.g. '4 nodes × 28 cores = 112 cores, 256 GB RAM/node'"
-            },
-            {
-              "id": "K_er_runtime",
-              "type": "text",
-              "label": "Observed runtime (wall time)",
-              "required": false,
-              "placeholder": "e.g. '72 hours', '3 days', '< 48 hours'",
-              "helpText": "Wall-clock time observed. Free text to allow ranges or approximations."
-            },
-            {
-              "id": "K_er_cpu_gpu_hours",
-              "type": "number",
-              "label": "CPU-hours or GPU-hours",
-              "required": false,
-              "placeholder": "e.g. 8064",
-              "unit": "core-hours",
-              "min": 0
-            },
-            {
-              "id": "K_er_num_jobs",
-              "type": "number",
-              "label": "Number of similar jobs",
-              "required": false,
-              "placeholder": "e.g. 50",
-              "unit": "jobs",
-              "min": 1
-            },
-            {
-              "id": "K_er_reference",
-              "type": "text",
-              "label": "Reference or supporting document",
-              "required": false,
-              "placeholder": "e.g. PARAM scheduler report ID, publication DOI, benchmark result URL",
-              "helpText": "Any reference that can be used to verify or contextualise this evidence (optional)."
-            },
-            {
-              "id": "K_er_notes",
-              "type": "textarea",
-              "label": "Notes on this evidence record (optional)",
-              "required": false,
-              "placeholder": "Any additional context for this evidence."
-            }
-          ],
-          "entryLabel": "evidence record"
-        }
-      ]
-    },
-    {
-      "id": "L",
-      "title": "L. Benchmark Evidence",
-      "description": "This section collects information about benchmark evidence for your workloads. The facility intends to maintain a benchmark library for common codes. If a benchmark exists for your code, or if you have run one, please provide the details here.",
-      "questions": [
-        {
-          "id": "L_benchmark_workload",
-          "type": "text",
-          "label": "Application or code this benchmark information applies to",
-          "required": false,
-          "placeholder": "e.g. VASP, GROMACS"
-        },
-        {
-          "id": "L_benchmark_status",
-          "type": "radio",
-          "label": "Benchmark status for this workload",
-          "required": true,
-          "helpText": "Select the option that best describes the availability of benchmark evidence for this workload.",
-          "options": [
-            {
-              "value": "existing",
-              "label": "An existing benchmark result is available and provided below"
-            },
-            {
-              "value": "user_provided",
-              "label": "I am submitting a benchmark result with this questionnaire"
-            },
-            {
-              "value": "requested",
-              "label": "I would like the facility to help set up a benchmark for this code"
-            },
-            {
-              "value": "unavailable",
-              "label": "No benchmark is available or feasible for this workload"
-            }
-          ]
-        },
-        {
-          "id": "L_benchmark_description",
-          "type": "textarea",
-          "label": "Benchmark description",
-          "required": false,
-          "conditionalOn": {
-            "questionId": "L_benchmark_status",
-            "values": [
-              "existing",
-              "user_provided"
-            ]
-          },
-          "placeholder": "Describe the benchmark: input system, hardware, resource configuration, and result. e.g. 'VASP benchmark: 64-atom BaTiO3 supercell, 3 SCF iterations, 4 nodes × 32 cores Intel Xeon Gold 6148, runtime 45 minutes.'",
-          "helpText": "Include enough detail for the committee to assess the relevance of the benchmark to your production workloads."
-        },
-        {
-          "id": "L_benchmark_reference",
-          "type": "text",
-          "label": "Benchmark reference, URL, or document",
-          "required": false,
-          "conditionalOn": {
-            "questionId": "L_benchmark_status",
-            "values": [
-              "existing",
-              "user_provided"
-            ]
-          },
-          "placeholder": "e.g. https://www.vasp.at/benchmarks/, internal document name, DOI"
-        },
-        {
-          "id": "L_benchmark_notes",
-          "type": "textarea",
-          "label": "Additional notes on benchmark evidence (optional)",
-          "required": false,
-          "placeholder": "Any additional context about the benchmark or why it is or is not available."
-        }
-      ]
-    },
-    {
-      "id": "M",
-      "title": "M. Workflow Optimisation and Technical Support",
-      "description": "This section collects factual information about which optimisation and workflow approaches your group has investigated. This information helps the committee understand your group's technical context. Failure to have investigated any particular approach is NOT evidence against your workload's requirements — these approaches are not always relevant or practical.",
-      "questions": [
-        {
-          "id": "M_investigated_approaches",
-          "type": "checkbox",
-          "label": "Which of the following approaches has your group investigated or used?",
-          "required": false,
-          "helpText": "Select all that apply. If you have not investigated any of these, select 'None investigated'. This is factual information — not having investigated an approach does not disadvantage your submission.",
-          "options": [
-            {
-              "value": "checkpoint_restart",
-              "label": "Checkpoint/restart (saving job state to resume after interruption)"
-            },
-            {
-              "value": "job_decomposition",
-              "label": "Job decomposition (splitting one large calculation into smaller independent ones)"
-            },
-            {
-              "value": "job_arrays",
-              "label": "Job arrays (submitting many similar jobs as a single array)"
-            },
-            {
-              "value": "workflow_managers",
-              "label": "Workflow managers (e.g. Snakemake, Nextflow, AiiDA, FireWorks)"
-            },
-            {
-              "value": "scaling_analysis",
-              "label": "Scaling analysis (systematically testing performance at different core/node counts)"
-            },
-            {
-              "value": "memory_optimisation",
-              "label": "Memory optimisation (reducing memory footprint of the calculation)"
-            },
-            {
-              "value": "gpu_acceleration",
-              "label": "GPU acceleration (using GPU-enabled version of the code)"
-            },
-            {
-              "value": "none_investigated",
-              "label": "None of these have been investigated",
-              "exclusive": true
-            }
-          ]
-        },
-        {
-          "id": "M_optimisation_notes",
-          "type": "textarea",
-          "label": "Notes on any of the above (optional)",
-          "required": false,
-          "placeholder": "e.g. 'We investigated job arrays but the code cannot be decomposed due to dependencies between steps.'"
-        },
-        {
-          "id": "M_technical_assistance",
-          "type": "radio",
-          "label": "Would technical assistance from HPC facility staff be useful for any of your workloads?",
-          "required": true,
-          "helpText": "This is an offer of support, not a requirement. Technical assistance might include code profiling, parallelisation advice, memory optimisation, or help setting up checkpoint/restart. Requesting assistance has no bearing on the QoS assessment.",
-          "options": [
-            {
-              "value": "yes",
-              "label": "Yes, technical assistance would be useful"
-            },
-            {
-              "value": "no",
-              "label": "No, we do not need technical assistance at this time"
-            },
-            {
-              "value": "maybe",
-              "label": "Possibly — we are uncertain whether our current approach can be improved"
-            }
-          ]
-        },
-        {
-          "id": "M_technical_assistance_description",
-          "type": "textarea",
-          "label": "If yes, describe the kind of assistance that would be useful (optional)",
-          "required": false,
-          "conditionalOn": {
-            "questionId": "M_technical_assistance",
-            "values": [
-              "yes",
-              "maybe"
-            ]
-          },
-          "placeholder": "e.g. 'Help profiling our VASP calculations to understand where time is spent.', 'Advice on whether our code can be run more efficiently on the available hardware.'"
-        }
-      ]
-    },
-    {
-      "id": "N",
-      "title": "N. Observed Service Characteristics",
-      "description": "This section asks you to describe any operational difficulties your group has experienced with HPC access. You are NOT being asked to request a particular queue, priority, or QoS class. Please just describe what you have observed. The committee will translate observed problems into QoS characteristics.",
-      "questions": [
-        {
-          "id": "N_philosophy_notice",
-          "type": "info",
-          "label": "Guidance",
-          "required": false,
-          "helpText": "The questions below ask what problems you have observed — not what service you believe you deserve or require. The committee reviews all submissions and applies the agreed tests to assign appropriate QoS characteristics. There is no requirement for you to argue your case here — just report the facts."
-        },
-        {
-          "id": "N_problems_experienced",
-          "type": "checkbox",
-          "label": "Which of the following operational problems has your group observed?",
-          "required": false,
-          "helpText": "Select all that apply. If you have not experienced any of these problems, select 'No problems observed'. Please only select problems you have actually observed, not ones you anticipate.",
-          "options": [
-            {
-              "value": "wall_time_termination",
-              "label": "Jobs terminated by the wall-time limit before completion"
-            },
-            {
-              "value": "excessive_queue_wait",
-              "label": "Excessive waiting time in the queue (jobs taking much longer to start than expected)"
-            },
-            {
-              "value": "insufficient_node_count",
-              "label": "Insufficient node count (unable to run at the scale the workload uses)"
-            },
-            {
-              "value": "insufficient_memory",
-              "label": "Insufficient memory (jobs failing due to out-of-memory errors)"
-            },
-            {
-              "value": "insufficient_gpu_access",
-              "label": "Insufficient GPU access (GPU queue heavily oversubscribed or GPUs unavailable)"
-            },
-            {
-              "value": "insufficient_total_capacity",
-              "label": "Insufficient total capacity (unable to complete all planned calculations within acceptable time)"
-            },
-            {
-              "value": "no_problems_observed",
-              "label": "No problems observed — current access has been adequate",
-              "exclusive": true
-            },
-            {
-              "value": "other",
-              "label": "Other operational problem"
-            }
-          ]
-        },
-        {
-          "id": "N_other_problem_description",
-          "type": "textarea",
-          "label": "If 'Other', describe the operational problem",
-          "required": false,
-          "conditionalOn": {
-            "questionId": "N_problems_experienced",
-            "values": [
-              "other"
-            ]
-          },
-          "placeholder": "Please describe the operational problem you have observed."
-        },
-        {
-          "id": "N_notes",
-          "type": "textarea",
-          "label": "Additional notes on observed service characteristics (optional)",
-          "required": false,
-          "placeholder": "Any additional factual information about your experience of the HPC service that is not captured above."
         }
       ]
     }
