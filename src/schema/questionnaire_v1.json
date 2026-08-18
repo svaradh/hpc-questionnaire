@@ -1783,277 +1783,269 @@
           "type": "repeatable",
           "label": "GPU information by code",
           "required": false,
-          "helpText": "Add one entry per application or code. If a code does not use GPUs, you do not need to add an entry for it.",
+          "helpText": "Add one entry per application or code that uses or could use GPU acceleration.",
           "googleFormsNote": "GOOGLE FORMS LIMITATION: Repeatable groups require a separate linked Google Form.",
+          "entryLabel": "code",
           "subQuestions": [
             {
               "id": "I_code_name",
               "type": "text",
               "label": "Application or code",
               "required": false,
-              "placeholder": "e.g. GROMACS, NAMD, PyTorch"
+              "placeholder": "e.g. GROMACS, PyTorch, VASP, custom ML training script"
             },
+
+            { "id": "I_part1_heading", "type": "heading", "label": "GPU Requirements", "required": false },
+
             {
-              "id": "I_uses_gpu",
+              "id": "I_gpu_status",
               "type": "radio",
-              "label": "Does this application use or could it use GPU acceleration?",
+              "label": "What is the GPU use status for this code?",
               "required": false,
-              "helpText": "GPUs (Graphics Processing Units) are used to accelerate many computational codes, particularly in molecular dynamics, machine learning, and quantum chemistry.",
+              "helpText": "Select the option that best describes how GPUs are or would be used with this code.",
               "options": [
-                {
-                  "value": "yes_currently",
-                  "label": "Yes — GPUs are currently used in production"
-                },
-                {
-                  "value": "yes_investigated",
-                  "label": "Yes — GPU use has been investigated but not yet in production"
-                },
-                {
-                  "value": "no",
-                  "label": "No"
-                },
-                {
-                  "value": "dont_know",
-                  "label": "Don't know if GPUs are relevant to this code"
-                }
+                { "value": "production",    "label": "GPU is currently used in production runs" },
+                { "value": "investigating", "label": "GPU use is being investigated but not yet in production" },
+                { "value": "gpu_only",      "label": "This code only runs on GPU — no CPU-only alternative" },
+                { "value": "dont_know",     "label": "Don't know" }
               ]
             },
             {
               "id": "I_gpu_model",
               "type": "text",
-              "label": "GPU model(s) used or tested",
+              "label": "GPU model(s) used, tested, or targeted",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_uses_gpu",
-                "values": [
-                  "yes_currently",
-                  "yes_investigated"
-                ]
-              },
-              "placeholder": "e.g. NVIDIA A100 80 GB, RTX 3090, V100",
-              "helpText": "The GPU hardware used in the observations below. Leave blank if not known."
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "placeholder": "e.g. NVIDIA A100 80 GB, V100 32 GB, RTX 4090",
+              "helpText": "The GPU hardware used or needed. Leave blank if not known — 'don't know' is fine at this stage."
+            },
+            {
+              "id": "I_gpu_memory_needed",
+              "type": "select",
+              "label": "Minimum GPU memory needed per card",
+              "required": false,
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "helpText": "GPU memory determines which GPU models can run this workload. Large ML models (e.g. transformers, diffusion models) often require 40–80 GB. MD and electronic structure codes typically need 16–40 GB.",
+              "options": [
+                { "value": "lt_16gb",   "label": "Less than 16 GB (standard consumer or entry-level GPU)" },
+                { "value": "16_40gb",   "label": "16 – 40 GB (e.g. NVIDIA V100 32 GB, A100 40 GB)" },
+                { "value": "40_80gb",   "label": "40 – 80 GB (e.g. NVIDIA A100 80 GB)" },
+                { "value": "gt_80gb",   "label": "More than 80 GB (e.g. H100 NVL — large model or multi-GPU memory pooling)" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "I_gpu_min_per_job",
+              "type": "number",
+              "label": "Minimum number of GPUs required per job",
+              "required": false,
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "placeholder": "e.g. 1",
+              "unit": "GPUs",
+              "min": 1,
+              "helpText": "The smallest number of GPUs on which this job has been observed to complete or is expected to complete."
+            },
+            {
+              "id": "I_gpu_typical_per_job",
+              "type": "number",
+              "label": "Typical number of GPUs used per job",
+              "required": false,
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "placeholder": "e.g. 4",
+              "unit": "GPUs",
+              "min": 1,
+              "helpText": "The number of GPUs used in a typical production run."
             },
             {
               "id": "I_gpu_frameworks",
               "type": "checkbox",
               "label": "GPU-enabled frameworks or libraries used",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_uses_gpu",
-                "values": [
-                  "yes_currently",
-                  "yes_investigated"
-                ]
-              },
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
               "options": [
-                {
-                  "value": "cuda",
-                  "label": "CUDA"
-                },
-                {
-                  "value": "opencl",
-                  "label": "OpenCL"
-                },
-                {
-                  "value": "pytorch",
-                  "label": "PyTorch"
-                },
-                {
-                  "value": "tensorflow",
-                  "label": "TensorFlow"
-                },
-                {
-                  "value": "jax",
-                  "label": "JAX"
-                },
-                {
-                  "value": "cupy",
-                  "label": "CuPy"
-                },
-                {
-                  "value": "gromacs_gpu",
-                  "label": "GROMACS GPU offload"
-                },
-                {
-                  "value": "namd_gpu",
-                  "label": "NAMD GPU acceleration"
-                },
-                {
-                  "value": "amber_gpu",
-                  "label": "AMBER GPU acceleration"
-                },
-                {
-                  "value": "lammps_gpu",
-                  "label": "LAMMPS GPU package"
-                },
-                {
-                  "value": "qe_gpu",
-                  "label": "Quantum ESPRESSO GPU"
-                },
-                {
-                  "value": "cp2k_gpu",
-                  "label": "CP2K GPU"
-                },
-                {
-                  "value": "other",
-                  "label": "Other"
-                },
-                {
-                  "value": "dont_know",
-                  "label": "Don't know"
-                }
+                { "value": "cuda",        "label": "CUDA" },
+                { "value": "opencl",      "label": "OpenCL" },
+                { "value": "pytorch",     "label": "PyTorch" },
+                { "value": "tensorflow",  "label": "TensorFlow" },
+                { "value": "jax",         "label": "JAX" },
+                { "value": "cupy",        "label": "CuPy" },
+                { "value": "gromacs_gpu", "label": "GROMACS GPU offload" },
+                { "value": "namd_gpu",    "label": "NAMD GPU acceleration" },
+                { "value": "amber_gpu",   "label": "AMBER GPU acceleration" },
+                { "value": "lammps_gpu",  "label": "LAMMPS GPU package" },
+                { "value": "qe_gpu",      "label": "Quantum ESPRESSO GPU" },
+                { "value": "cp2k_gpu",    "label": "CP2K GPU" },
+                { "value": "other",       "label": "Other" },
+                { "value": "dont_know",   "label": "Don't know" }
               ]
             },
             {
               "id": "I_gpu_frameworks_other",
               "type": "text",
-              "label": "GPU frameworks (if 'Other')",
+              "label": "GPU framework (if 'Other')",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_gpu_frameworks",
-                "values": [
-                  "other"
-                ]
-              },
+              "conditionalOn": { "questionId": "I_gpu_frameworks", "values": ["other"] },
               "placeholder": "Please specify"
             },
             {
-              "id": "I_performance_with_gpu",
-              "type": "textarea",
-              "label": "Observed performance with GPU (if available)",
+              "id": "I_nvlink_needed",
+              "type": "radio",
+              "label": "Does this workload need fast GPU-to-GPU communication within a single node?",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_uses_gpu",
-                "values": [
-                  "yes_currently",
-                  "yes_investigated"
-                ]
-              },
-              "placeholder": "e.g. 'GROMACS 100ns/day on 1× A100; 10ns/day on 32 CPU cores'. Include resources and runtime.",
-              "helpText": "Describe the observed performance when running with GPU. Include the GPU model, number of GPUs, and observed throughput or wall time."
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "helpText": "NVLink is a high-speed connection between GPUs on the same node, used when the workload distributes computation or memory across multiple GPUs simultaneously (e.g. model parallelism in large ML training, or multi-GPU MD). Most single-GPU workloads do not need this.",
+              "options": [
+                { "value": "yes",            "label": "Yes — multiple GPUs on the same node must share data at high speed" },
+                { "value": "no",             "label": "No — each GPU runs independently or only one GPU is used" },
+                { "value": "dont_know",      "label": "Don't know" },
+                { "value": "not_applicable", "label": "Not applicable" }
+              ]
             },
             {
-              "id": "I_performance_without_gpu",
-              "type": "textarea",
-              "label": "Observed performance without GPU (CPU-only), for comparison (if available)",
+              "id": "I_multinode_gpu",
+              "type": "radio",
+              "label": "Does this workload need to use GPUs across multiple nodes?",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_uses_gpu",
-                "values": [
-                  "yes_currently",
-                  "yes_investigated"
-                ]
-              },
-              "placeholder": "e.g. '10ns/day on 32 CPU cores (same system size)'. Include resources and runtime.",
-              "helpText": "If you have a CPU-only performance figure for the same workload, enter it here. This allows the committee to assess the practical speedup."
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "helpText": "Multi-node GPU jobs require high-speed networking (InfiniBand or equivalent) between nodes for GPU communication (e.g. via NCCL for distributed ML training). This is a significant infrastructure requirement. Most GPU workloads at this scale run on a single node.",
+              "options": [
+                { "value": "yes_current",  "label": "Yes — currently done (on collaborator or national facility)" },
+                { "value": "yes_planned",  "label": "Yes — planned or expected to be needed" },
+                { "value": "no",           "label": "No — single-node GPU is sufficient" },
+                { "value": "dont_know",    "label": "Don't know" }
+              ]
+            },
+            {
+              "id": "I_gpu_jobs_per_year",
+              "type": "number",
+              "label": "Approximate number of GPU jobs per year",
+              "required": false,
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "placeholder": "e.g. 200",
+              "unit": "jobs",
+              "min": 1,
+              "helpText": "A rough estimate. One job = one scheduler submission. This helps the committee assess GPU queue demand."
             },
             {
               "id": "I_evidence_source",
               "type": "select",
-              "label": "Source of this GPU performance information",
+              "label": "Source of this GPU information",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_uses_gpu",
-                "values": [
-                  "yes_currently",
-                  "yes_investigated"
-                ]
-              },
-              "helpText": "Where does this GPU performance information come from? Published benchmarks, developer documentation, and your own production observations are all valid.",
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating", "gpu_only"] },
+              "helpText": "Where does this information come from? Published benchmarks, developer documentation, and production observations are all valid.",
               "options": [
-                {
-                  "value": "current_iiser_hpc",
-                  "label": "Current IISER HPC cluster"
-                },
-                {
-                  "value": "historical_iiser_hpc",
-                  "label": "Historical / earlier IISER HPC cluster"
-                },
-                {
-                  "value": "external_hpc_national",
-                  "label": "External or national HPC facility (e.g. PARAM, C-DAC)"
-                },
-                {
-                  "value": "previous_production",
-                  "label": "Previous production calculation (same group)"
-                },
-                {
-                  "value": "collaborator_institutional",
-                  "label": "Collaborator's or another institution's cluster"
-                },
-                {
-                  "value": "standardised_benchmark",
-                  "label": "Standardised benchmark run"
-                },
-                {
-                  "value": "published_software_benchmark",
-                  "label": "Published or software benchmark"
-                },
-                {
-                  "value": "developer_vendor_documentation",
-                  "label": "Developer or vendor documentation"
-                },
-                {
-                  "value": "projected_workload",
-                  "label": "Projected / estimated (no direct measurement)"
-                },
-                {
-                  "value": "other",
-                  "label": "Other"
-                }
+                { "value": "current_iiser_hpc",           "label": "Current IISER HPC cluster" },
+                { "value": "historical_iiser_hpc",        "label": "Historical / earlier IISER HPC cluster" },
+                { "value": "external_hpc_national",       "label": "External or national HPC facility (e.g. PARAM, C-DAC)" },
+                { "value": "previous_production",         "label": "Previous production calculation (same group)" },
+                { "value": "collaborator_institutional",  "label": "Collaborator's or another institution's cluster" },
+                { "value": "standardised_benchmark",      "label": "Standardised benchmark run" },
+                { "value": "published_software_benchmark","label": "Published or software benchmark" },
+                { "value": "developer_vendor_documentation","label": "Developer or vendor documentation" },
+                { "value": "projected_workload",          "label": "Projected / estimated (no direct measurement)" },
+                { "value": "other",                       "label": "Other" }
               ]
             },
+
             {
-              "id": "I_specialised_interconnect",
+              "id": "I_part2_heading",
+              "type": "heading",
+              "label": "CPU vs GPU Performance Comparison",
+              "required": false,
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating"] }
+            },
+
+            {
+              "id": "I_cpu_comparison",
               "type": "radio",
-              "label": "Does the workload require a specialised high-speed interconnect between GPUs or nodes?",
+              "label": "Do you have runtime data comparing CPU-only and GPU performance for this workload?",
               "required": false,
-              "helpText": "For example, NVLink (between GPUs on the same node) or InfiniBand (between nodes for multi-node GPU jobs). Most GPU workloads do not require this.",
+              "conditionalOn": { "questionId": "I_gpu_status", "values": ["production", "investigating"] },
+              "helpText": "A direct comparison helps the committee assess the practical benefit of GPU access for this code.",
               "options": [
-                {
-                  "value": "yes",
-                  "label": "Yes"
-                },
-                {
-                  "value": "no",
-                  "label": "No"
-                },
-                {
-                  "value": "dont_know",
-                  "label": "Don't know"
-                },
-                {
-                  "value": "not_applicable",
-                  "label": "Not applicable"
-                },
-                {
-                  "value": "not_tested",
-                  "label": "Not tested"
-                }
+                { "value": "yes",        "label": "Yes — I have run the same workload on both CPU-only and GPU" },
+                { "value": "no",         "label": "No — comparison data not available" },
+                { "value": "no_cpu_alt", "label": "No CPU-only alternative — the code does not run practically without GPU" }
               ]
             },
             {
-              "id": "I_specialised_interconnect_description",
-              "type": "text",
-              "label": "If yes, describe the interconnect requirement",
+              "id": "I_cpu_cores",
+              "type": "number",
+              "label": "CPU-only run — number of CPU cores used",
               "required": false,
-              "conditionalOn": {
-                "questionId": "I_specialised_interconnect",
-                "values": [
-                  "yes"
-                ]
-              },
-              "placeholder": "e.g. 'NVLink between GPUs on the same node', 'InfiniBand HDR for multi-node NCCL communication'"
+              "conditionalOn": { "questionId": "I_cpu_comparison", "values": ["yes"] },
+              "placeholder": "e.g. 32",
+              "unit": "cores",
+              "min": 1
+            },
+            {
+              "id": "I_cpu_wall_time",
+              "type": "duration",
+              "label": "CPU-only run — observed wall time",
+              "required": false,
+              "conditionalOn": { "questionId": "I_cpu_comparison", "values": ["yes"] },
+              "units": ["seconds", "minutes", "hours", "days"],
+              "defaultUnit": "hours",
+              "helpText": "Wall time for the CPU-only run of the same workload."
+            },
+            {
+              "id": "I_gpu_count_comp",
+              "type": "number",
+              "label": "GPU run — number of GPUs used",
+              "required": false,
+              "conditionalOn": { "questionId": "I_cpu_comparison", "values": ["yes"] },
+              "placeholder": "e.g. 1",
+              "unit": "GPUs",
+              "min": 1
+            },
+            {
+              "id": "I_gpu_cores_comp",
+              "type": "number",
+              "label": "GPU run — number of CPU cores alongside the GPUs",
+              "required": false,
+              "conditionalOn": { "questionId": "I_cpu_comparison", "values": ["yes"] },
+              "placeholder": "e.g. 8",
+              "unit": "cores",
+              "min": 1,
+              "helpText": "Most GPU jobs also use some CPU cores. Enter the number of CPU cores in the GPU run."
+            },
+            {
+              "id": "I_gpu_wall_time",
+              "type": "duration",
+              "label": "GPU run — observed wall time",
+              "required": false,
+              "conditionalOn": { "questionId": "I_cpu_comparison", "values": ["yes"] },
+              "units": ["seconds", "minutes", "hours", "days"],
+              "defaultUnit": "hours",
+              "helpText": "Wall time for the GPU run of the same workload. The committee uses the ratio CPU wall time / GPU wall time to assess speedup."
+            },
+            {
+              "id": "I_comparison_evidence_source",
+              "type": "select",
+              "label": "Source of this comparison data",
+              "required": false,
+              "conditionalOn": { "questionId": "I_cpu_comparison", "values": ["yes"] },
+              "options": [
+                { "value": "current_iiser_hpc",           "label": "Current IISER HPC cluster" },
+                { "value": "historical_iiser_hpc",        "label": "Historical / earlier IISER HPC cluster" },
+                { "value": "external_hpc_national",       "label": "External or national HPC facility" },
+                { "value": "previous_production",         "label": "Previous production calculation (same group)" },
+                { "value": "collaborator_institutional",  "label": "Collaborator's or another institution's cluster" },
+                { "value": "standardised_benchmark",      "label": "Standardised benchmark run" },
+                { "value": "published_software_benchmark","label": "Published or software benchmark" },
+                { "value": "developer_vendor_documentation","label": "Developer or vendor documentation" },
+                { "value": "projected_workload",          "label": "Projected / estimated" },
+                { "value": "other",                       "label": "Other" }
+              ]
             },
             {
               "id": "I_notes",
               "type": "textarea",
-              "label": "Additional notes on GPU or specialised hardware use (optional)",
+              "label": "Additional notes (optional)",
               "required": false,
-              "placeholder": "Any other relevant information about GPU or specialised hardware requirements."
+              "placeholder": "Any other relevant information about GPU use or requirements for this code."
             }
-          ],
-          "entryLabel": "code"
+          ]
         }
       ]
     },

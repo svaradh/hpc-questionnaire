@@ -92,9 +92,12 @@ var SHEET_DEFINITIONS = [
   {
     name: 'GpuInfo',
     headers: [
-      'submission_id', 'pi_name', 'code_name', 'uses_gpu', 'gpu_model', 'frameworks',
-      'performance_with_gpu', 'performance_without_gpu', 'evidence_source',
-      'specialised_interconnect', 'notes'
+      'submission_id', 'pi_name', 'code_name', 'gpu_status', 'gpu_model',
+      'gpu_memory_needed', 'min_gpus_per_job', 'typical_gpus_per_job', 'frameworks',
+      'nvlink_needed', 'multinode_gpu', 'gpu_jobs_per_year', 'evidence_source',
+      'cpu_comparison', 'cpu_cores', 'cpu_wall_time_hours',
+      'gpu_count', 'gpu_cores', 'gpu_wall_time_hours', 'comparison_evidence_source',
+      'notes'
     ]
   },
   {
@@ -472,20 +475,30 @@ function writeMemoryInfo(submissionId, piName, answers) {
 function writeGpuInfo(submissionId, piName, answers) {
   var records = getArr(answers, 'I_gpu_records');
   if (records.length === 0) {
-    appendRow('GpuInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '']);
+    appendRow('GpuInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     return;
   }
   records.forEach(function(entry) {
     appendRow('GpuInfo', [
       submissionId, piName,
       entry['I_code_name'] || '',
-      entry['I_uses_gpu'] || '',
+      entry['I_gpu_status'] || '',
       entry['I_gpu_model'] || '',
+      entry['I_gpu_memory_needed'] || '',
+      entry['I_gpu_min_per_job'] || '',
+      entry['I_gpu_typical_per_job'] || '',
       joinArr(entry['I_gpu_frameworks']),
-      entry['I_performance_with_gpu'] || '',
-      entry['I_performance_without_gpu'] || '',
+      entry['I_nvlink_needed'] || '',
+      entry['I_multinode_gpu'] || '',
+      entry['I_gpu_jobs_per_year'] || '',
       entry['I_evidence_source'] || '',
-      entry['I_specialised_interconnect'] || '',
+      entry['I_cpu_comparison'] || '',
+      entry['I_cpu_cores'] || '',
+      durationToHours(entry, 'I_cpu_wall_time'),
+      entry['I_gpu_count_comp'] || '',
+      entry['I_gpu_cores_comp'] || '',
+      durationToHours(entry, 'I_gpu_wall_time'),
+      entry['I_comparison_evidence_source'] || '',
       entry['I_notes'] || ''
     ]);
   });

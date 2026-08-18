@@ -502,30 +502,29 @@ export interface MemoryRecord {
  * Evidence level is NOT collected for GPU records (only evidence source).
  */
 export interface GpuRecord {
-  /** Local UUID for this record. */
   id: string
-  /** Code name (corresponds to I_code_name). */
   workloadId: string
-  /** Whether GPU acceleration is used or has been investigated for this code. */
-  gpuUsed: 'yes_currently' | 'yes_investigated' | 'no' | 'dont_know'
-  /** GPU model/product name (e.g. "NVIDIA A100 80 GB"). */
+  /** GPU use status: production / investigating / gpu_only / dont_know */
+  gpuStatus?: 'production' | 'investigating' | 'gpu_only' | 'dont_know'
   gpuModel?: string
-  /** GPU-enabled frameworks or libraries used. */
+  gpuMemoryNeeded?: 'lt_16gb' | '16_40gb' | '40_80gb' | 'gt_80gb' | 'dont_know'
+  minGpusPerJob?: number
+  typicalGpusPerJob?: number
   gpuFrameworks?: string[]
-  /**
-   * Observed or estimated performance comparison with and without GPU
-   * (free text, e.g. "~10× faster than 32-core CPU-only run").
-   */
-  performanceWithGpu?: string
-  performanceWithoutGpu?: string
-  /**
-   * Where the GPU performance information comes from.
-   * Note: no evidenceLevel for GPU records — only evidenceSource.
-   */
+  /** Whether fast intra-node GPU communication (NVLink) is needed. */
+  nvlinkNeeded?: 'yes' | 'no' | 'dont_know' | 'not_applicable'
+  /** Whether the workload spans multiple nodes using GPUs. */
+  multinodeGpu?: 'yes_current' | 'yes_planned' | 'no' | 'dont_know'
+  gpuJobsPerYear?: number
   evidenceSource?: EvidenceSource
-  /** Whether the workload requires a high-speed interconnect (e.g. NVLink, InfiniBand). */
-  specialisedInterconnectRequired: YesNoUncertain
-  specialisedInterconnectDescription?: string
+  /** Whether CPU vs GPU runtime comparison data is available. */
+  cpuComparison?: 'yes' | 'no' | 'no_cpu_alt'
+  cpuCores?: number
+  cpuWallTime?: DurationValue
+  gpuCountComp?: number
+  gpuCoresComp?: number
+  gpuWallTime?: DurationValue
+  comparisonEvidenceSource?: EvidenceSource
   notes?: string
 }
 
