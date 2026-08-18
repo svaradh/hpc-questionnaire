@@ -199,7 +199,7 @@
     {
       "id": "B",
       "title": "B. Workload Profile",
-      "description": "This section collects information about the software and codes your group uses, and the broad character of your workloads. Please add one entry per principal application or code. You may add as many codes as apply.",
+      "description": "This section collects information about the software and codes your group uses, and the broad character of your workloads. Please add one entry per principal application or code. You may add as many codes as apply.\n\nThroughout this questionnaire, a 'job' means a single submission to the HPC scheduler — one entry in the queue. For example, 100 separate calculations submitted individually are 100 jobs. A job array submitted as a single scheduler entry also counts as one job, even if it runs many independent tasks internally.",
       "questions": [
         {
           "id": "B_codes",
@@ -724,7 +724,7 @@
               "placeholder": "e.g. 50",
               "unit": "jobs",
               "min": 1,
-              "helpText": "Approximately how many jobs of this type do you run per year or per research question?"
+              "helpText": "Approximately how many jobs of this type do you run per year or per research question? Remember: one job = one scheduler submission."
             },
             {
               "id": "D_rt_evidence_source",
@@ -2091,7 +2091,7 @@
           "label": "How many independent jobs do you run per year?",
           "required": false,
           "unit": "jobs",
-          "helpText": "A rough estimate is sufficient.",
+          "helpText": "A rough estimate is sufficient. One job = one scheduler submission. A job array submitted as a single entry counts as one job.",
           "conditionalOn": { "questionId": "J_workflow_types", "values": ["independent"] }
         },
         {
