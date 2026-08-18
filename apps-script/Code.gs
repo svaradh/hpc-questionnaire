@@ -78,8 +78,8 @@ function deleteAllRowsForSubmission(submissionId) {
   var sheetNames = [
     'Submissions', 'RespondentInfo', 'Workloads', 'JobSetups', 'RuntimeRecords',
     'WallTimeTerminations', 'CheckpointInfo', 'ScalingInfo', 'MemoryInfo',
-    'GpuInfo', 'Throughput', 'EvidenceRecords', 'BenchmarkInfo',
-    'WorkflowInfo', 'ServiceObservations'
+    'GpuInfo', 'IndependentJobs', 'PipelineJobs', 'ExtendedCalcs',
+    'BenchmarkRequests', 'ServiceObservations'
   ];
   sheetNames.forEach(function(name) {
     var sheet = ss.getSheetByName(name);
