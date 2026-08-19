@@ -1,95 +1,115 @@
-# HPC Questionnaire Analysis Notebooks
+# HPC Questionnaire — Committee Analysis Notebooks
 
-These notebooks help the HPC Users' Committee at IISER Bhopal analyse submissions from the HPC Workload Characterisation Questionnaire. They produce charts and summaries that the committee uses to understand workload diversity and plan appropriate Quality-of-Service classes.
+Python notebooks for the HPC Users' Committee to analyse questionnaire responses and design QoS policy.
 
 **Important:** These notebooks visualise evidence collected from research groups. They do not score, rank, or automatically assign queues. All policy decisions are made by the committee.
 
 ---
 
-## Prerequisites
+## What you need
 
-- A Google account with at least **read** access to the questionnaire Google Sheet
-- No local Python installation needed — all notebooks run in Google Colab
+1. An `@iiserb.ac.in` Google account — the HPC admin will share the response sheet with you
+2. A web browser — that's it
 
----
-
-## How to open in Colab
-
-**Option A — Upload manually**
-
-1. Download or clone this `analysis/` folder to your computer.
-2. Go to [colab.research.google.com](https://colab.research.google.com).
-3. Choose **File → Upload notebook** and select the `.ipynb` file you want to open.
-4. Upload `sheets_client.py` to the Colab session storage (see Setup below).
-
-**Option B — Open from GitHub**
-
-1. Push this repository to GitHub (or a fork).
-2. Go to [colab.research.google.com](https://colab.research.google.com).
-3. Choose **File → Open notebook → GitHub** tab.
-4. Paste the repository URL and select the notebook.
+No installation, no configuration, no API keys.
 
 ---
 
-## How to set up sheet access
+## Getting started
 
-The notebooks support two authentication methods. Choose whichever suits your situation.
+### Step 1 — Get access to the data
 
-### Method 1 — Interactive OAuth (recommended for committee members)
+The HPC admin shares the **HPC Questionnaire Responses** Google Sheet with your IISER Google account (Viewer access). You will receive a sharing notification by email.
 
-This is the simplest method. When you run `00_setup.ipynb`, a pop-up will ask you to sign in with your Google account. No key files are needed.
+### Step 2 — Find the Spreadsheet ID
 
-This method uses `google.colab.auth.authenticate_user()` and works only inside Colab.
+Open the sheet in your browser. The URL looks like:
+```
+https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
+```
+Copy the long string between `/d/` and `/edit`. You will need this once in Step 4.
 
-### Method 2 — Service account key (for automated or server-side use)
+### Step 3 — Open a notebook in Colab
 
-1. In [Google Cloud Console](https://console.cloud.google.com), create a service account with the **Google Sheets API** and **Google Drive API** enabled.
-2. Download the JSON key file.
-3. Share your Google Sheet with the service account email (view access is sufficient).
-4. In `00_setup.ipynb`, set `SERVICE_ACCOUNT_KEY_PATH` to the path of the JSON file (e.g. `/content/service_account.json` after uploading it to Colab).
+Go to **colab.research.google.com** and open any notebook:
+- File → Open notebook → GitHub → paste `https://github.com/svaradh/hpc-questionnaire`
+- Then navigate to the `analysis/` folder
+
+### Step 4 — Run the setup notebook first
+
+Open **`00_setup.ipynb`** and paste your Spreadsheet ID where indicated (one cell, clearly marked). Click **Runtime → Run all**.
+
+Colab will ask you to sign in with your Google account — click your IISER account. This happens once per Colab session. After that, open and run any other notebook directly.
 
 ---
 
-## How to run
-
-1. Open `00_setup.ipynb` first. Run all cells. This installs packages, sets your Sheet ID, authenticates, and confirms all tabs are accessible.
-2. Open any of the numbered notebooks (`01_` through `06_`). Each notebook imports `sheets_client` and calls `load_sheets()` at the top — you do not need to re-authenticate if you are in the same Colab session.
-3. Run all cells in order. Charts appear inline.
-
-**Run order:** `00_setup` must be run first in each new session. The other notebooks (`01` to `06`) are independent of each other and can be run in any order.
-
----
-
-## Notebook descriptions
+## Notebooks
 
 | Notebook | What it shows |
 |---|---|
-| `00_setup.ipynb` | Authentication, sheet connection, row-count summary |
-| `01_workload_overview.ipynb` | Workload categories, codes used, job volumes, department distribution |
-| `02_resource_requirements.ipynb` | Memory, wall time, core counts, evidence confidence levels |
-| `03_gpu_demand.ipynb` | GPU usage status, memory, frameworks, speedup ratios |
-| `04_workflow_patterns.ipynb` | Independent jobs, pipelines, extended calculations, checkpointing |
-| `05_service_gaps.ipynb` | Problems experienced, wall-time terminations, checkpoint issues, scaling |
-| `06_qos_clusters.ipynb` | Workload fingerprints, QoS dimension overlap, triage ordering |
+| `00_setup.ipynb` | Connect to the sheet, verify data loaded correctly |
+| `01_workload_overview.ipynb` | Workload categories, codes used, job counts, department breakdown |
+| `02_resource_requirements.ipynb` | Memory per core, wall-time distribution, core counts, evidence levels |
+| `03_gpu_demand.ipynb` | GPU status, memory needs, frameworks, NVLink/multi-node, CPU vs GPU speedup |
+| `04_workflow_patterns.ipynb` | Independent/pipeline/extended split, CPU-hours used vs needed gap |
+| `05_service_gaps.ipynb` | Problems experienced, wall-time terminations, scaling behaviour |
+| `06_qos_clusters.ipynb` | Workload fingerprints, QoS dimension prevalence, triage priority table |
+
+Run them in any order after `00_setup.ipynb`.
 
 ---
 
-## How to add custom analysis
+## Writing your own analysis
 
-- Each notebook follows the same pattern: load data, filter/clean, plot.
-- Add new cells at the bottom of the relevant notebook.
-- The `load_sheets()` function returns a plain `dict` of pandas DataFrames — one per sheet tab. You can join, filter, and plot them however you like.
-- The `sheets_client.py` module contains helper functions (`split_semicolons`, `map_range_labels`) that are useful when working with multi-value fields and range strings.
-- Do not modify `sheets_client.py` unless you are changing authentication or data loading behaviour — keep analysis logic in the notebooks.
+Once the data is loaded, each sheet tab is a standard pandas DataFrame. Open a new Colab notebook and write anything you like:
+
+```python
+# Two lines to get started in any new notebook
+from sheets_client import load_sheets, explode_semicolons, map_range_labels, MEMORY_PER_CORE_LABELS
+dfs = load_sheets('YOUR_SPREADSHEET_ID')
+
+# Standard pandas from here
+df = dfs['RuntimeRecords']
+df[df['wall_time_hours'].astype(float) > 48]        # filter long jobs
+df.groupby('evidence_source').size()                 # count by source
+
+# Multi-value columns (categories, problems, frameworks, etc.)
+explode_semicolons(dfs['Workloads'], 'categories').value_counts()
+
+# Readable axis labels from range keys
+map_range_labels(dfs['JobSetups']['memory_range'], MEMORY_PER_CORE_LABELS)
+```
+
+**Helper functions** (import from `sheets_client`):
+- `load_sheets(spreadsheet_id)` — loads all tabs as DataFrames
+- `explode_semicolons(df, col)` — flattens semicolon-joined columns for counting
+- `split_semicolons(series)` — splits into lists without exploding
+- `map_range_labels(series, mapping)` — converts range keys to readable labels
+- `summarise_sheets(dfs)` — shows row counts per tab
+
+**Label mappings** (import from `sheets_client`):
+`CPU_HOURS_LABELS`, `WALL_TIME_LABELS`, `MEMORY_LABELS`, `MEMORY_PER_CORE_LABELS`,
+`CORES_LABELS`, `GPU_MEMORY_LABELS`, `JOB_COUNT_LABELS`
 
 ---
 
-## Troubleshooting
+## Available data tabs
 
-**"Worksheet not found"** — The sheet tab name must match exactly. Check that your Google Sheet has all the tabs listed in the questionnaire data model.
-
-**"403 Forbidden"** — The authenticated account does not have access to the sheet. Share the sheet with the relevant Google account or service account email.
-
-**Empty DataFrames** — If a tab exists but has no data rows (only a header), the notebook will skip that chart and print a notice. This is normal if no submissions have been collected yet.
-
-**Package import errors** — Re-run `00_setup.ipynb` to reinstall packages. Colab environments reset between sessions.
+| Tab | Contents |
+|---|---|
+| Submissions | Index — one row per group (submission_id, pi_name, department) |
+| RespondentInfo | Section A — PI and respondent details |
+| Workloads | Section B — codes used, categories, job counts (one row per code) |
+| JobSetups | Section C — typical job configurations (one row per code+system) |
+| RuntimeRecords | Section D — observed runtimes with evidence source and level |
+| WallTimeTerminations | Section E — wall-time termination events |
+| CheckpointInfo | Section F — checkpoint/restart capability per code |
+| ScalingInfo | Section G — parallel scaling observations |
+| MemoryInfo | Section H — memory requirements per code |
+| GpuInfo | Section I — GPU requirements and CPU vs GPU comparison |
+| IndependentJobs | Section J — independent job workflow data |
+| PipelineJobs | Section J — pipeline workflow data |
+| ExtendedCalcs | Section J — extended single calculation data |
+| BenchmarkRequests | Section D — benchmark requests |
+| ServiceObservations | Section N — problems experienced and workload characteristics |
+| CommitteeAssessment | Committee triage and notes (filled in by committee) |
