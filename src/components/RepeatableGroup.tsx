@@ -22,6 +22,8 @@ interface RepeatableGroupProps {
 
 export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupProps) {
   const subQuestions = question.subQuestions ?? []
+  const coreSubQuestions = subQuestions.filter(q => !q.advanced)
+  const advancedSubQuestions = subQuestions.filter(q => q.advanced)
 
   const handleAddRow = () => {
     onChange([...rows, {}])
@@ -43,6 +45,35 @@ export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupPro
     return rows[rowIndex]?.[subId] ?? undefined
   }
 
+  // Check conditional visibility of a sub-question within a row
+  const isSubQuestionVisible = (rowIndex: number, subQ: Question): boolean => {
+    if (!subQ.conditionalOn) return true
+    const depVal = getRowValue(rowIndex, subQ.conditionalOn.questionId)
+    const depStr =
+      typeof depVal === 'string'
+        ? depVal
+        : Array.isArray(depVal)
+          ? (depVal as string[]).join(',')
+          : ''
+    return subQ.conditionalOn.values.some(v =>
+      depStr === v || (Array.isArray(depVal) && (depVal as string[]).includes(v))
+    )
+  }
+
+  const renderSubQuestion = (rowIndex: number, subQ: Question) => {
+    if (!isSubQuestionVisible(rowIndex, subQ)) return null
+    const rowVal = getRowValue(rowIndex, subQ.id)
+    return (
+      <QuestionRenderer
+        key={subQ.id}
+        question={subQ}
+        value={rowVal}
+        onChange={val => handleRowChange(rowIndex, subQ.id, val)}
+        idPrefix={`${question.id}_row${rowIndex}_`}
+      />
+    )
+  }
+
   // Build a display label for each row card header
   const getRowLabel = (rowIndex: number): string => {
     // Try to find a meaningful value from the first sub-question
@@ -62,51 +93,40 @@ export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupPro
         <p className="repeatable-empty">No entries yet. Click &quot;Add entry&quot; below to begin.</p>
       )}
 
-      {rows.map((_, rowIndex) => (
-        <div key={rowIndex} className="repeatable-row">
-          <div className="repeatable-row-header">
-            <span className="repeatable-row-label">{getRowLabel(rowIndex)}</span>
-            <button
-              type="button"
-              className="btn-delete-row"
-              onClick={() => handleDeleteRow(rowIndex)}
-              aria-label={`Remove entry ${rowIndex + 1}`}
-            >
-              Remove
-            </button>
-          </div>
+      {rows.map((_, rowIndex) => {
+        const visibleAdvanced = advancedSubQuestions.filter(subQ => isSubQuestionVisible(rowIndex, subQ))
 
-          <div className="repeatable-row-body">
-            {subQuestions.map(subQ => {
-              const rowVal = getRowValue(rowIndex, subQ.id)
-              // Check conditional visibility within a row
-              if (subQ.conditionalOn) {
-                const depVal = getRowValue(rowIndex, subQ.conditionalOn.questionId)
-                const depStr =
-                  typeof depVal === 'string'
-                    ? depVal
-                    : Array.isArray(depVal)
-                      ? (depVal as string[]).join(',')
-                      : ''
-                const matches = subQ.conditionalOn.values.some(v =>
-                  depStr === v || (Array.isArray(depVal) && (depVal as string[]).includes(v))
-                )
-                if (!matches) return null
-              }
+        return (
+          <div key={rowIndex} className="repeatable-row">
+            <div className="repeatable-row-header">
+              <span className="repeatable-row-label">{getRowLabel(rowIndex)}</span>
+              <button
+                type="button"
+                className="btn-delete-row"
+                onClick={() => handleDeleteRow(rowIndex)}
+                aria-label={`Remove entry ${rowIndex + 1}`}
+              >
+                Remove
+              </button>
+            </div>
 
-              return (
-                <QuestionRenderer
-                  key={subQ.id}
-                  question={subQ}
-                  value={rowVal}
-                  onChange={val => handleRowChange(rowIndex, subQ.id, val)}
-                  idPrefix={`${question.id}_row${rowIndex}_`}
-                />
-              )
-            })}
+            <div className="repeatable-row-body">
+              {coreSubQuestions.map(subQ => renderSubQuestion(rowIndex, subQ))}
+
+              {visibleAdvanced.length > 0 && (
+                <details className="repeatable-row-advanced">
+                  <summary>
+                    + Show {visibleAdvanced.length} more optional field{visibleAdvanced.length > 1 ? 's' : ''}
+                  </summary>
+                  <div className="repeatable-row-advanced-body">
+                    {visibleAdvanced.map(subQ => renderSubQuestion(rowIndex, subQ))}
+                  </div>
+                </details>
+              )}
+            </div>
           </div>
-        </div>
-      ))}
+        )
+      })}
 
       <button
         type="button"

@@ -140,6 +140,14 @@ export interface Question {
    * Maximum value for number inputs (inclusive).
    */
   max?: number
+  /**
+   * When true and this question is a subQuestion of a repeatable group,
+   * it is rendered collapsed behind a "show more" disclosure within each
+   * row instead of appearing by default. Used to de-emphasise secondary
+   * fields (e.g. storage, interconnect sensitivity) without removing them
+   * from the schema or hiding them entirely.
+   */
+  advanced?: boolean
 }
 
 /**

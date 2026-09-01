@@ -605,6 +605,42 @@ body {
   margin-bottom: 1.25rem;
 }
 
+.repeatable-row-advanced {
+  margin-top: 0.25rem;
+  margin-bottom: 1.25rem;
+}
+
+.repeatable-row-advanced > summary {
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-primary);
+  padding: 0.35rem 0;
+  list-style: none;
+}
+
+.repeatable-row-advanced > summary::-webkit-details-marker {
+  display: none;
+}
+
+.repeatable-row-advanced > summary:hover {
+  text-decoration: underline;
+}
+
+.repeatable-row-advanced-body {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed var(--color-border);
+}
+
+.repeatable-row-advanced-body .question-block {
+  margin-bottom: 1.25rem;
+}
+
+.repeatable-row-advanced-body .question-block:last-child {
+  margin-bottom: 0;
+}
+
 .btn-add-row {
   display: inline-flex;
   align-items: center;

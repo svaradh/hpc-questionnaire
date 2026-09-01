@@ -1,5 +1,5 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your research workloads so that the HPC Users' Committee can design and assign appropriate Quality-of-Service (QoS) classes. You are asked to describe what you observe and what evidence you have — the committee applies the agreed tests and makes the policy judgements.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -352,8 +352,54 @@
     },
     {
       "id": "C",
-      "title": "C. Typical Job Setup",
-      "description": "For each code or application you run on HPC, describe how you typically set up a job — which system you run it on and approximately what resources you use.\n\nYou do not need to know exact hardware specifications. Range estimates and \"Don't know\" are always valid answers. If you run the same code on different systems, or in very different configurations, add a separate entry for each.",
+      "title": "C. Your Experience and Workload Characteristics",
+      "description": "Your answers here determine which follow-up sections the form will show. Only sections relevant to your workload will appear — you will not be asked to complete sections that do not apply. There is no disadvantage to reporting operational difficulties.\n\nThe sections after this one (job setup, runtime data, and beyond) are all optional supplementary detail — add as much or as little as you have readily available.",
+      "questions": [
+        {
+          "id": "N_problems",
+          "type": "checkbox",
+          "label": "Which of the following operational problems has your group experienced?",
+          "required": false,
+          "helpText": "Select all that apply. If you have not experienced any of these problems, select 'No problems observed'.",
+          "options": [
+            { "value": "wall_time_termination", "label": "Jobs terminated by the wall-time limit before completion" },
+            { "value": "excessive_queue_wait", "label": "Excessive waiting time in the queue" },
+            { "value": "insufficient_node_count", "label": "Unable to run at the node or core count the workload uses" },
+            { "value": "insufficient_memory", "label": "Jobs failing due to insufficient memory (out-of-memory errors)" },
+            { "value": "insufficient_gpu_access", "label": "Insufficient GPU access" },
+            { "value": "insufficient_total_capacity", "label": "Insufficient total capacity — unable to complete all planned calculations" },
+            { "value": "no_problems_observed", "label": "No problems observed — current access has been adequate", "exclusive": true },
+            { "value": "other", "label": "Other operational problem" }
+          ]
+        },
+        {
+          "id": "N_problems_other",
+          "type": "text",
+          "label": "If 'Other', describe the operational problem",
+          "required": false,
+          "conditionalOn": { "questionId": "N_problems", "values": ["other"] },
+          "placeholder": "Please describe"
+        },
+        {
+          "id": "N_workload_chars",
+          "type": "checkbox",
+          "label": "Which of the following workload characteristics apply to your group? Select all that apply.",
+          "required": false,
+          "helpText": "These are factual descriptions of how your calculations are organised — not claims about priority or entitlement. Select all that describe your workloads.",
+          "options": [
+            { "value": "char_scaling", "label": "Jobs that run across multiple nodes or cores and may benefit from more parallelism" },
+            { "value": "char_gpu", "label": "Use of, or interest in, GPU-accelerated computation" },
+            { "value": "char_throughput", "label": "Large numbers of independent jobs (e.g. parameter sweeps, screening calculations)" },
+            { "value": "char_pipeline", "label": "Sequential pipeline workflows where each step depends on the previous" },
+            { "value": "char_extended", "label": "Extended single calculations that run continuously for long periods" }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "D. Typical Job Setup",
+      "description": "For each code or application you run on HPC, describe how you typically set up a job — which system you run it on and approximately what resources you use.\n\nYou do not need to know exact hardware specifications. Range estimates and \"Don't know\" are always valid answers. If you run the same code on different systems, or in very different configurations, add a separate entry for each.\n\nThis section is optional — skip it if this level of detail isn't readily on hand. The committee can follow up if more is needed. Each entry starts with a short core set of fields; memory, storage, and interconnect detail are tucked behind a \"show more\" toggle if you have them.",
       "questions": [
         {
           "id": "C_configs",
@@ -565,6 +611,7 @@
               "type": "select",
               "label": "Approximately how much memory (RAM) does a typical job use per CPU core?",
               "required": false,
+              "advanced": true,
               "helpText": "Memory per core is more useful than memory per node because node core-counts vary. In Slurm job scripts this is the --mem-per-cpu value. To estimate it: divide the total RAM your job uses by the number of cores it uses. For example, a job using 16 cores and 64 GB RAM needs 4 GB per core.",
               "options": [
                 {
@@ -602,6 +649,7 @@
               "type": "select",
               "label": "Approximately how much scratch disk space does a typical job use?",
               "required": false,
+              "advanced": true,
               "helpText": "The temporary disk space used by the job for input files, output files, and intermediate data while it is running. Think about the size of the files the job produces. 'Don't know' is valid.",
               "options": [
                 {
@@ -635,6 +683,7 @@
               "type": "radio",
               "label": "Does this job need fast communication between nodes?",
               "required": false,
+              "advanced": true,
               "helpText": "If your job runs across multiple nodes and the different parts need to communicate frequently during the calculation, it may be sensitive to the speed of the network connecting the nodes. Single-node jobs and jobs where each node runs independently are not sensitive to this. Example of sensitive: a large MPI simulation where all nodes exchange data every timestep. Example of not sensitive: running 100 independent calculations, one per node.",
               "options": [
                 {
@@ -668,9 +717,9 @@
       ]
     },
     {
-      "id": "D",
-      "title": "D. Runtime and Wall-Time Behaviour",
-      "description": "This section collects observed (resource configuration, wall-clock time) pairs for your workloads.\n\nIMPORTANT: 'Wall time' means the elapsed clock time while a job is actually running — it does NOT include time spent waiting in the queue. Runtime is affected by the resources allocated, so please record the resource configuration alongside each runtime observation.\n\nPlease do not enter a single 'required wall time' — instead, enter the wall time that was actually observed for a specific configuration. The committee will analyse these pairs.\n\nIf you have already described a typical job setup in Section C, you may cross-reference it here by noting the code and system name.\n\nIf your group has not recently used the current IISER HPC cluster, evidence from past usage on other systems, national facilities, or published benchmarks is equally valid. Current cluster usage is not the only accepted source of evidence.",
+      "id": "E",
+      "title": "E. Runtime and Wall-Time Behaviour",
+      "description": "This section collects observed (resource configuration, wall-clock time) pairs for your workloads. It is optional — skip it if this data isn't readily on hand.\n\nIMPORTANT: 'Wall time' means the elapsed clock time while a job is actually running — it does NOT include time spent waiting in the queue. Runtime is affected by the resources allocated, so please record the resource configuration alongside each runtime observation.\n\nPlease do not enter a single 'required wall time' — instead, enter the wall time that was actually observed for a specific configuration. The committee will analyse these pairs.\n\nIf you have already described a typical job setup in Section D, you may cross-reference it here by noting the code and system name.\n\nIf your group has not recently used the current IISER HPC cluster, evidence from past usage on other systems, national facilities, or published benchmarks is equally valid. Current cluster usage is not the only accepted source of evidence.\n\nEvidence confidence levels used throughout this questionnaire (here and in later sections):\nLevel 1: Direct production observation — actual jobs with documented resource use and runtime.\nLevel 2: Reproducible benchmark — a representative calculation on known hardware.\nLevel 3: Historical/external production evidence — actual production on another HPC system.\nLevel 4: Software/scaling evidence — published, developer, or vendor information.\nLevel 5: Projection — estimated future workload without direct measurements.",
       "questions": [
         {
           "id": "D_runtime_records",
@@ -809,14 +858,19 @@
               "type": "text",
               "label": "Hardware platform (if from an external or historical source)",
               "required": false,
+              "conditionalOn": {
+                "questionId": "D_rt_evidence_source",
+                "values": ["historical_iiser_hpc", "external_hpc_national", "collaborator_institutional"]
+              },
               "placeholder": "e.g. Intel Xeon E5-2680v4, 28 cores/node, EDR InfiniBand",
-              "helpText": "The compute hardware on which this observation was made. Most relevant for external, national, or historical evidence. Leave blank for current IISER cluster observations."
+              "helpText": "The compute hardware on which this observation was made."
             },
             {
               "id": "D_rt_notes",
               "type": "textarea",
               "label": "Notes on this runtime observation (optional)",
               "required": false,
+              "advanced": true,
               "placeholder": "Any relevant context, e.g. 'job was killed before completion', 'run on a shared workstation, may not be representative of cluster performance'."
             }
           ],
@@ -845,54 +899,8 @@
       ]
     },
     {
-      "id": "N",
-      "title": "N. Your Experience and Workload Characteristics",
-      "description": "Your answers here determine which follow-up sections the form will show. Only sections relevant to your workload will appear — you will not be asked to complete sections that do not apply. There is no disadvantage to reporting operational difficulties.",
-      "questions": [
-        {
-          "id": "N_problems",
-          "type": "checkbox",
-          "label": "Which of the following operational problems has your group experienced?",
-          "required": false,
-          "helpText": "Select all that apply. If you have not experienced any of these problems, select 'No problems observed'.",
-          "options": [
-            { "value": "wall_time_termination", "label": "Jobs terminated by the wall-time limit before completion" },
-            { "value": "excessive_queue_wait", "label": "Excessive waiting time in the queue" },
-            { "value": "insufficient_node_count", "label": "Unable to run at the node or core count the workload uses" },
-            { "value": "insufficient_memory", "label": "Jobs failing due to insufficient memory (out-of-memory errors)" },
-            { "value": "insufficient_gpu_access", "label": "Insufficient GPU access" },
-            { "value": "insufficient_total_capacity", "label": "Insufficient total capacity — unable to complete all planned calculations" },
-            { "value": "no_problems_observed", "label": "No problems observed — current access has been adequate", "exclusive": true },
-            { "value": "other", "label": "Other operational problem" }
-          ]
-        },
-        {
-          "id": "N_problems_other",
-          "type": "text",
-          "label": "If 'Other', describe the operational problem",
-          "required": false,
-          "conditionalOn": { "questionId": "N_problems", "values": ["other"] },
-          "placeholder": "Please describe"
-        },
-        {
-          "id": "N_workload_chars",
-          "type": "checkbox",
-          "label": "Which of the following workload characteristics apply to your group? Select all that apply.",
-          "required": false,
-          "helpText": "These are factual descriptions of how your calculations are organised — not claims about priority or entitlement. Select all that describe your workloads.",
-          "options": [
-            { "value": "char_scaling", "label": "Jobs that run across multiple nodes or cores and may benefit from more parallelism" },
-            { "value": "char_gpu", "label": "Use of, or interest in, GPU-accelerated computation" },
-            { "value": "char_throughput", "label": "Large numbers of independent jobs (e.g. parameter sweeps, screening calculations)" },
-            { "value": "char_pipeline", "label": "Sequential pipeline workflows where each step depends on the previous" },
-            { "value": "char_extended", "label": "Extended single calculations that run continuously for long periods" }
-          ]
-        }
-      ]
-    },
-    {
-      "id": "E",
-      "title": "E. Wall-Time Termination",
+      "id": "F",
+      "title": "F. Wall-Time Termination",
       "description": "This section collects factual information about jobs that were stopped by the scheduler because they exceeded the wall-time limit. You are not being asked whether you 'need' a longer wall time — please describe what happened. The committee uses the resource configuration and CPU-hours to assess the nature of the constraint.",
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["wall_time_termination"] }
@@ -1048,8 +1056,8 @@
       ]
     },
     {
-      "id": "F",
-      "title": "F. Checkpoint and Restart",
+      "id": "G",
+      "title": "G. Checkpoint and Restart",
       "description": "Checkpoint/restart allows a job to be stopped and later resumed from a saved state, without repeating all completed computation. Add one entry per application or code — different codes may have very different checkpoint/restart capabilities. 'Don't know' is a valid answer for any question.",
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["wall_time_termination"] }
@@ -1339,8 +1347,8 @@
       ]
     },
     {
-      "id": "G",
-      "title": "G. Parallel Scaling",
+      "id": "H",
+      "title": "H. Parallel Scaling",
       "description": "This section collects factual observations about how your workloads perform when run on different numbers of cores or nodes. Add one entry per code. You are not being asked whether you 'require' a particular number of nodes — please describe what has been observed or is documented.",
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["insufficient_node_count"] },
@@ -1471,7 +1479,7 @@
                   "type": "select",
                   "label": "Evidence confidence level",
                   "required": true,
-                  "helpText": "Select the level that best describes the confidence in this scaling observation. These levels indicate evidence quality — they are not used to rank users.\n\nLevel 1: Direct production observation — actual jobs with documented resource use and runtime.\nLevel 2: Reproducible benchmark — a representative calculation on known hardware.\nLevel 3: Historical/external production evidence — actual production on another HPC system.\nLevel 4: Software/scaling evidence — published, developer, or vendor information.\nLevel 5: Projection — estimated future workload without direct measurements.",
+                  "helpText": "Same five-level evidence scale as in Section E (Runtime and Wall-Time Behaviour) — see that section for the full definitions. Not used to rank users, just to record how confident this observation is.",
                   "options": [
                     {
                       "value": "1",
@@ -1573,8 +1581,8 @@
       ]
     },
     {
-      "id": "H",
-      "title": "H. Memory Requirements",
+      "id": "I",
+      "title": "I. Memory Requirements",
       "description": "This section collects factual information about the memory (RAM) used by your workloads. Add one entry per application or code. Please report observed values where possible.",
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["insufficient_memory"] }
@@ -1733,7 +1741,7 @@
               "type": "select",
               "label": "Evidence confidence level",
               "required": false,
-              "helpText": "Select the level that best describes the confidence in this memory information. These levels indicate evidence quality — they are not used to rank users.\n\nLevel 1: Direct production observation — actual jobs with documented resource use and runtime.\nLevel 2: Reproducible benchmark — a representative calculation on known hardware.\nLevel 3: Historical/external production evidence — actual production on another HPC system.\nLevel 4: Software/scaling evidence — published, developer, or vendor information.\nLevel 5: Projection — estimated future workload without direct measurements.",
+              "helpText": "Same five-level evidence scale as in Section E (Runtime and Wall-Time Behaviour) — see that section for the full definitions. Not used to rank users, just to record how confident this observation is.",
               "options": [
                 {
                   "value": "1",
@@ -1770,8 +1778,8 @@
       ]
     },
     {
-      "id": "I",
-      "title": "I. GPU and Specialised Resources",
+      "id": "J",
+      "title": "J. GPU and Specialised Resources",
       "description": "This section collects factual information about GPU use and performance. Add one entry per application or code that uses, or has been investigated for, GPU acceleration. If none of your workloads use GPUs, this section can be left empty.",
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["insufficient_gpu_access"] },
@@ -2050,8 +2058,8 @@
       ]
     },
     {
-      "id": "J",
-      "title": "J. Workflow Patterns",
+      "id": "K",
+      "title": "K. Workflow Patterns",
       "description": "This section collects information about how your calculations are organised and submitted to the scheduler. HPC facilities serve many research groups simultaneously through time-sharing — jobs from different groups run concurrently and are each served as resources become available. This is different from laboratory instruments, which may need to be reserved exclusively for the duration of an experiment. Understanding the structure of your workflow helps the committee design scheduling policies that allow all groups to make steady research progress.",
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["excessive_queue_wait", "insufficient_total_capacity"] },
@@ -2143,7 +2151,7 @@
           "type": "select",
           "label": "Total CPU-hours or GPU-hours estimated to be needed per year, if resources were unconstrained",
           "required": false,
-          "helpText": "Your best estimate of annual CPU-hour requirement. Where possible, derive this from Section D: multiply the CPU-hours per job by the number of similar jobs per year. The committee will cross-check this against your Section D data.",
+          "helpText": "Your best estimate of annual CPU-hour requirement. Where possible, derive this from Section E: multiply the CPU-hours per job by the number of similar jobs per year. The committee will cross-check this against your Section E data.",
           "options": [
             { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
             { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
@@ -2235,7 +2243,7 @@
           "type": "select",
           "label": "Total CPU-hours or GPU-hours from pipeline jobs estimated to be needed per year, if resources were unconstrained",
           "required": false,
-          "helpText": "Your best estimate of annual CPU-hour requirement for pipeline workloads. Where possible, derive this from Section D data. The committee will cross-check this against your observed runtime records.",
+          "helpText": "Your best estimate of annual CPU-hour requirement for pipeline workloads. Where possible, derive this from Section E data. The committee will cross-check this against your observed runtime records.",
           "options": [
             { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
             { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
@@ -2302,7 +2310,7 @@
           "type": "radio",
           "label": "Can any part of this calculation be saved and resumed from that point?",
           "required": false,
-          "helpText": "If yes, the calculation may be completable through a series of shorter jobs even if no single job can run for the full required duration. See also Section F.",
+          "helpText": "If yes, the calculation may be completable through a series of shorter jobs even if no single job can run for the full required duration. See also Section G.",
           "options": [
             { "value": "yes",        "label": "Yes" },
             { "value": "no",         "label": "No" },
@@ -2341,7 +2349,7 @@
           "type": "select",
           "label": "Total CPU-hours or GPU-hours from extended calculations estimated to be needed per year, if resources were unconstrained",
           "required": false,
-          "helpText": "Your best estimate of annual CPU-hour requirement for extended calculations. Where possible, derive this from Section D: CPU-hours per job × number of such calculations per year. The committee will cross-check this against your observed runtime records.",
+          "helpText": "Your best estimate of annual CPU-hour requirement for extended calculations. Where possible, derive this from Section E: CPU-hours per job × number of such calculations per year. The committee will cross-check this against your observed runtime records.",
           "options": [
             { "value": "lt_1000",        "label": "Less than 1,000 core-hours" },
             { "value": "1000_9999",      "label": "1,000 – 9,999 core-hours" },
