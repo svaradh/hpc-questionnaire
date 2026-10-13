@@ -117,7 +117,7 @@ export interface Question {
    * Value stored as { value: number, unit: string }.
    * The Apps Script normalises to hours on write.
    *
-   * TODO (future harmonisation): wall-time fields in Section D and other
+   * TODO (future harmonisation): wall-time fields in Section E and other
    * time-valued fields currently use a plain number (hours). When those
    * sections are revised, adopt this same duration type throughout so that
    * the Apps Script can normalise all time fields to a single unit (hours)

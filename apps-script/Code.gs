@@ -113,7 +113,7 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     var credential           = body.credential;
     var answers              = body.answers || {};
-    var questionnaireVersion = body.questionnaireVersion || '1.1.0';
+    var questionnaireVersion = body.questionnaireVersion || '1.2.0';
     var editingSubmissionId  = body.editingSubmissionId || null;
 
     // --- Check submission window ---

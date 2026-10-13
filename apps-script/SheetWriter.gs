@@ -48,8 +48,9 @@ var SHEET_DEFINITIONS = [
   {
     name: 'RuntimeRecords',
     headers: [
-      'submission_id', 'pi_name', 'entry_index', 'workload_name', 'resource_config',
-      'wall_time_hours', 'cpu_gpu_hours', 'num_similar_jobs',
+      'submission_id', 'pi_name', 'entry_index', 'workload_name',
+      'nodes', 'cores', 'memory_amount_gb', 'memory_basis',
+      'wall_time_hours', 'cpu_gpu_hours', 'computed_cpu_hours', 'num_similar_jobs',
       'evidence_source', 'evidence_level', 'hardware', 'notes'
     ]
   },
@@ -77,7 +78,7 @@ var SHEET_DEFINITIONS = [
     headers: [
       'submission_id', 'pi_name', 'code_name', 'independent_jobs', 'independent_jobs_notes',
       'scaling_behaviour', 'scaling_limit_cores', 'min_cores', 'max_cores_tested', 'code_notes',
-      'resource_config', 'wall_time_hours', 'evidence_source', 'evidence_level',
+      'nodes', 'cores', 'wall_time_hours', 'evidence_source', 'evidence_level',
       'benchmark_reference', 'config_notes'
     ]
   },
@@ -192,7 +193,7 @@ function val(answers, key) {
  * Stores 6 decimal places to preserve precision down to 10 seconds
  * (10 s = 0.002778 h). Returns '' if value is absent or not a number.
  *
- * TODO (future harmonisation): wall-time fields in Section D currently
+ * TODO (future harmonisation): wall-time fields in Section E currently
  * store a plain number in hours. When those sections are revised, route
  * them through this function for consistent normalisation.
  */
@@ -343,7 +344,7 @@ function writeJobSetups(submissionId, piName, answers) {
 function writeRuntimeRecords(submissionId, piName, answers) {
   var records = getArr(answers, 'D_runtime_records');
   if (records.length === 0) {
-    appendRow('RuntimeRecords', [submissionId, piName, '', '', '', '', '', '', '', '', '', '']);
+    appendRow('RuntimeRecords', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     return;
   }
   records.forEach(function(entry, idx) {
@@ -351,9 +352,13 @@ function writeRuntimeRecords(submissionId, piName, answers) {
       submissionId, piName,
       idx + 1,
       entry['D_rt_workload_name'] || '',
-      entry['D_rt_resource_config'] || '',
+      entry['D_rt_nodes'] || '',
+      entry['D_rt_cores'] || '',
+      entry['D_rt_memory_amount'] || '',
+      entry['D_rt_memory_basis'] || '',
       entry['D_rt_wall_time_hours'] || '',
       entry['D_rt_cpu_gpu_hours'] || '',
+      computeCpuHours(entry['D_rt_cores'], entry['D_rt_wall_time_hours']),
       entry['D_rt_num_similar_jobs'] || '',
       entry['D_rt_evidence_source'] || '',
       entry['D_rt_evidence_level'] || '',
@@ -413,7 +418,7 @@ function writeCheckpointInfo(submissionId, piName, answers) {
 function writeScalingInfo(submissionId, piName, answers) {
   var outerRecords = getArr(answers, 'G_scaling_records');
   if (outerRecords.length === 0) {
-    appendRow('ScalingInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
+    appendRow('ScalingInfo', [submissionId, piName, '', '', '', '', '', '', '', '', '', '', '', '', '', '', '']);
     return;
   }
   outerRecords.forEach(function(codeEntry) {
@@ -431,14 +436,15 @@ function writeScalingInfo(submissionId, piName, answers) {
       appendRow('ScalingInfo', [
         submissionId, piName, codeName,
         indJobs, indNotes, scalingBehaviour, scalingLimitCores, minCores, maxCores, codeNotes,
-        '', '', '', '', '', ''
+        '', '', '', '', '', '', ''
       ]);
     } else {
       innerData.forEach(function(cfg) {
         appendRow('ScalingInfo', [
           submissionId, piName, codeName,
           indJobs, indNotes, scalingBehaviour, scalingLimitCores, minCores, maxCores, codeNotes,
-          cfg['G_sd_resource_config'] || '',
+          cfg['G_sd_nodes'] || '',
+          cfg['G_sd_cores'] || '',
           cfg['G_sd_wall_time_hours'] || '',
           cfg['G_sd_evidence_source'] || '',
           cfg['G_sd_evidence_level'] || '',

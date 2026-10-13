@@ -657,7 +657,7 @@ The questionnaire must remain extensible so that additional evidence modules can
 
 ### Time unit harmonisation (future task)
 
-Section F uses a structured `duration` question type (`{ value, unit }`) that the Apps Script normalises to hours on write. Other time-valued fields (notably Section D wall-time, CPU/GPU hours) currently store a plain number in hours. When those sections are revised, adopt the same `duration` type throughout so that all time fields are entered and normalised consistently.
+Section G uses a structured `duration` question type (`{ value, unit }`) that the Apps Script normalises to hours on write. Other time-valued fields (notably Section E wall-time, CPU/GPU hours) currently store a plain number in hours. When those sections are revised, adopt the same `duration` type throughout so that all time fields are entered and normalised consistently.
 
 ---
 

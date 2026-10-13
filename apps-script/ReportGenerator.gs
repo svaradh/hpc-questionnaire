@@ -67,15 +67,15 @@ function generateReport(submissionId) {
   var wloads = getRowsForSubmission(ss, 'Workloads', submissionId);
   var setups = getRowsForSubmission(ss, 'JobSetups', submissionId);
   var rts    = getRowsForSubmission(ss, 'RuntimeRecords', submissionId);
+  var bmark  = getFirstRowForSubmission(ss, 'BenchmarkRequests', submissionId);
   var wtt    = getFirstRowForSubmission(ss, 'WallTimeTerminations', submissionId);
-  var chk    = getFirstRowForSubmission(ss, 'CheckpointInfo', submissionId);
-  var scl    = getFirstRowForSubmission(ss, 'ScalingInfo', submissionId);
-  var mem    = getFirstRowForSubmission(ss, 'MemoryInfo', submissionId);
-  var gpu    = getFirstRowForSubmission(ss, 'GpuInfo', submissionId);
-  var tput   = getFirstRowForSubmission(ss, 'Throughput', submissionId);
-  var evds   = getRowsForSubmission(ss, 'EvidenceRecords', submissionId);
-  var bmark  = getFirstRowForSubmission(ss, 'BenchmarkInfo', submissionId);
-  var wflow  = getFirstRowForSubmission(ss, 'WorkflowInfo', submissionId);
+  var chks   = getRowsForSubmission(ss, 'CheckpointInfo', submissionId);
+  var scls   = getRowsForSubmission(ss, 'ScalingInfo', submissionId);
+  var mems   = getRowsForSubmission(ss, 'MemoryInfo', submissionId);
+  var gpus   = getRowsForSubmission(ss, 'GpuInfo', submissionId);
+  var indep  = getFirstRowForSubmission(ss, 'IndependentJobs', submissionId);
+  var pipe   = getFirstRowForSubmission(ss, 'PipelineJobs', submissionId);
+  var ext    = getFirstRowForSubmission(ss, 'ExtendedCalcs', submissionId);
   var svc    = getFirstRowForSubmission(ss, 'ServiceObservations', submissionId);
 
   // Convenience: pull frequently-used values
@@ -157,9 +157,9 @@ function generateReport(submissionId) {
   body.appendParagraph('');
 
   // -------------------------------------------------------------------------
-  // Section C — Typical Job Setups
+  // Section D — Typical Job Setups
   // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION C — TYPICAL JOB SETUPS');
+  appendHeading2(body, 'SECTION D — TYPICAL JOB SETUPS');
 
   if (setups.length === 0 || !setups[0]['system_name']) {
     body.appendParagraph('No job setup entries provided.').setItalic(true);
@@ -186,210 +186,250 @@ function generateReport(submissionId) {
   body.appendParagraph('');
 
   // -------------------------------------------------------------------------
-  // Section D — Runtime Observations
+  // Section E — Runtime Observations
   // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION D — RUNTIME OBSERVATIONS');
+  appendHeading2(body, 'SECTION E — RUNTIME OBSERVATIONS');
 
   if (rts.length === 0 || !rts[0]['workload_name']) {
     body.appendParagraph('No runtime records provided.').setItalic(true);
   } else {
-    var rtHeaders = ['Workload', 'Config', 'Wall time (h)', 'Core-hours', 'Jobs', 'Evidence source', 'Confidence'];
+    var rtHeaders = ['Workload', 'Nodes', 'Cores', 'Wall time (h)', 'Core-hours (reported)', 'Core-hours (computed)', 'Jobs', 'Evidence source', 'Confidence'];
     var rtRows = rts
       .filter(function(r) { return r['workload_name']; })
       .map(function(r) {
         return [
-          r['workload_name']    || '',
-          r['resource_config']  || '',
-          r['wall_time_hours']  || '',
-          r['cpu_gpu_hours']    || '',
-          r['num_similar_jobs'] || '',
-          r['evidence_source']  || '',
-          r['evidence_level']   || ''
+          r['workload_name']       || '',
+          r['nodes']               || '',
+          r['cores']               || '',
+          r['wall_time_hours']     || '',
+          r['cpu_gpu_hours']       || '',
+          r['computed_cpu_hours']  || '',
+          r['num_similar_jobs']    || '',
+          r['evidence_source']     || '',
+          r['evidence_level']      || ''
         ];
       });
     appendTable(body, rtHeaders, rtRows);
   }
 
+  if (bmark && bmark['benchmark_requested'] && bmark['benchmark_requested'] !== 'no') {
+    appendHeading3(body, 'Benchmark Request');
+    appendTwoColTable(body, [
+      ['Requested',  bmark['benchmark_requested'] || ''],
+      ['Codes',      bmark['benchmark_codes']      || '']
+    ]);
+  }
+
   body.appendParagraph('');
 
   // -------------------------------------------------------------------------
-  // Section E — Wall-Time Terminations
+  // Section F — Wall-Time Terminations
   // -------------------------------------------------------------------------
   if (wtt && wtt['has_been_terminated'] && wtt['has_been_terminated'] !== '') {
-    appendHeading2(body, 'SECTION E — WALL-TIME TERMINATIONS');
+    appendHeading2(body, 'SECTION F — WALL-TIME TERMINATIONS');
     appendTwoColTable(body, [
-      ['Has been terminated',          wtt['has_been_terminated']         || ''],
-      ['Frequency',                    wtt['frequency']                   || ''],
-      ['Requested wall time (h)',      wtt['requested_wall_time_hrs']     || ''],
-      ['Actual run time at kill (h)',  wtt['actual_run_time_hrs']         || ''],
-      ['Was restarted',               wtt['was_restarted']               || ''],
-      ['Work lost',                    wtt['work_lost']                   || ''],
-      ['Eventually completed',         wtt['eventually_completed']        || ''],
-      ['Completed on different config',wtt['completed_different_config']  || ''],
-      ['Notes',                        wtt['notes']                       || '']
+      ['Has been terminated',            wtt['has_been_terminated']        || ''],
+      ['Frequency',                      wtt['frequency']                  || ''],
+      ['Cores at termination',           wtt['terminated_cores']           || ''],
+      ['Requested wall time (h)',        wtt['terminated_wall_time_hours'] || ''],
+      ['Core-hours at termination',      wtt['terminated_cpu_hours']       || ''],
+      ['Completed anywhere',             wtt['completed_anywhere']         || ''],
+      ['Completed on system',            wtt['completed_system']           || ''],
+      ['Cores in completed run',         wtt['completed_cores']            || ''],
+      ['Wall time in completed run (h)', wtt['completed_wall_time_hours']  || ''],
+      ['Core-hours in completed run',    wtt['completed_cpu_hours']        || ''],
+      ['Notes',                          wtt['notes']                      || '']
     ]);
     body.appendParagraph('');
   }
 
   // -------------------------------------------------------------------------
-  // Section F — Checkpoint/Restart
+  // Section G — Checkpoint/Restart
   // -------------------------------------------------------------------------
-  if (chk && chk['supported'] && chk['supported'] !== '') {
-    appendHeading2(body, 'SECTION F — CHECKPOINT / RESTART');
-    appendTwoColTable(body, [
-      ['Supported',              chk['supported']           || ''],
-      ['Type',                   chk['checkpoint_type']     || ''],
-      ['Interval',               chk['interval']            || ''],
-      ['Restart behaviour',      chk['restart_behaviour']   || ''],
-      ['Computational loss',     chk['computational_loss']  || ''],
-      ['Tested',                 chk['tested']              || ''],
-      ['Currently used',         chk['currently_used']      || ''],
-      ['Notes',                  chk['notes']               || '']
-    ]);
-    body.appendParagraph('');
+  if (chks.length > 0 && chks.some(function(c) { return c['supported']; })) {
+    appendHeading2(body, 'SECTION G — CHECKPOINT / RESTART');
+    chks.filter(function(c) { return c['supported']; }).forEach(function(chk) {
+      appendHeading3(body, chk['workload_ref'] || '(applies to all codes)');
+      appendTwoColTable(body, [
+        ['Supported',                chk['supported']                 || ''],
+        ['Type',                     chk['checkpoint_type']           || ''],
+        ['Checkpoint interval (h)',  chk['checkpoint_interval_hours'] || ''],
+        ['Restart automatic',        chk['restart_automatic']         || ''],
+        ['Restart overhead (h)',     chk['restart_overhead_hours']    || ''],
+        ['Restart errors',           chk['restart_errors']            || ''],
+        ['Checkpointing abandoned',  chk['checkpoint_abandoned']      || ''],
+        ['Abandoned reason',         chk['abandoned_reason']          || ''],
+        ['Currently used',           chk['currently_used']            || ''],
+        ['Notes',                    chk['notes']                     || '']
+      ]);
+      body.appendParagraph('');
+    });
   }
 
   // -------------------------------------------------------------------------
-  // Section G — Parallel Scaling
+  // Section H — Parallel Scaling
   // -------------------------------------------------------------------------
-  if (scl && scl['independent_jobs'] && scl['independent_jobs'] !== '') {
-    appendHeading2(body, 'SECTION G — PARALLEL SCALING');
-    appendTwoColTable(body, [
-      ['Independent jobs',                 scl['independent_jobs']           || ''],
-      ['Node count affects runtime',       scl['node_count_affects_runtime'] || ''],
-      ['Configurations tested (summary)',  scl['configs_tested']             || ''],
-      ['Min nodes (observed)',             scl['min_nodes']                  || ''],
-      ['Max nodes tested',                 scl['max_nodes']                  || ''],
-      ['Notes',                            scl['notes']                      || '']
-    ]);
-    body.appendParagraph('');
+  if (scls.length > 0 && scls.some(function(s) { return s['independent_jobs']; })) {
+    appendHeading2(body, 'SECTION H — PARALLEL SCALING');
+    // Group rows by code, since each (code, resource configuration) pair is its own row.
+    var scalingByCode = {};
+    var scalingCodeOrder = [];
+    scls.forEach(function(s) {
+      var key = s['code_name'] || '(applies to all codes)';
+      if (!scalingByCode[key]) { scalingByCode[key] = []; scalingCodeOrder.push(key); }
+      scalingByCode[key].push(s);
+    });
+    scalingCodeOrder.forEach(function(code) {
+      var rows = scalingByCode[code];
+      var first = rows[0];
+      appendHeading3(body, code);
+      appendTwoColTable(body, [
+        ['Independent jobs',       first['independent_jobs']    || ''],
+        ['Scaling behaviour',      first['scaling_behaviour']   || ''],
+        ['Scaling limit (cores)',  first['scaling_limit_cores'] || ''],
+        ['Min cores (observed)',   first['min_cores']           || ''],
+        ['Max cores tested',       first['max_cores_tested']    || ''],
+        ['Notes',                  first['code_notes']          || '']
+      ]);
+      var configRows = rows.filter(function(r) { return r['nodes'] || r['cores'] || r['wall_time_hours']; });
+      if (configRows.length > 0) {
+        appendTable(body, ['Nodes', 'Cores', 'Wall time (h)', 'Evidence source', 'Confidence', 'Notes'],
+          configRows.map(function(r) {
+            return [r['nodes'] || '', r['cores'] || '', r['wall_time_hours'] || '', r['evidence_source'] || '', r['evidence_level'] || '', r['config_notes'] || ''];
+          }));
+      }
+      body.appendParagraph('');
+    });
   }
 
   // -------------------------------------------------------------------------
-  // Section H — Memory
+  // Section I — Memory
   // -------------------------------------------------------------------------
-  if (mem && (mem['typical_memory_gb'] || mem['peak_memory_gb'] || mem['standard_nodes_tested'])) {
-    appendHeading2(body, 'SECTION H — MEMORY REQUIREMENTS');
-    appendTwoColTable(body, [
-      ['Typical memory per node (GB)',  mem['typical_memory_gb']      || ''],
-      ['Peak memory per node (GB)',     mem['peak_memory_gb']         || ''],
-      ['Min workable memory (GB)',      mem['min_workable_gb']        || ''],
-      ['Memory distribution',          mem['memory_distribution']     || ''],
-      ['Standard nodes tested',        mem['standard_nodes_tested']   || ''],
-      ['Notes',                        mem['notes']                   || '']
-    ]);
-    body.appendParagraph('');
+  var memsWithData = mems.filter(function(m) { return m['typical_memory_gb'] || m['peak_memory_gb'] || m['standard_nodes_tested']; });
+  if (memsWithData.length > 0) {
+    appendHeading2(body, 'SECTION I — MEMORY REQUIREMENTS');
+    memsWithData.forEach(function(mem) {
+      appendHeading3(body, mem['code_name'] || '(applies to all codes)');
+      appendTwoColTable(body, [
+        ['Typical memory per node (GB)',  mem['typical_memory_gb']      || ''],
+        ['Peak memory per node (GB)',     mem['peak_memory_gb']         || ''],
+        ['Min workable memory (GB)',      mem['min_workable_gb']        || ''],
+        ['Memory distribution',           mem['memory_distribution']    || ''],
+        ['Standard nodes tested',         mem['standard_nodes_tested']  || ''],
+        ['Evidence source',               mem['evidence_source']        || ''],
+        ['Confidence',                    mem['evidence_level']         || ''],
+        ['Notes',                         mem['notes']                  || '']
+      ]);
+      body.appendParagraph('');
+    });
   }
 
   // -------------------------------------------------------------------------
-  // Section I — GPU
+  // Section J — GPU and Specialised Resources
   // -------------------------------------------------------------------------
-  if (gpu && gpu['gpu_used'] && gpu['gpu_used'] !== '') {
-    appendHeading2(body, 'SECTION I — GPU AND SPECIALISED RESOURCES');
-    appendTwoColTable(body, [
-      ['GPU used',                   gpu['gpu_used']                  || ''],
-      ['GPU model',                  gpu['gpu_model']                 || ''],
-      ['Frameworks',                 gpu['frameworks']                || ''],
-      ['Performance with GPU',       gpu['performance_with_gpu']      || ''],
-      ['Performance without GPU',    gpu['performance_without_gpu']   || ''],
-      ['Specialised interconnect',   gpu['specialised_interconnect']  || ''],
-      ['Notes',                      gpu['notes']                     || '']
-    ]);
-    body.appendParagraph('');
+  var gpusWithData = gpus.filter(function(g) { return g['gpu_status']; });
+  if (gpusWithData.length > 0) {
+    appendHeading2(body, 'SECTION J — GPU AND SPECIALISED RESOURCES');
+    gpusWithData.forEach(function(gpu) {
+      appendHeading3(body, gpu['code_name'] || '(code not specified)');
+      appendTwoColTable(body, [
+        ['GPU status',                 gpu['gpu_status']             || ''],
+        ['GPU model',                  gpu['gpu_model']               || ''],
+        ['Min GPU memory needed',      gpu['gpu_memory_needed']       || ''],
+        ['Min GPUs per job',           gpu['min_gpus_per_job']        || ''],
+        ['Typical GPUs per job',       gpu['typical_gpus_per_job']    || ''],
+        ['Frameworks',                 gpu['frameworks']              || ''],
+        ['NVLink needed',              gpu['nvlink_needed']           || ''],
+        ['Multi-node GPU',             gpu['multinode_gpu']           || ''],
+        ['GPU jobs per year',          gpu['gpu_jobs_per_year']       || ''],
+        ['Evidence source',            gpu['evidence_source']         || '']
+      ]);
+      if (gpu['cpu_comparison'] === 'yes') {
+        appendTable(body, ['', 'CPU-only run', 'GPU run'], [
+          ['Cores/GPUs',  gpu['cpu_cores'] || '',       (gpu['gpu_count'] || '') + (gpu['gpu_cores'] ? ' GPU(s) + ' + gpu['gpu_cores'] + ' cores' : '')],
+          ['Wall time (h)', gpu['cpu_wall_time_hours'] || '', gpu['gpu_wall_time_hours'] || '']
+        ]);
+      } else if (gpu['cpu_comparison']) {
+        body.appendParagraph('CPU vs GPU comparison: ' + gpu['cpu_comparison']);
+      }
+      if (gpu['notes']) body.appendParagraph('Notes: ' + gpu['notes']);
+      body.appendParagraph('');
+    });
   }
 
   // -------------------------------------------------------------------------
-  // Section J — Throughput
+  // Section K — Workflow Patterns
   // -------------------------------------------------------------------------
-  if (tput && (tput['independent_job_count'] || tput['fully_independent'])) {
-    appendHeading2(body, 'SECTION J — THROUGHPUT');
-    appendTwoColTable(body, [
-      ['Independent job count',   tput['independent_job_count'] || ''],
-      ['Concurrent jobs',         tput['concurrent_jobs']       || ''],
-      ['Total CPU/GPU hours/yr',  tput['total_hours_range']     || ''],
-      ['Typical turnaround',      tput['turnaround_range']      || ''],
-      ['Queue depth',             tput['queue_depth']           || ''],
-      ['Fully independent',       tput['fully_independent']     || ''],
-      ['Notes',                   tput['notes']                 || '']
-    ]);
-    body.appendParagraph('');
+  var hasWorkflowData = (indep && indep['job_count_per_year']) || (pipe && pipe['stages']) || (ext && ext['wall_time_hours']);
+  if (hasWorkflowData) {
+    appendHeading2(body, 'SECTION K — WORKFLOW PATTERNS');
+
+    if (indep && indep['job_count_per_year']) {
+      appendHeading3(body, 'Independent Jobs');
+      appendTwoColTable(body, [
+        ['Jobs per year',           indep['job_count_per_year'] || ''],
+        ['Wall time per job (h)',   indep['wall_time_hours']    || ''],
+        ['Concurrent jobs',         indep['concurrent_jobs']    || ''],
+        ['Typical turnaround',      indep['turnaround_range']   || ''],
+        ['CPU-hours used/yr',       indep['cpu_hours_used']     || ''],
+        ['CPU-hours needed/yr',     indep['cpu_hours_needed']   || '']
+      ]);
+      body.appendParagraph('');
+    }
+
+    if (pipe && pipe['stages']) {
+      appendHeading3(body, 'Pipeline Workflow');
+      appendTwoColTable(body, [
+        ['Stages',                   pipe['stages']               || ''],
+        ['Wall time per stage (h)',  pipe['stage_wall_time_hours'] || ''],
+        ['Stages parallelisable',    pipe['stage_parallelisable']  || ''],
+        ['Pipelines per year',       pipe['pipelines_per_year']    || ''],
+        ['End-to-end time (h)',      pipe['end_to_end_hours']      || ''],
+        ['CPU-hours used/yr',        pipe['cpu_hours_used']        || ''],
+        ['CPU-hours needed/yr',      pipe['cpu_hours_needed']      || '']
+      ]);
+      body.appendParagraph('');
+    }
+
+    if (ext && ext['wall_time_hours']) {
+      appendHeading3(body, 'Extended Calculation');
+      appendTwoColTable(body, [
+        ['Wall time needed (h)',       ext['wall_time_hours']         || ''],
+        ['Longest available (h)',      ext['longest_available_hours'] || ''],
+        ['Completed anywhere',         ext['completed']                || ''],
+        ['Completed on system',        ext['completed_system']         || ''],
+        ['Can checkpoint',             ext['can_checkpoint']           || ''],
+        ['Calculations per year',      ext['count_per_year']           || ''],
+        ['CPU-hours used/yr',          ext['cpu_hours_used']           || ''],
+        ['CPU-hours needed/yr',        ext['cpu_hours_needed']         || '']
+      ]);
+      body.appendParagraph('');
+    }
   }
 
   // -------------------------------------------------------------------------
-  // Section K — External Evidence
+  // Section C — Observed Service Issues
   // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION K — EXTERNAL EVIDENCE');
-
-  if (evds.length === 0 || !evds[0]['source']) {
-    body.appendParagraph('No external evidence records provided.').setItalic(true);
-  } else {
-    var evHeaders = ['Source', 'Confidence', 'Code', 'Workload', 'Hardware', 'Config', 'Runtime', 'Core-hours', 'Jobs', 'Reference'];
-    var evRows = evds
-      .filter(function(ev) { return ev['source']; })
-      .map(function(ev) {
-        return [
-          ev['source']               || '',
-          ev['confidence_level']     || '',
-          ev['code']                 || '',
-          ev['workload_description'] || '',
-          ev['hardware']             || '',
-          ev['resource_config']      || '',
-          ev['runtime']              || '',
-          ev['cpu_gpu_hours']        || '',
-          ev['num_jobs']             || '',
-          ev['reference']            || ''
-        ];
-      });
-    appendTable(body, evHeaders, evRows);
-  }
-
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Section L — Benchmark
-  // -------------------------------------------------------------------------
-  if (bmark && bmark['status'] && bmark['status'] !== '') {
-    appendHeading2(body, 'SECTION L — BENCHMARK EVIDENCE');
-    appendTwoColTable(body, [
-      ['Status',      bmark['status']      || ''],
-      ['Description', bmark['description'] || ''],
-      ['Reference',   bmark['reference']   || ''],
-      ['Notes',       bmark['notes']       || '']
-    ]);
-    body.appendParagraph('');
-  }
-
-  // -------------------------------------------------------------------------
-  // Section M — Workflow Optimisation
-  // -------------------------------------------------------------------------
-  if (wflow && wflow['investigated_approaches'] && wflow['investigated_approaches'] !== '') {
-    appendHeading2(body, 'SECTION M — WORKFLOW OPTIMISATION');
-    appendTwoColTable(body, [
-      ['Approaches investigated',         wflow['investigated_approaches']       || ''],
-      ['Technical assistance useful',     wflow['technical_assistance_useful']   || ''],
-      ['Notes',                           wflow['notes']                         || '']
-    ]);
-    body.appendParagraph('');
-  }
-
-  // -------------------------------------------------------------------------
-  // Section N — Observed Service Issues
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION N — OBSERVED SERVICE ISSUES');
+  appendHeading2(body, 'SECTION C — OBSERVED SERVICE ISSUES');
 
   if (svc && svc['problems_experienced'] && svc['problems_experienced'] !== '') {
     var problems = svc['problems_experienced'].split('; ');
     problems.forEach(function(prob) {
       if (prob.trim()) body.appendListItem(prob.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
     });
-    if (svc['other_description']) {
-      body.appendParagraph('Other: ' + svc['other_description']);
-    }
-    if (svc['notes']) {
-      body.appendParagraph('Notes: ' + svc['notes']);
+    if (svc['other_problem_description']) {
+      body.appendParagraph('Other: ' + svc['other_problem_description']);
     }
   } else {
     body.appendParagraph('No service observations recorded.').setItalic(true);
+  }
+
+  if (svc && svc['workload_characteristics'] && svc['workload_characteristics'] !== '') {
+    body.appendParagraph('');
+    appendHeading3(body, 'Workload Characteristics (self-reported)');
+    svc['workload_characteristics'].split('; ').forEach(function(ch) {
+      if (ch.trim()) body.appendListItem(ch.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
+    });
   }
 
   body.appendParagraph('');

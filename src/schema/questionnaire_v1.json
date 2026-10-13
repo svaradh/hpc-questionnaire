@@ -738,12 +738,46 @@
               "helpText": "A short description of the specific calculation or job type this runtime applies to."
             },
             {
-              "id": "D_rt_resource_config",
-              "type": "text",
-              "label": "Resource configuration for this observation",
+              "id": "D_rt_nodes",
+              "type": "number",
+              "label": "Number of nodes",
               "required": true,
-              "placeholder": "e.g. 1 node × 32 cores, 128 GB RAM",
-              "helpText": "Describe the resources that were actually allocated when this runtime was observed. Examples: '1 node × 32 cores, 128 GB RAM' — '4 nodes × 16 cores, 64 GB RAM/node, InfiniBand' — '1 node × 8 cores + 2 × A100 GPUs, 256 GB RAM'. Include nodes, cores, RAM, and GPUs where applicable."
+              "min": 1,
+              "placeholder": "e.g. 4",
+              "helpText": "How many compute nodes were allocated when this runtime was observed. Enter 1 for a single node, workstation, or laptop."
+            },
+            {
+              "id": "D_rt_cores",
+              "type": "number",
+              "label": "Total CPU cores (across all nodes)",
+              "required": true,
+              "min": 1,
+              "placeholder": "e.g. 128",
+              "helpText": "Total CPU cores used across all nodes for this observation. If you used 4 nodes with 32 cores each, enter 128."
+            },
+            {
+              "id": "D_rt_memory_amount",
+              "type": "number",
+              "label": "Memory (RAM) for this observation",
+              "required": false,
+              "advanced": true,
+              "min": 0,
+              "unit": "GB",
+              "placeholder": "e.g. 128",
+              "helpText": "The amount of memory allocated for this run. Say below whether this figure is for the whole node or per core."
+            },
+            {
+              "id": "D_rt_memory_basis",
+              "type": "radio",
+              "label": "Is that memory amount per node, or per core?",
+              "required": false,
+              "advanced": true,
+              "helpText": "For example, 128 GB allocated on 1 node is 'per node'. 4 GB allocated for each of 32 cores is 'per core'.",
+              "options": [
+                { "value": "per_node", "label": "Per node" },
+                { "value": "per_core", "label": "Per core" },
+                { "value": "dont_know", "label": "Don't know" }
+              ]
             },
             {
               "id": "D_rt_wall_time_hours",
@@ -860,7 +894,7 @@
               "required": false,
               "conditionalOn": {
                 "questionId": "D_rt_evidence_source",
-                "values": ["historical_iiser_hpc", "external_hpc_national", "collaborator_institutional"]
+                "values": ["historical_iiser_hpc", "external_hpc_national", "previous_production", "collaborator_institutional", "standardised_benchmark", "published_software_benchmark", "developer_vendor_documentation", "projected_workload", "other"]
               },
               "placeholder": "e.g. Intel Xeon E5-2680v4, 28 cores/node, EDR InfiniBand",
               "helpText": "The compute hardware on which this observation was made."
@@ -1008,11 +1042,11 @@
         {
           "id": "E_completed_system",
           "type": "text",
-          "label": "Which system was this, and what wall-time limit was available?",
+          "label": "Which system was this?",
           "required": false,
           "conditionalOn": { "questionId": "E_completed_anywhere", "values": ["yes_different"] },
-          "placeholder": "e.g. PARAM Shakti (7-day limit), collaborator cluster at IIT Delhi (5-day limit)",
-          "helpText": "The name of the system and, if known, the wall-time limit available on that system."
+          "placeholder": "e.g. PARAM Shakti, collaborator cluster at IIT Delhi",
+          "helpText": "The name of the system where the calculation completed. The wall-time limit on that system is captured separately, below."
         },
         {
           "id": "E_completed_cores",
@@ -1410,11 +1444,20 @@
               "helpText": "If you have run the same calculation on different numbers of cores or nodes, record the results here. This helps the committee understand how your workload scales.",
               "subQuestions": [
                 {
-                  "id": "G_sd_resource_config",
-                  "type": "text",
-                  "label": "Resource configuration",
+                  "id": "G_sd_nodes",
+                  "type": "number",
+                  "label": "Number of nodes",
                   "required": true,
-                  "placeholder": "e.g. '8 cores (1 node)', '32 cores (1 node)'"
+                  "min": 1,
+                  "placeholder": "e.g. 1"
+                },
+                {
+                  "id": "G_sd_cores",
+                  "type": "number",
+                  "label": "Total CPU cores (across all nodes)",
+                  "required": true,
+                  "min": 1,
+                  "placeholder": "e.g. 32"
                 },
                 {
                   "id": "G_sd_wall_time_hours",

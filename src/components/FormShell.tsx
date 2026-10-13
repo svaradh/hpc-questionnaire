@@ -183,7 +183,7 @@ export function FormShell({
     const result = await submitForm(
       answers,
       user.credential,
-      '1.1.0',
+      schema.version,
       editingSubmissionId ?? undefined
     )
     setIsSubmitting(false)

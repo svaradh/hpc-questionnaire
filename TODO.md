@@ -1,0 +1,3 @@
+# TODO
+
+- **Verify the rewritten `ReportGenerator.gs` against real data.** The GPU/Scaling/Memory/Checkpoint multi-row rendering, the Workflow Patterns (Section K) block, and the Benchmark Request / Service Observations field fixes were corrected by inspection against the actual sheet schemas, but have not been exercised against a live Apps Script deployment. Before trusting it for committee use, generate one real report (e.g. from the existing pilot submissions — Singh, Thakur, or Sharma) via the "HPC Committee" menu → "Generate Report for Selected Row," and eyeball every section against the underlying sheet rows.

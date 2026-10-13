@@ -38,7 +38,7 @@ export async function checkWindow(): Promise<WindowStatus> {
 export async function submitForm(
   answers: Record<string, unknown>,
   credential: string,
-  questionnaireVersion = '1.1.0',
+  questionnaireVersion = '1.2.0',
   editingSubmissionId?: string
 ): Promise<SubmitResult> {
   if (!APPS_SCRIPT_URL) {

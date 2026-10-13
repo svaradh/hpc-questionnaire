@@ -95,7 +95,7 @@ export type OperationalProblem =
   | 'no_problems_observed'
   | 'other'
 
-/** System type for resource records (Section C). */
+/** System type for resource records (Section D). */
 export type SystemType =
   | 'hpc_institutional'
   | 'hpc_national'
@@ -171,7 +171,7 @@ export interface WorkloadRecord {
 // ---------------------------------------------------------------------------
 
 /**
- * Section C: Typical job setup for a workload on a specific system.
+ * Section D: Typical job setup for a workload on a specific system.
  * A workload may have multiple ResourceRecords (e.g. different systems
  * or very different configurations on the same system).
  *
@@ -214,7 +214,7 @@ export interface ResourceRecord {
 // ---------------------------------------------------------------------------
 
 /**
- * Section D: Observed runtime for a specific resource configuration.
+ * Section E: Observed runtime for a specific resource configuration.
  * Paired (resource config, runtime) records are the primary evidence
  * for wall-time behaviour. The committee infers whether wall time is
  * intrinsic or resource-dependent from these pairs.
@@ -225,16 +225,18 @@ export interface RuntimeRecord {
   id: string
   /** References a WorkloadRecord.id. */
   workloadId: string
-  /**
-   * Free-text description of the resource configuration at which this
-   * runtime was observed (e.g. "32 cores on 1 node, 128 GB RAM").
-   * This may also reference a ResourceRecord.id.
-   */
-  resourceConfigDescription: string
+  /** Number of compute nodes allocated for this observation. */
+  nodes?: number
+  /** Total CPU cores allocated across all nodes for this observation. */
+  cores?: number
+  /** Memory allocated for this observation, in GB. Basis given by memoryBasis. */
+  memoryAmountGB?: number
+  memoryBasis?: 'per_node' | 'per_core' | 'dont_know'
+  /** May also reference a ResourceRecord.id. */
   resourceRecordId?: string
   /** Observed wall-clock runtime in hours. */
   wallTimeHours?: number
-  /** Total CPU-hours or GPU-hours for this job. */
+  /** Total CPU-hours or GPU-hours for this job, as reported by the respondent. Cross-check against cores * wallTimeHours. */
   cpuGpuHours?: number
   /** Number of jobs with similar configuration and runtime. */
   numberOfJobs?: number
@@ -246,7 +248,7 @@ export interface RuntimeRecord {
 }
 
 // ---------------------------------------------------------------------------
-// 5. Benchmark request (Section D)
+// 5. Benchmark request (Section E)
 // ---------------------------------------------------------------------------
 
 /**
@@ -268,7 +270,7 @@ export interface BenchmarkRequest {
  * A duration value entered via the 'duration' question type.
  * Stored as the raw user input; normalised to hours by the Apps Script on write.
  *
- * TODO (future harmonisation): wall-time fields in Section D and other
+ * TODO (future harmonisation): wall-time fields in Section E and other
  * time-valued fields currently store a plain number in hours. When those
  * sections are revised, adopt DurationValue throughout so the Apps Script
  * can normalise all time fields consistently.
@@ -279,7 +281,7 @@ export interface DurationValue {
 }
 
 /**
- * Section F: Checkpoint and restart characteristics of a workload.
+ * Section G: Checkpoint and restart characteristics of a workload.
  * Collected per-workload. "Don't know" is always valid.
  */
 export interface CheckpointInfo {
@@ -312,8 +314,10 @@ export interface CheckpointInfo {
  * Now includes evidence metadata so the committee can assess source quality.
  */
 export interface ScalingDataPoint {
-  /** Resource configuration description (cores, nodes, etc.). */
-  resourceConfig: string
+  /** Number of compute nodes used for this observation. */
+  nodes?: number
+  /** Total CPU cores used across all nodes for this observation. */
+  cores?: number
   /** Observed wall-clock time in hours. */
   wallTimeHours?: number
   /** Where this scaling observation comes from. */
@@ -327,7 +331,7 @@ export interface ScalingDataPoint {
 }
 
 /**
- * Section G: Parallel scaling observations for one code.
+ * Section H: Parallel scaling observations for one code.
  * The section is now a repeatable (one ScalingInfo per code).
  * The committee uses this to assess whether multi-node resources
  * are technically necessary or merely convenient.
@@ -367,7 +371,7 @@ export interface ScalingInfo {
 // ---------------------------------------------------------------------------
 
 /**
- * Section E: Factual record of a wall-time termination event.
+ * Section F: Factual record of a wall-time termination event.
  * Users report what happened; the committee draws inferences.
  * Users are NOT asked whether they "need" a longer wall time.
  *
@@ -395,7 +399,7 @@ export interface WallTimeTerminationRecord {
    * yes_different     — a different HPC system
    */
   completedAnywhere?: 'yes_same_single' | 'yes_same_restarts' | 'yes_different' | 'no' | 'dont_know'
-  /** Name and wall-time limit of the system where it completed (if different). */
+  /** Name of the system where it completed (if different). Wall-time limit is in completedWallTime. */
   completedSystem?: string
   /** CPU cores used in the successful run. */
   completedCores?: number
@@ -407,11 +411,11 @@ export interface WallTimeTerminationRecord {
 }
 
 // ---------------------------------------------------------------------------
-// QoS observation (Section N)
+// QoS observation (Section C)
 // ---------------------------------------------------------------------------
 
 /**
- * Section N: Observed operational problems and workload characteristics
+ * Section C: Observed operational problems and workload characteristics
  * reported by the group.
  * These are factual descriptions of what the group has experienced and
  * how their workloads are organised — NOT requests for specific QoS
@@ -455,11 +459,11 @@ export interface CommitteeAssessment {
 }
 
 // ---------------------------------------------------------------------------
-// Memory record (Section H)
+// Memory record (Section I)
 // ---------------------------------------------------------------------------
 
 /**
- * Section H: Memory usage characteristics for one code.
+ * Section I: Memory usage characteristics for one code.
  * The section is now a repeatable (one MemoryRecord per code).
  * Now includes evidence metadata so the committee can assess source quality.
  */
@@ -492,11 +496,11 @@ export interface MemoryRecord {
 }
 
 // ---------------------------------------------------------------------------
-// GPU record (Section I)
+// GPU record (Section J)
 // ---------------------------------------------------------------------------
 
 /**
- * Section I: GPU and specialised hardware characteristics for one code.
+ * Section J: GPU and specialised hardware characteristics for one code.
  * The section is now a repeatable (one GpuRecord per code).
  * No section-level gate — users who don't use GPUs simply add no entries.
  * Evidence level is NOT collected for GPU records (only evidence source).
@@ -529,11 +533,11 @@ export interface GpuRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Workflow pattern records (Section J)
+// Workflow pattern records (Section K)
 // ---------------------------------------------------------------------------
 
 /**
- * Section J — Block A: Independent jobs workflow pattern.
+ * Section K — Block A: Independent jobs workflow pattern.
  * Written only when the respondent selects 'independent' in J_workflow_types.
  */
 export interface IndependentJobsRecord {
@@ -551,7 +555,7 @@ export interface IndependentJobsRecord {
 }
 
 /**
- * Section J — Block B: Sequential pipeline workflow pattern.
+ * Section K — Block B: Sequential pipeline workflow pattern.
  * Written only when the respondent selects 'pipeline' in J_workflow_types.
  */
 export interface PipelineRecord {
@@ -571,7 +575,7 @@ export interface PipelineRecord {
 }
 
 /**
- * Section J — Block C: Extended single-calculation workflow pattern.
+ * Section K — Block C: Extended single-calculation workflow pattern.
  * Written only when the respondent selects 'extended' in J_workflow_types.
  * This block collects evidence that helps the committee assess whether
  * extended/reservation-like access is genuinely required.
@@ -637,40 +641,40 @@ export interface Submission {
   /** Section B. One entry per principal code/application. */
   workloads: WorkloadRecord[]
 
-  /** Section C. One or more resource configs per workload. */
+  /** Section D. One or more resource configs per workload. */
   resources: ResourceRecord[]
 
-  /** Section D. Observed (config, runtime) pairs. */
+  /** Section E. Observed (config, runtime) pairs. */
   runtimes: RuntimeRecord[]
 
-  /** Section D. Optional benchmark request (D_benchmark_request / D_benchmark_codes). */
+  /** Section E. Optional benchmark request (D_benchmark_request / D_benchmark_codes). */
   benchmarkRequest?: BenchmarkRequest
 
-  /** Section F. Checkpoint/restart info per workload. */
+  /** Section G. Checkpoint/restart info per workload. */
   checkpointInfo: CheckpointInfo[]
 
-  /** Section G. Scaling observations per workload. */
+  /** Section H. Scaling observations per workload. */
   scalingInfo: ScalingInfo[]
 
-  /** Section E. Wall-time termination events per workload. */
+  /** Section F. Wall-time termination events per workload. */
   wallTimeTerminations: WallTimeTerminationRecord[]
 
-  /** Section H. Memory characteristics per workload. */
+  /** Section I. Memory characteristics per workload. */
   memoryRecords: MemoryRecord[]
 
-  /** Section I. GPU characteristics per workload. */
+  /** Section J. GPU characteristics per workload. */
   gpuRecords: GpuRecord[]
 
-  /** Section J — Block A. Independent-jobs workflow pattern. */
+  /** Section K — Block A. Independent-jobs workflow pattern. */
   independentJobsRecords: IndependentJobsRecord[]
 
-  /** Section J — Block B. Sequential pipeline workflow pattern. */
+  /** Section K — Block B. Sequential pipeline workflow pattern. */
   pipelineRecords: PipelineRecord[]
 
-  /** Section J — Block C. Extended single-calculation workflow pattern. */
+  /** Section K — Block C. Extended single-calculation workflow pattern. */
   extendedCalcRecords: ExtendedCalcRecord[]
 
-  /** Section N. Observed operational problems and workload characteristics (single record per submission). */
+  /** Section C. Observed operational problems and workload characteristics (single record per submission). */
   qosObservation?: Partial<QoSObservation>
 
   /**

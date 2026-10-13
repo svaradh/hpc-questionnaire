@@ -100,16 +100,16 @@ map_range_labels(dfs['JobSetups']['memory_range'], MEMORY_PER_CORE_LABELS)
 | Submissions | Index — one row per group (submission_id, pi_name, department) |
 | RespondentInfo | Section A — PI and respondent details |
 | Workloads | Section B — codes used, categories, job counts (one row per code) |
-| JobSetups | Section C — typical job configurations (one row per code+system) |
-| RuntimeRecords | Section D — observed runtimes with evidence source and level |
-| WallTimeTerminations | Section E — wall-time termination events |
-| CheckpointInfo | Section F — checkpoint/restart capability per code |
-| ScalingInfo | Section G — parallel scaling observations |
-| MemoryInfo | Section H — memory requirements per code |
-| GpuInfo | Section I — GPU requirements and CPU vs GPU comparison |
-| IndependentJobs | Section J — independent job workflow data |
-| PipelineJobs | Section J — pipeline workflow data |
-| ExtendedCalcs | Section J — extended single calculation data |
-| BenchmarkRequests | Section D — benchmark requests |
-| ServiceObservations | Section N — problems experienced and workload characteristics |
+| JobSetups | Section D — typical job configurations (one row per code+system) |
+| RuntimeRecords | Section E — observed runtimes (nodes, cores, memory, wall time) with evidence source and level; includes a computed_cpu_hours cross-check against the reported cpu_gpu_hours |
+| WallTimeTerminations | Section F — wall-time termination events |
+| CheckpointInfo | Section G — checkpoint/restart capability per code |
+| ScalingInfo | Section H — parallel scaling observations |
+| MemoryInfo | Section I — memory requirements per code |
+| GpuInfo | Section J — GPU requirements and CPU vs GPU comparison |
+| IndependentJobs | Section K — independent job workflow data |
+| PipelineJobs | Section K — pipeline workflow data |
+| ExtendedCalcs | Section K — extended single calculation data |
+| BenchmarkRequests | Section E — benchmark requests |
+| ServiceObservations | Section C — problems experienced and workload characteristics |
 | CommitteeAssessment | Committee triage and notes (filled in by committee) |
