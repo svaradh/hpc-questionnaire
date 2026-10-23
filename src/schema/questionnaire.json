@@ -425,14 +425,14 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe up to three main codes your group runs, one entry each. Numbers for a typical job are enough; ticking \"Don't know\" is always fine.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.\n\nLater sections ask about specific codes by picking them from this list.",
+      "description": "Describe up to five main codes your group runs, one entry each. Numbers for a typical job are enough; ticking \"Don't know\" is always fine.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.\n\nLater sections ask about specific codes by picking them from this list.",
       "questions": [
         {
           "id": "W_problem_notice",
           "type": "info",
           "required": false,
           "label": "Please include the codes affected by the problems you reported",
-          "helpText": "You reported operational problems in Section B. The follow-up sections that ask about them refer back to the codes listed here, so make sure every code involved is included. If more than three codes are affected, list the three most affected here and name the others under \"Other codes\" below.",
+          "helpText": "You reported operational problems in Section B. The follow-up sections that ask about them refer back to the codes listed here, so make sure every code involved is included. If more than five codes are affected, list the five most affected here and name the others under \"Other codes\" below.",
           "conditionalOn": {
             "questionId": "X_problems",
             "values": [
@@ -451,10 +451,10 @@
         {
           "id": "W_workloads",
           "type": "repeatable",
-          "label": "Main codes (up to 3)",
+          "label": "Main codes (up to 5)",
           "required": false,
           "entryLabel": "code",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "W_h_code",
@@ -1407,7 +1407,7 @@
           "label": "Entries",
           "required": false,
           "entryLabel": "workload",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "L_workload",
@@ -1632,7 +1632,7 @@
           "label": "Entries",
           "required": false,
           "entryLabel": "workload",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "P_workload",
@@ -1968,7 +1968,7 @@
           "label": "Entries",
           "required": false,
           "entryLabel": "workload",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "M_workload",
@@ -2098,7 +2098,7 @@
           "label": "Entries",
           "required": false,
           "entryLabel": "workload",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "G_workload",
@@ -2240,7 +2240,7 @@
           "label": "Entries",
           "required": false,
           "entryLabel": "workload",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "SC_workload",
@@ -2427,7 +2427,7 @@
     {
       "id": "E6",
       "title": "E6. Queue and Turnaround",
-      "description": "Shown because queue-wait or capacity problems were reported. Waiting times depend on the queue and on the resources requested, so each entry first records what was requested. Add an entry for each queue or kind of job where waiting is an issue (up to 3).",
+      "description": "Shown because queue-wait or capacity problems were reported. Waiting times depend on the queue and on the resources requested, so each entry first records what was requested. Add an entry for each queue or kind of job where waiting is an issue (up to 5).",
       "conditionalOn": [
         {
           "questionId": "X_problems",
@@ -2449,7 +2449,7 @@
           "required": false,
           "label": "Queue experience",
           "entryLabel": "queue",
-          "maxEntries": 3,
+          "maxEntries": 5,
           "subQuestions": [
             {
               "id": "Q_queue",

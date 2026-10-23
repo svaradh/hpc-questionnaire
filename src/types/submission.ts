@@ -105,7 +105,7 @@ export interface ExperienceRecord {
 
 // ---------------------------------------------------------------------------
 // 3–5. Workloads: resources, runtime and evidence of a typical job
-//      (Section C) — tab "Workloads", one row per code (max 3)
+//      (Section C) — tab "Workloads", one row per code (max 5)
 // ---------------------------------------------------------------------------
 
 export interface WorkloadRecord {
@@ -229,7 +229,7 @@ export interface ScratchRecord {
   residenceAfterJob?: 'none' | 'lt_1d' | '1_7d' | 'gt_7d' | Unknown
 }
 
-/** E6 — tab "Queue", one row per queue / kind of job (max 3). */
+/** E6 — tab "Queue", one row per queue / kind of job (max 5). */
 export interface QueueRecord {
   /** "<cluster>.<queue>" from the cluster config, or "other". */
   queue?: string

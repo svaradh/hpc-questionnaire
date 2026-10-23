@@ -58,9 +58,9 @@ Target: a group with an ordinary workload and no problems finishes in **~8–10 
 | X_problems | Operational problems experienced on **any** HPC system (as v2, plus): **scratch space insufficient or jobs failed on scratch limits**; **test/debug jobs wait too long to start** | checkbox, incl. "No problems observed" and "Not yet run jobs on HPC" (exclusive) |
 | X_problems_where | For each problem ticked: on which system(s)? | small checkbox matrix (problem × Gargi/Raman/other) — tells the committee whether a problem is a *present-cluster* problem |
 
-### Section 3 — Your workloads (core; up to 3 main codes)
+### Section 3 — Your workloads (core; up to 5 main codes)
 
-One card per main code (max 3; a free-text field after the table lists any other codes). Sub-headed so it reads as five short blocks.
+One card per main code (max 5; a free-text field after the table lists any other codes). Sub-headed so it reads as five short blocks.
 
 **3a. Identity**
 
@@ -160,7 +160,7 @@ Committee comment "D & E optional when no problems": in v3 the heavy parts of D/
 | `quantity` type: `{value, unit}` for time and size with a units table; normalised on write (hours, GB) | single numeric format; replaces `duration` and plain hour fields (the CLAUDE.md time-harmonisation task) |
 | `integer` / `decimal` validation, min/max, inline error | format-validated boxes |
 | `allowUnknown` on numeric/quantity inputs (Don't-know tick-box) | unknown path without free text |
-| `maxEntries` on repeatables (3) | workload cap |
+| `maxEntries` on repeatables (5) | workload cap |
 | `workloadRef` type: options from the workload table's names | follow-ups refer to workloads without re-entry |
 | Conditions over repeatable rows with comparisons: `{rows: 'W', field, op: 'gte', value \| configRef}` | threshold-based triggers |
 | `src/config/clusters.json`: per-cluster nodes by type, cores/node, memory/node, GPUs, partitions + wall-time limits, scratch size/quota/purge | triggers and analysis read limits from one place |
@@ -222,7 +222,7 @@ All thresholds live under `thresholds` in the config; `null` disables a trigger.
 ### Implementation decisions taken in step 2 (differences from §4)
 
 - Section letters: A About · B Experience · C Workloads · D Storage & testing · E1–E6 follow-ups · F Growth & closing. Section 1 keeps the `A_*` question IDs (PI auto-fill and the duplicate-PI check depend on them); other IDs as in §4.
-- Follow-ups E1–E5 are short per-workload lists (max 3 entries), each starting with a workload picker, so a group with two long-running codes can describe both.
+- Follow-ups E1–E5 are short per-workload lists (max 5 entries), each starting with a workload picker, so a group with two long-running codes can describe both.
 - `X_problems_where` is one checkbox for all problems ticked (not a problem × system matrix).
 - The checkpoint question lives only in E1 (not duplicated in the workload card).
 - The workload table is core for everyone (pending confirmation, §10). Making it optional for "no problems" groups is one line: `"optionalWhen"` on Section C.
@@ -231,4 +231,4 @@ All thresholds live under `thresholds` in the config; `null` disables a trigger.
 - **Home area** (D) asks only for working space: run inputs and data files, checkpoint files, parameter files, own production/analysis codes, and final outputs awaiting transfer to the group's own storage; plus how long outputs stay before transfer. The section states that home is not long-term storage. (Policy context: ≥ 30–50 concurrent users; ~1 TB per group is already large.)
 - **Scratch**: the workload card asks for the volume of files one job *writes* during the run (read-only inputs can stay in home on the same parallel file system). E5 separates read-only input volume, re-reading of own output, share of run time spent on file I/O, file count, local-disk option, and how long files must stay after the job. Scratch policy is a largest area per user (value not yet set), not equal shares; trigger thresholds (1 % / 5 % of ~52 TB) are placeholders.
 - **Committee parameters** (`committeeParameters` and per-cluster `storage.scratchFraction` in `src/config/clusters.json`): the home:scratch split (0.5 for now; usually 60:40), the largest scratch area per user, a home-space guide per group, and the scratch trigger fractions. Scratch/home sizes and scratch trigger thresholds are computed from these, and the analysis (step 3) will check responses against the same file.
-- **Queue (E6)**: up to 3 entries, each recording the queue (picker generated from the cluster config, showing node and wall-time limits), the workload, and the resources requested (skipped when it was the typical job from Section C) before the typical and longest waits. The share of planned work not run stays group-level.
+- **Queue (E6)**: up to 5 entries, each recording the queue (picker generated from the cluster config, showing node and wall-time limits), the workload, and the resources requested (skipped when it was the typical job from Section C) before the typical and longest waits. The share of planned work not run stays group-level.
