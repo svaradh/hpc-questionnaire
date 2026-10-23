@@ -74,13 +74,8 @@ function deleteRowsForSubmission(sheet, submissionId) {
 
 function deleteAllRowsForSubmission(submissionId) {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  // Delete from all sheets EXCEPT CommitteeAssessment (preserve committee notes)
-  var sheetNames = [
-    'Submissions', 'RespondentInfo', 'Workloads', 'JobSetups', 'RuntimeRecords',
-    'WallTimeTerminations', 'CheckpointInfo', 'ScalingInfo', 'MemoryInfo',
-    'GpuInfo', 'IndependentJobs', 'PipelineJobs', 'ExtendedCalcs',
-    'BenchmarkRequests', 'ServiceObservations'
-  ];
+  // Delete from all data sheets EXCEPT CommitteeAssessment (preserve committee notes)
+  var sheetNames = dataSheetNames();
   sheetNames.forEach(function(name) {
     var sheet = ss.getSheetByName(name);
     if (sheet) deleteRowsForSubmission(sheet, submissionId);
@@ -113,7 +108,7 @@ function doPost(e) {
     var body = JSON.parse(e.postData.contents);
     var credential           = body.credential;
     var answers              = body.answers || {};
-    var questionnaireVersion = body.questionnaireVersion || '1.3.0';
+    var questionnaireVersion = body.questionnaireVersion || '2.0.0';
     var editingSubmissionId  = body.editingSubmissionId || null;
 
     // --- Check submission window ---

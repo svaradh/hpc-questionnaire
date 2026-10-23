@@ -1,7 +1,7 @@
 import { FormShell } from './components/FormShell'
 import { useFormState } from './hooks/useFormState'
 import type { QuestionnaireSchema } from './types/schema'
-import schemaData from './schema/questionnaire_v1.json'
+import schemaData from './schema/questionnaire.json'
 import './App.css'
 
 const schema = schemaData as unknown as QuestionnaireSchema

@@ -16,11 +16,22 @@ function includesAny(val: unknown, values: string[]): boolean {
   return false
 }
 
+/** Base-unit value of a row field, or the product of several; null if any is unknown. */
+function rowNumber(row: Answers, field: string | string[]): number | null {
+  let product = 1
+  for (const f of Array.isArray(field) ? field : [field]) {
+    const n = toBaseNumber(row[f])
+    if (n === null) return null
+    product *= n
+  }
+  return product
+}
+
 function matchesRow(pred: RowPredicate, row: Answers): boolean {
   if ('all' in pred) return pred.all.every(p => matchesRow(p, row))
   if ('any' in pred) return pred.any.some(p => matchesRow(p, row))
   if (pred.op === 'in') return includesAny(row[pred.field], pred.values)
-  const lhs = toBaseNumber(row[pred.field])
+  const lhs = rowNumber(row, pred.field)
   const rhs = pred.configRef !== undefined ? configNumber(pred.configRef) : pred.value ?? null
   if (lhs === null || rhs === null) return false
   switch (pred.op) {
@@ -78,12 +89,11 @@ export function sectionHasAnswers(section: Section, answers: Answers): boolean {
 }
 
 /**
- * Answers to submit: drops the question answers of any section where the
- * respondent ticked the "not aware" declaration (the declaration itself is
- * kept), so partially entered data the respondent chose to set aside is not
- * sent. A declaration left on a section that is no longer shown is also
- * dropped, so it is not reported. The local draft is left untouched so
- * unticking restores it.
+ * Answers to submit. Drops everything belonging to sections that are not
+ * shown (answers left over from an earlier trigger), and the question
+ * answers of sections where the respondent ticked the "not aware"
+ * declaration (the declaration itself is kept). The local draft is left
+ * untouched, so re-showing a section or unticking restores the answers.
  */
 export function answersForSubmission(
   sections: Section[],
@@ -91,12 +101,11 @@ export function answersForSubmission(
 ): Answers {
   const out = { ...answers }
   for (const section of sections) {
-    if (!isSectionNotAware(section, answers)) continue
-    if (!isSectionVisible(section, answers)) {
-      delete out[section.notAwareOption!.questionId]
-      continue
+    const visible = isSectionVisible(section, answers)
+    if (!visible && section.notAwareOption) delete out[section.notAwareOption.questionId]
+    if (!visible || isSectionNotAware(section, answers)) {
+      for (const q of section.questions) delete out[q.id]
     }
-    for (const q of section.questions) delete out[q.id]
   }
   return out
 }

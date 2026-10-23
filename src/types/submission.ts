@@ -1,12 +1,18 @@
 /**
- * TypeScript types for the HPC questionnaire submission data model.
+ * TypeScript types for the HPC questionnaire submission data model (schema 2.0.0).
  *
- * The data model separates nine distinct entities as specified in
- * the project specification (section 10). This separation enables:
- *   - Independent export of each entity type as CSV/JSON
- *   - Committee-facing summaries per entity
- *   - Future database normalisation without changing question logic
- *   - Independent versioning of each entity schema
+ * Entities mirror the response-sheet tabs written by apps-script/SheetWriter.gs,
+ * keeping the separation required by the project specification (section 10):
+ * respondent/group, workloads, resources, runtimes, evidence, checkpoint,
+ * scaling, service observations and committee assessment. In v3 the resource,
+ * runtime and evidence facts of a typical job live together in one
+ * WorkloadRecord (one code described once); follow-up records refer to it
+ * by name.
+ *
+ * Conventions:
+ * - Quantities are normalised to base units on write: hours (time), GB (size).
+ * - Every numeric field may hold 'dont_know'. It must NEVER be read as 0 or "No".
+ * - Derived fields are computed by the writer, never asked of respondents.
  *
  * IMPORTANT: Nothing in this data model produces a priority score,
  * ranks users, or assigns QoS classes. The submission is evidence.
@@ -14,75 +20,33 @@
  */
 
 // ---------------------------------------------------------------------------
-// Shared vocabulary types
+// Shared vocabulary
 // ---------------------------------------------------------------------------
 
-/**
- * Standard set of answers for technical yes/no questions.
- * "Don't know" is always a valid answer and must NEVER be
- * interpreted as "No" by any automated process.
- */
-export type YesNoUncertain =
-  | 'yes'
-  | 'no'
-  | 'dont_know'
-  | 'not_applicable'
-  | 'not_tested'
+/** Stored for any question answered "Don't know / not aware". */
+export type Unknown = 'dont_know'
+
+/** A measured or estimated number, or an explicit unknown. */
+export type NumOrUnknown = number | Unknown
 
 /** Submission lifecycle status. */
 export type SubmissionStatus = 'draft' | 'submitted' | 'under_review' | 'assessed'
 
 /**
- * Evidence confidence levels (1 = highest confidence, 5 = lowest).
- * These levels indicate the quality of the evidence supplied.
- * They must NOT be used to automatically rank or score users.
- *
- *   1 — Direct production observation
+ * Evidence confidence levels (1 = highest confidence, 5 = lowest), derived
+ * from WorkloadRecord.source. They indicate evidence quality and must NOT
+ * be used to rank or score users.
+ *   1 — Direct production observation (Gargi, Raman)
  *   2 — Reproducible benchmark
  *   3 — Historical/external production evidence
- *   4 — Software/scaling evidence
- *   5 — Projection
+ *   4 — Published / developer data
+ *   5 — Projection (estimate)
  */
 export type EvidenceLevel = 1 | 2 | 3 | 4 | 5
 
-/** Enumeration of recognised evidence sources. */
 export type EvidenceSource =
-  | 'current_iiser_hpc'
-  | 'historical_iiser_hpc'
-  | 'external_hpc_national'
-  | 'previous_production'
-  | 'collaborator_institutional'
-  | 'standardised_benchmark'
-  | 'published_software_benchmark'
-  | 'developer_vendor_documentation'
-  | 'projected_workload'
-  | 'other'
-
-/** Role of the person completing the form. */
-export type RespondentRole =
-  | 'pi'
-  | 'postdoctoral_researcher'
-  | 'phd_student'
-  | 'designated_computational_member'
-  | 'technical_staff'
-  | 'other'
-
-/** Broad computational workload categories (not user identity categories). */
-export type WorkloadCategory =
-  | 'electronic_structure'
-  | 'molecular_dynamics'
-  | 'atomistic_simulation'
-  | 'climate_environmental'
-  | 'cfd'
-  | 'bioinformatics_genomics'
-  | 'machine_learning'
-  | 'numerical_modelling'
-  | 'many_body_exact_diagonalisation'
-  | 'data_analysis'
-  | 'other'
-
-/** Checkpoint/restart implementation type. */
-export type CheckpointType = 'native' | 'external' | 'none' | 'dont_know'
+  | 'gargi' | 'raman' | 'iiserb_earlier' | 'national' | 'collaborator'
+  | 'cloud' | 'benchmark' | 'published' | 'estimate' | Unknown
 
 /** Observed operational problems (factual, not entitlement claims). */
 export type OperationalProblem =
@@ -92,613 +56,219 @@ export type OperationalProblem =
   | 'insufficient_memory'
   | 'insufficient_gpu_access'
   | 'insufficient_total_capacity'
+  | 'scratch_insufficient'
+  | 'debug_wait'
+  | 'other'
   | 'no_problems_observed'
   | 'no_hpc_experience'
-  | 'other'
+  | Unknown
 
-/** System type for resource records (Section D). */
-export type SystemType =
-  | 'hpc_institutional'
-  | 'hpc_national'
-  | 'hpc_departmental'
-  | 'hpc_collaborator'
-  | 'cloud'
-  | 'workstation'
-  | 'laptop'
-  | 'dont_know'
+/** How a workload's jobs are organised (several may apply). */
+export type WorkflowPattern = 'standalone' | 'independent' | 'chain' | 'long_calc' | 'campaign' | Unknown
+
+/** Effect on wall time of doubling the cores (ratio new/old wall time). */
+export type DoublingEffect = 'le_0_6' | '0_6_0_8' | 'gt_0_8' | 'longer' | 'not_tested' | Unknown
 
 // ---------------------------------------------------------------------------
-// 1. Respondent / Research group information
+// 1. Respondent / group (Section A) — tab "Group"
 // ---------------------------------------------------------------------------
 
-/** Contact details for the person completing the form. */
-export interface CompletedBy {
-  name: string
-  email: string
-  role: RespondentRole
-  roleOther?: string
-}
-
-/**
- * Section A: Research programme.
- * Collects only contextual information — NOT a classification of
- * the group as computational / non-computational / core / peripheral.
- */
-export interface Respondent {
-  researchGroupName: string
-  department: string
+export interface GroupInfo {
+  piSalutation: string
   piName: string
   piEmail: string
-  completedBy: CompletedBy
-  /**
-   * Brief factual description of the research activities for which
-   * HPC resources are used or requested.
-   * Max ~500 words; free text.
-   */
-  researchDescription: string
+  groupName: string
+  department: string
+  completedBy: { name: string; email: string; role: string }
+  hpcUsersNow?: NumOrUnknown
+  hpcUsers3y?: NumOrUnknown
+  researchDescription?: string
 }
 
 // ---------------------------------------------------------------------------
-// 2. Workload records
+// 2. Service observations (Section B) — tab "Experience"
 // ---------------------------------------------------------------------------
 
-/**
- * Section B: One entry per principal application / code used by the group.
- * A group may have multiple WorkloadRecords.
- */
-export interface WorkloadRecord {
-  /** Local UUID for referencing from other records. */
-  id: string
-  /** Name of the application or code (e.g. "VASP", "GROMACS", "OpenFOAM"). */
-  softwareName: string
-  /** Version string if known. */
-  version?: string
-  /** URL or publication reference for the software. */
-  softwareReference?: string
-  /** Computational workload categories that apply to this code. */
-  categories: WorkloadCategory[]
-  categoriesOther?: string
-  /**
-   * Approximate number of production jobs per year using this code.
-   * Stored as a range string (e.g. "100–499") because exact counts
-   * are rarely known in advance.
-   */
-  annualJobCountRange?: string
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// 3. Resource records
-// ---------------------------------------------------------------------------
-
-/**
- * Section D: Typical job setup for a workload on a specific system.
- * A workload may have multiple ResourceRecords (e.g. different systems
- * or very different configurations on the same system).
- *
- * All numeric resource fields use range strings rather than exact numbers
- * because exact values are rarely known by non-expert respondents and
- * range estimates are sufficient for QoS policy decisions.
- */
-export interface ResourceRecord {
-  id: string
-  /** References a WorkloadRecord.id or code name (free-text match). */
-  workloadId: string
-  /** Name of the cluster/system as the user knows it (e.g. "IISER HPC", "PARAM Shakti"). */
-  systemName?: string
-  /** Category of the system. */
-  systemType?: SystemType
-  /** Number of nodes as a range string (e.g. "2_4", "5_16", "dont_know"). */
-  nodesRange?: string
-  /** Total CPU cores (all nodes combined) as a range string. */
-  totalCpuCoresRange?: string
-  /** Whether GPUs are used for this job. */
-  gpuUsed?: 'yes' | 'no' | 'dont_know'
-  /** Number of GPUs per node as a category string (e.g. "1", "4", "dont_know"). */
-  gpusPerNodeRange?: string
-  /** GPU model/type if known. */
-  gpuModel?: string
-  /** Memory per CPU core as a range string (e.g. "2_4gb", "4_8gb"). Node-independent. */
-  memoryPerCoreRange?: string
-  /** Scratch storage per job as a range string (e.g. "100_500gb", "dont_know"). */
-  storageScratchRange?: string
-  /**
-   * Whether this job is sensitive to inter-node network speed
-   * (e.g. tightly coupled MPI vs. embarrassingly parallel).
-   */
-  interconnectSensitive?: 'yes' | 'no' | 'dont_know' | 'not_applicable'
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// 4. Runtime records
-// ---------------------------------------------------------------------------
-
-/**
- * Section E: Observed runtime for a specific resource configuration.
- * Paired (resource config, runtime) records are the primary evidence
- * for wall-time behaviour. The committee infers whether wall time is
- * intrinsic or resource-dependent from these pairs.
- *
- * DO NOT store "required wall time" — store observed wall time.
- */
-export interface RuntimeRecord {
-  id: string
-  /** References a WorkloadRecord.id. */
-  workloadId: string
-  /** Number of compute nodes allocated for this observation. */
-  nodes?: number
-  /** Total CPU cores allocated across all nodes for this observation. */
-  cores?: number
-  /** Memory allocated for this observation, in GB. Basis given by memoryBasis. */
-  memoryAmountGB?: number
-  memoryBasis?: 'per_node' | 'per_core' | 'dont_know'
-  /** May also reference a ResourceRecord.id. */
-  resourceRecordId?: string
-  /** Observed wall-clock runtime in hours. */
-  wallTimeHours?: number
-  /** Total CPU-hours or GPU-hours for this job, as reported by the respondent. Cross-check against cores * wallTimeHours. */
-  cpuGpuHours?: number
-  /** Number of jobs with similar configuration and runtime. */
-  numberOfJobs?: number
-  evidenceSource: EvidenceSource
-  evidenceLevel: EvidenceLevel
-  /** Hardware platform for external/historical observations. */
-  hardware?: string
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// 5. Benchmark request (Section E)
-// ---------------------------------------------------------------------------
-
-/**
- * Records whether the group requests an HPC-team-run benchmark for any code.
- * Replaces the former Section L BenchmarkRecord.
- * Evidence from benchmarks run by the facility is accepted as Level 2 evidence.
- */
-export interface BenchmarkRequest {
-  /** Whether benchmarking assistance would be useful (gauges interest; not a commitment). */
-  status: 'yes' | 'no' | 'not_sure'
-  /** Application(s) for which assistance would be useful. */
-  codes?: string
-  /** Whether a group member would volunteer to help others benchmark (D_benchmark_volunteer). */
-  volunteer?: 'yes' | 'possibly' | 'no'
-  /** Application(s) the group could help with. */
-  volunteerCodes?: string
-}
-
-// ---------------------------------------------------------------------------
-// 6. Checkpoint/restart information
-// ---------------------------------------------------------------------------
-
-/**
- * A duration value entered via the 'duration' question type.
- * Stored as the raw user input; normalised to hours by the Apps Script on write.
- *
- * TODO (future harmonisation): wall-time fields in Section E and other
- * time-valued fields currently store a plain number in hours. When those
- * sections are revised, adopt DurationValue throughout so the Apps Script
- * can normalise all time fields consistently.
- */
-export interface DurationValue {
-  value: number | ''
-  unit: 'seconds' | 'minutes' | 'hours' | 'days'
-}
-
-/**
- * Section G: Checkpoint and restart characteristics of a workload.
- * Collected per-workload. "Don't know" is always valid.
- */
-export interface CheckpointInfo {
-  workloadId: string
-  supported: YesNoUncertain
-  checkpointType?: CheckpointType
-  /** How often checkpoints are written. Normalised to hours on export. */
-  checkpointInterval?: DurationValue
-  /** Whether the job restarts automatically without manual steps. */
-  restartAutomatic?: 'yes' | 'no' | 'dont_know'
-  /** Time to reinitialise or reload data after a restart. Normalised to hours on export. */
-  restartOverhead?: DurationValue
-  /** Whether restarted runs have produced incorrect or unexpected results. */
-  restartErrors?: 'yes' | 'no' | 'not_tested' | 'dont_know'
-  /** Whether checkpointing was attempted in production and later abandoned. */
-  checkpointAbandoned?: 'yes' | 'no' | 'dont_know'
-  /** Reason checkpointing was abandoned, if applicable. */
-  abandonedReason?: 'overhead_too_large' | 'results_unreliable' | 'too_complex' | 'not_compatible' | 'other'
-  abandonedReasonOther?: string
-  currentlyUsed: YesNoUncertain
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// 7. Scaling information
-// ---------------------------------------------------------------------------
-
-/**
- * A single data point in a parallel scaling study.
- * Now includes evidence metadata so the committee can assess source quality.
- */
-export interface ScalingDataPoint {
-  /** Number of compute nodes used for this observation. */
-  nodes?: number
-  /** Total CPU cores used across all nodes for this observation. */
-  cores?: number
-  /** Observed wall-clock time in hours. */
-  wallTimeHours?: number
-  /** Where this scaling observation comes from. */
-  evidenceSource?: EvidenceSource
-  /** Confidence level for this observation. */
-  evidenceLevel?: EvidenceLevel
-  /** Published benchmark or documentation reference, if applicable. */
-  benchmarkReference?: string
-  /** Notes on this configuration (e.g. "memory-bound above 32 cores"). */
-  notes?: string
-}
-
-/**
- * Section H: Parallel scaling observations for one code.
- * The section is now a repeatable (one ScalingInfo per code).
- * The committee uses this to assess whether multi-node resources
- * are technically necessary or merely convenient.
- *
- * Users are NOT asked whether they "require" a particular node count.
- * They report what was observed or is documented.
- */
-export interface ScalingInfo {
-  /** Code name (corresponds to G_code_name; may be empty if general). */
-  workloadId: string
-  /**
-   * Whether the workload can be divided into fully independent jobs.
-   * "For example, running 100 independent calculations as 100 separate
-   * jobs is a highly parallel/decomposable workload."
-   */
-  independentJobs: YesNoUncertain
-  independentJobsNotes?: string
-  /** Observed (config, runtime, evidence) tuples from scaling tests. */
-  runtimeByConfig: ScalingDataPoint[]
-  /**
-   * Observed parallel scaling pattern: linear | sublinear | plateau |
-   * regression | none | not_tested | dont_know.
-   * Replaces the former binary nodeCountAffectsRuntime field.
-   */
-  scalingBehaviour?: string
-  /** Core count at which performance stops improving or begins to degrade. */
-  scalingLimitCores?: number
-  /** Smallest total CPU core count at which the job has been observed to complete. */
-  practicalMinCores?: number
-  /** Largest total CPU core count actually tested (not a desired maximum). */
-  practicalMaxCoresTested?: number
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// 8. Wall-time termination records
-// ---------------------------------------------------------------------------
-
-/**
- * Section F: Factual record of a wall-time termination event.
- * Users report what happened; the committee draws inferences.
- * Users are NOT asked whether they "need" a longer wall time.
- *
- * CPU-hours fields are computed by the Apps Script:
- *   terminatedCpuHours = terminatedCores × terminatedWallTime (in hours)
- *   completedCpuHours  = completedCores  × completedWallTime  (in hours)
- * This allows direct comparison of the two resource configurations.
- */
-export interface WallTimeTerminationRecord {
-  id: string
-  /** Has at least one job been killed by a wall-time limit? */
-  hasBeenTerminated: YesNoUncertain
-  /** Whether this is an isolated occurrence or a recurring pattern. */
-  frequency?: 'isolated' | 'recurring' | 'dont_know'
-  /** CPU cores allocated when the job was terminated. */
-  terminatedCores?: number
-  /** Wall-time limit requested when the job was terminated. */
-  terminatedWallTime?: DurationValue
-  /** Computed: terminatedCores × terminatedWallTime in hours. */
-  terminatedCpuHours?: number
-  /**
-   * Whether the calculation has produced a valid result on any system.
-   * yes_same_single   — current IISER cluster, single uninterrupted run
-   * yes_same_restarts — current IISER cluster, via checkpoint-restart cycles
-   * yes_different     — a different HPC system
-   */
-  completedAnywhere?: 'yes_same_single' | 'yes_same_restarts' | 'yes_different' | 'no' | 'dont_know'
-  /** Name of the system where it completed (if different). Wall-time limit is in completedWallTime. */
-  completedSystem?: string
-  /** CPU cores used in the successful run. */
-  completedCores?: number
-  /** Wall-time limit available in the successful run. */
-  completedWallTime?: DurationValue
-  /** Computed: completedCores × completedWallTime in hours. */
-  completedCpuHours?: number
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// QoS observation (Section C)
-// ---------------------------------------------------------------------------
-
-/**
- * Section C: Observed operational problems and workload characteristics
- * reported by the group.
- * These are factual descriptions of what the group has experienced and
- * how their workloads are organised — NOT requests for specific QoS
- * entitlements. The committee translates observed problems into QoS
- * characteristics and uses workload characteristics to determine which
- * follow-up sections to examine.
- */
-export interface QoSObservation {
-  /** Factual operational problems that have been observed. */
-  problemsExperienced: OperationalProblem[]
-  /** Free-text description if 'other' is selected. */
-  otherDescription?: string
-  /** Factual workload characteristics (N_workload_chars values). */
-  workloadCharacteristics: string[]
-  /**
-   * Sections where the respondent declared "not aware / don't know how to
-   * characterise" (NA_* questionIds, prefix stripped, e.g. 'wall_time').
-   * A valid answer — flags possible clarification, never a negative finding.
-   */
+export interface ExperienceRecord {
+  systemsUsed: string[]
+  /** % of core-hours run on IISER Bhopal clusters in the last 12 months. */
+  shareIiserbPct?: NumOrUnknown
+  problems: OperationalProblem[]
+  problemsOther?: string
+  /** Systems on which the problems occurred (gargi / raman / iiserb_earlier / elsewhere). */
+  problemsWhere?: string[]
+  /** Follow-up sections declared "not aware / unable to characterise". */
   notAwareSections?: string[]
 }
 
 // ---------------------------------------------------------------------------
-// Committee assessment (Phase 5 placeholder)
+// 3–5. Workloads: resources, runtime and evidence of a typical job
+//      (Section C) — tab "Workloads", one row per code (max 3)
+// ---------------------------------------------------------------------------
+
+export interface WorkloadRecord {
+  code: string
+  type: string[]
+  source?: EvidenceSource
+  // Resources and runtime of a typical job
+  nodes?: NumOrUnknown
+  cores?: NumOrUnknown
+  gpus?: NumOrUnknown
+  memNodeGb?: NumOrUnknown
+  walltimeH?: NumOrUnknown
+  scratchMinGb?: NumOrUnknown
+  // Volume
+  jobsYear?: NumOrUnknown
+  jobsYearUnconstrained?: NumOrUnknown
+  concurrent?: NumOrUnknown
+  // Organisation
+  organisation: WorkflowPattern[]
+  batchSize?: NumOrUnknown
+  chainSteps?: NumOrUnknown
+  chainElapsedH?: NumOrUnknown
+  longTotalH?: NumOrUnknown
+  campaignCores?: NumOrUnknown
+  campaignDurationH?: NumOrUnknown
+  campaignsYear?: NumOrUnknown
+  // GPU / CPU balance
+  gpuVersion?: 'in_use' | 'tested_not_adopted' | 'available_not_tested' | 'none' | Unknown
+  gpuSpeedup?: 'lt_2' | '2_5' | '5_20' | 'gt_20' | 'not_measured' | Unknown
+  cpuViable?: 'similar' | '2_5_slower' | 'gt_5_slower' | 'no' | Unknown
+  // Derived (blank when any input is missing or unknown)
+  coreHoursYear?: number
+  coreHoursYearUnconstrained?: number
+  gpuHoursYear?: number
+  peakConcurrentCores?: number
+  peakConcurrentScratchGb?: number
+  evidenceLevel?: EvidenceLevel
+}
+
+/** Section D — tab "StorageTesting". */
+export interface StorageTestingRecord {
+  persistentNowGb?: NumOrUnknown
+  persistent3yGb?: NumOrUnknown
+  scratchResidence?: 'none' | 'lt_1d' | '1_7d' | 'gt_7d' | Unknown
+  usesDebug?: 'yes' | 'no' | Unknown
+  sessionsWeek?: NumOrUnknown
+  sessionCores?: NumOrUnknown
+  sessionLengthH?: NumOrUnknown
+  purpose?: string[]
+  otherCodes?: string
+}
+
+// ---------------------------------------------------------------------------
+// 6–8. Follow-up records (Section E1–E6), each referring to a workload by name
+// ---------------------------------------------------------------------------
+
+/** E1 — tab "LongJobs" (includes checkpoint/restart information). */
+export interface LongJobRecord {
+  workload: string
+  longestRunH?: NumOrUnknown
+  longestCores?: NumOrUnknown
+  checkpoint?: 'yes' | 'no' | 'not_tested' | Unknown
+  restartLossH?: NumOrUnknown
+  doublingEffect?: DoublingEffect
+  terminations12m?: NumOrUnknown
+}
+
+/** E2 — tab "Scaling". Up to three measured (cores, wall time) pairs. */
+export interface ScalingRecord {
+  workload: string
+  points: Array<{ cores?: NumOrUnknown; walltimeH?: NumOrUnknown }>
+  doublingEffect?: DoublingEffect
+  maxCoresTested?: NumOrUnknown
+  maxCoresUseful?: NumOrUnknown
+}
+
+/** E3 — tab "Memory". */
+export interface MemoryRecord {
+  workload: string
+  peakGb?: NumOrUnknown
+  fitsStandardNode?: 'yes' | 'fails_oom' | 'not_tested' | Unknown
+  distributable?: 'yes' | 'no' | Unknown
+}
+
+/** E4 — tab "Gpu". */
+export interface GpuRecord {
+  workload: string
+  gpuModel?: string
+  memPerGpuGb?: NumOrUnknown
+  maxGpusPerJob?: NumOrUnknown
+  nvlinkNeeded?: 'yes' | 'no' | Unknown
+  multinodeGpu?: 'yes_now' | 'yes_planned' | 'no' | Unknown
+}
+
+/** E5 — tab "Scratch". */
+export interface ScratchRecord {
+  workload: string
+  peakGb?: NumOrUnknown
+  filesPerJob?: 'lt_1k' | '1k_100k' | 'gt_100k' | Unknown
+  filePattern?: 'few_large' | 'many_small' | 'both' | Unknown
+  localDiskPossible?: 'yes' | 'no' | Unknown
+}
+
+/** E6 — tab "Queue". */
+export interface QueueRecord {
+  cluster?: string[]
+  typicalWaitH?: NumOrUnknown
+  longestWaitH?: NumOrUnknown
+  shareNotRunPct?: NumOrUnknown
+}
+
+/** Section F — tab "Closing". */
+export interface ClosingRecord {
+  growth3yFactor?: NumOrUnknown
+  benchmarkHelp?: 'yes' | 'no' | 'not_sure'
+  benchmarkCodes?: string
+  volunteer?: 'yes' | 'possibly' | 'no'
+  volunteerCodes?: string
+  comments?: string
+}
+
+// ---------------------------------------------------------------------------
+// 9. Committee assessment — tab "CommitteeAssessment" (committee only)
 // ---------------------------------------------------------------------------
 
 /**
- * Placeholder for the committee-facing assessment added in Phase 5.
- * No automatic scoring or entitlement assignment is performed here.
- * The committee manually records their triage category and findings.
+ * Triage categories (CLAUDE.md §8):
+ *   1 — automatically characterised
+ *   2 — clarification needed
+ *   3 — technical assessment
  */
 export interface CommitteeAssessment {
-  /**
-   * Triage category assigned by the committee:
-   *   1 — Automatically characterised (data sufficient, fits known profile)
-   *   2 — Clarification needed (minor gaps, follow-up required)
-   *   3 — Technical assessment (unusual/contested requirement)
-   */
   triageCategory?: 1 | 2 | 3
-  assessorName?: string
-  assessorEmail?: string
+  assessor?: string
   assessedAt?: string
   findings?: string
-  recommendedQoSCharacteristics?: string
+  recommendedQos?: string
   followUpRequired?: boolean
   followUpNotes?: string
 }
 
 // ---------------------------------------------------------------------------
-// Memory record (Section I)
+// Top-level submission
 // ---------------------------------------------------------------------------
 
-/**
- * Section I: Memory usage characteristics for one code.
- * The section is now a repeatable (one MemoryRecord per code).
- * Now includes evidence metadata so the committee can assess source quality.
- */
-export interface MemoryRecord {
-  /** Local UUID for this record. */
-  id: string
-  /** Code name (corresponds to H_code_name; may be empty if general). */
-  workloadId: string
-  /** Typical memory used per node in GB. */
-  typicalMemoryPerNodeGB?: number
-  /** Observed peak memory per node in GB. */
-  peakMemoryPerNodeGB?: number
-  /** Minimum memory at which the job has been observed to run (GB). */
-  minimumWorkableMemoryGB?: number
-  /**
-   * Whether the job's memory is confined to a single node (per-node)
-   * or distributed across nodes (MPI/distributed shared memory).
-   */
-  memoryDistribution?: 'per_node' | 'distributed' | 'either' | 'dont_know'
-  /**
-   * Whether the workload has been tested on nodes with the standard
-   * memory configuration of the current cluster.
-   */
-  standardNodesTested: YesNoUncertain
-  /** Where this memory information comes from. */
-  evidenceSource?: EvidenceSource
-  /** Confidence level for this memory information. */
-  evidenceLevel?: EvidenceLevel
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// GPU record (Section J)
-// ---------------------------------------------------------------------------
-
-/**
- * Section J: GPU and specialised hardware characteristics for one code.
- * The section is now a repeatable (one GpuRecord per code).
- * No section-level gate — users who don't use GPUs simply add no entries.
- * Evidence level is NOT collected for GPU records (only evidence source).
- */
-export interface GpuRecord {
-  id: string
-  workloadId: string
-  /** GPU use status: production / investigating / gpu_only / dont_know */
-  gpuStatus?: 'production' | 'investigating' | 'gpu_only' | 'dont_know'
-  gpuModel?: string
-  gpuMemoryNeeded?: 'lt_16gb' | '16_40gb' | '40_80gb' | 'gt_80gb' | 'dont_know'
-  minGpusPerJob?: number
-  typicalGpusPerJob?: number
-  gpuFrameworks?: string[]
-  /** Whether fast intra-node GPU communication (NVLink) is needed. */
-  nvlinkNeeded?: 'yes' | 'no' | 'dont_know' | 'not_applicable'
-  /** Whether the workload spans multiple nodes using GPUs. */
-  multinodeGpu?: 'yes_current' | 'yes_planned' | 'no' | 'dont_know'
-  gpuJobsPerYear?: number
-  evidenceSource?: EvidenceSource
-  /** Whether CPU vs GPU runtime comparison data is available. */
-  cpuComparison?: 'yes' | 'no' | 'no_cpu_alt'
-  cpuCores?: number
-  cpuWallTime?: DurationValue
-  gpuCountComp?: number
-  gpuCoresComp?: number
-  gpuWallTime?: DurationValue
-  comparisonEvidenceSource?: EvidenceSource
-  notes?: string
-}
-
-// ---------------------------------------------------------------------------
-// Workflow pattern records (Section K)
-// ---------------------------------------------------------------------------
-
-/**
- * Section K — Block A: Independent jobs workflow pattern.
- * Written only when the respondent selects 'independent' in J_workflow_types.
- */
-export interface IndependentJobsRecord {
-  workloadId?: string
-  /** Approximate number of independent jobs run per year. */
-  jobCountPerYear?: number
-  /** Typical wall time per individual job. */
-  wallTimePerJob?: DurationValue
-  /** Number of jobs typically running concurrently. */
-  concurrentJobs?: number
-  /** Typical turnaround time range (submission to completion, including queue). */
-  turnaroundRange?: string
-  /** Total CPU/GPU hours per year (range string). */
-  totalCpuHoursRange?: string
-}
-
-/**
- * Section K — Block B: Sequential pipeline workflow pattern.
- * Written only when the respondent selects 'pipeline' in J_workflow_types.
- */
-export interface PipelineRecord {
-  workloadId?: string
-  /** Number of stages in a typical pipeline run. */
-  stages?: number
-  /** Typical wall time per pipeline stage. */
-  stageWallTime?: DurationValue
-  /** Whether any stage can be divided into independent parallel jobs. */
-  stageParallelisable?: 'yes' | 'partly' | 'no' | 'dont_know'
-  /** Number of complete pipelines run per year. */
-  pipelinesPerYear?: number
-  /** Total elapsed time from first stage start to last stage completion. */
-  endToEndTime?: DurationValue
-  /** Total CPU/GPU hours per year (range string). */
-  totalCpuHoursRange?: string
-}
-
-/**
- * Section K — Block C: Extended single-calculation workflow pattern.
- * Written only when the respondent selects 'extended' in J_workflow_types.
- * This block collects evidence that helps the committee assess whether
- * extended/reservation-like access is genuinely required.
- */
-export interface ExtendedCalcRecord {
-  workloadId?: string
-  /** Typical wall time required for one continuous calculation. */
-  wallTime?: DurationValue
-  /** Longest wall-time limit available to the group on any HPC system. */
-  longestAvailableWallTime?: DurationValue
-  /**
-   * Whether this type of calculation has produced a valid result on any system.
-   * yes_single   — completed in a single uninterrupted run
-   * yes_restarts — completed via checkpoint-restart cycles
-   * no           — has not produced a valid result anywhere
-   * dont_know    — unknown
-   */
-  completed?: 'yes_single' | 'yes_restarts' | 'no' | 'dont_know'
-  /** System name and wall-time limit under which the calculation completed. */
-  completedSystem?: string
-  /** Whether any part of the calculation can be saved and resumed. */
-  canCheckpoint?: 'yes' | 'no' | 'dont_know' | 'not_tested'
-  /** Number of such calculations run or attempted per year. */
-  countPerYear?: number
-  /** Total CPU/GPU hours per year (range string). */
-  totalCpuHoursRange?: string
-}
-
-
-// ---------------------------------------------------------------------------
-// Top-level Submission
-// ---------------------------------------------------------------------------
-
-/**
- * A complete questionnaire submission.
- * Combines all nine data model entities.
- *
- * Status flow: draft → submitted → under_review → assessed
- *
- * IMPORTANT: No field in this model contains a priority score,
- * a QoS rank, or an automatic entitlement assignment.
- * The committeeAssessment field is populated only by the committee
- * in Phase 5 and later.
- */
 export interface Submission {
-  /** UUID generated at first save. */
   id: string
-  /**
-   * Schema version against which this submission was completed
-   * (e.g. "1.0.0"). Enables future migrations.
-   */
+  /** Schema version the submission was completed against, e.g. "2.0.0". */
   questionnaireVersion: string
   status: SubmissionStatus
-  createdAt: string
-  updatedAt: string
   submittedAt?: string
 
-  // --- Nine data model entities ---
-
-  /** Section A. */
-  respondent?: Partial<Respondent>
-
-  /** Section B. One entry per principal code/application. */
+  group: GroupInfo
+  experience: ExperienceRecord
   workloads: WorkloadRecord[]
-
-  /** Section D. One or more resource configs per workload. */
-  resources: ResourceRecord[]
-
-  /** Section E. Observed (config, runtime) pairs. */
-  runtimes: RuntimeRecord[]
-
-  /** Section E. Optional benchmark request (D_benchmark_request / D_benchmark_codes). */
-  benchmarkRequest?: BenchmarkRequest
-
-  /** Section G. Checkpoint/restart info per workload. */
-  checkpointInfo: CheckpointInfo[]
-
-  /** Section H. Scaling observations per workload. */
-  scalingInfo: ScalingInfo[]
-
-  /** Section F. Wall-time termination events per workload. */
-  wallTimeTerminations: WallTimeTerminationRecord[]
-
-  /** Section I. Memory characteristics per workload. */
-  memoryRecords: MemoryRecord[]
-
-  /** Section J. GPU characteristics per workload. */
-  gpuRecords: GpuRecord[]
-
-  /** Section K — Block A. Independent-jobs workflow pattern. */
-  independentJobsRecords: IndependentJobsRecord[]
-
-  /** Section K — Block B. Sequential pipeline workflow pattern. */
-  pipelineRecords: PipelineRecord[]
-
-  /** Section K — Block C. Extended single-calculation workflow pattern. */
-  extendedCalcRecords: ExtendedCalcRecord[]
-
-  /** Section C. Observed operational problems and workload characteristics (single record per submission). */
-  qosObservation?: Partial<QoSObservation>
-
-  /**
-   * Phase 5 placeholder. Populated by the committee only.
-   * Not present in Phase 1 submissions.
-   */
+  storageTesting: StorageTestingRecord
+  longJobs: LongJobRecord[]
+  scaling: ScalingRecord[]
+  memory: MemoryRecord[]
+  gpu: GpuRecord[]
+  scratch: ScratchRecord[]
+  queue?: QueueRecord
+  closing: ClosingRecord
   committeeAssessment?: CommitteeAssessment
 
-  /**
-   * Raw flat answers from the form renderer, keyed by questionId.
-   * This is the primary store used by the React UI and localStorage.
-   * The structured entities above are derived from these answers on export.
-   */
+  /** Raw flat answers from the form, keyed by questionId (primary store in the UI). */
   rawAnswers: Record<string, unknown>
 }

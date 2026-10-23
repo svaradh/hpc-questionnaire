@@ -2,8 +2,8 @@
   "_source": "hpc.iiserb.ac.in cluster pages and 'Policies & Usage Charges', as supplied by the user on 2026-10-23.",
   "_notes": [
     "Raman cores per node: the site lists 'Xeon Gold 6126, 12 cores' (a 12-core CPU); 24 per node assumes 2 sockets, consistent with pilot data ('2 x 12-cores Intel Xeon Gold 6126, 96 GB RAM'). TO CONFIRM.",
-    "Raman GPU node: GPU model and count not listed. TO CONFIRM.",
-    "Scratch: only total usable storage is listed; scratch size, quotas and purge policy unknown. Scratch-based triggers stay disabled (null) until filled in."
+    "Raman GPU node: model not listed; recalled as a Volta-generation card. Not needed by the form for now.",
+    "Scratch: not listed separately. Home:scratch is usually 60:40; assumed 50:50 of usable storage (user, 2026-10-23). Quotas and purge policy unknown."
   ],
   "clusters": [
     {
@@ -15,7 +15,7 @@
         { "id": "highmem", "count": 3, "cpu": "2x AMD EPYC 9554", "coresPerNode": 128, "memoryGB": 2304 }
       ],
       "gpuNodes": [],
-      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchTB": null },
+      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchTB": 60 },
       "interconnect": "200 Gbps Mellanox InfiniBand HDR",
       "queues": [
         { "id": "debug",  "minNodes": 1, "maxNodes": 2, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 5 },
@@ -34,9 +34,9 @@
         { "id": "highmem", "count": 1, "cpu": "Xeon Platinum 8160", "coresPerNode": 24, "memoryGB": 1152 }
       ],
       "gpuNodes": [
-        { "count": 1, "cpu": "2x Xeon Gold 6126", "coresPerNode": 24, "memoryGB": 96, "gpuModel": null, "gpusPerNode": null }
+        { "count": 1, "cpu": "2x Xeon Gold 6126", "coresPerNode": 24, "memoryGB": 96, "gpuModel": "Volta generation (unconfirmed)", "gpusPerNode": null }
       ],
-      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchTB": null },
+      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchTB": 52 },
       "interconnect": "100 Gbps Intel Omni-Path + 1 Gbps Ethernet",
       "queues": [
         { "id": "debug",  "minNodes": 1, "maxNodes": 4, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 4 },
@@ -62,6 +62,8 @@
     "largestStandardNodeMemoryGB": 768,
     "largeRunCores": 768,
     "debugWalltimeHours": 0.5,
-    "scratchPerJobTriggerGB": null
+    "_scratchComment": "Scratch flags use the smaller scratch area (Raman, 52 TB = 53248 GB): one job > 1 %, or a group's concurrent jobs together > 5 % (users currently request 8-10 % each).",
+    "scratchPerJobTriggerGB": 532,
+    "scratchConcurrentTriggerGB": 2662
   }
 }

@@ -194,7 +194,7 @@ export function QuestionRenderer({
             {question.required && <span className="required-mark" aria-label="required"> *</span>}
           </legend>
           {renderHelpText()}
-          <div className="checkbox-group">
+          <div className={`checkbox-group${(question.options?.length ?? 0) > 7 ? ' checkbox-group-wide' : ''}`}>
             {question.options?.map(opt => (
               <label key={opt.value} className="checkbox-label">
                 <input

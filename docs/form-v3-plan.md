@@ -209,11 +209,22 @@ All thresholds live under `thresholds` in the config; `null` disables a trigger.
 
 ## 10. Open items
 
-1. Raman: cores per node (24 assumed), GPU node's GPU model and count, high-memory node core count.
-2. Scratch: size of the scratch area on each cluster (vs. the listed total usable storage), per-user/group quota, purge policy. Until known, the scratch trigger (5E) fires only on the scratch-problem tick.
+1. Raman: cores per node (24 assumed); GPU believed Volta-generation (not needed by the form).
+2. Scratch: assumed 50 % of usable storage (Gargi ~60 TB, Raman ~52 TB) per user's estimate; quota and purge policy still unknown.
 3. Confirm the workload table stays core for groups reporting no problems (§5).
 
 ## 11. Progress
 
 - [x] Step 1 engine: `quantity` type (time/size, normalised to hours/GB), integer/min/max inline validation, Don't-know tick-box (`allowUnknown`), `maxEntries`, `workloadRef`, row-based and compound conditions with `configRef` thresholds, `committeeUse` tag, cluster config. Verified with condition unit tests and in the browser; v1.3 form unchanged.
-- [ ] Step 2 v3 schema content and sheet writer.
+- [x] Step 2 v3 schema (`src/schema/questionnaire.json`, 2.0.0) and declarative sheet writer (`apps-script/SheetWriter.gs`). Verified: every answerable question maps to a sheet column; derived values (core-hours/yr, GPU-hours/yr, peak concurrent cores and scratch, evidence level) computed by the writer; all six follow-up triggers fire in the browser; answers of hidden or "not aware" sections are dropped on submit.
+- [ ] Step 3 report generator, analysis notebooks and pilot test fixture for the v3 tabs.
+
+### Implementation decisions taken in step 2 (differences from §4)
+
+- Section letters: A About · B Experience · C Workloads · D Storage & testing · E1–E6 follow-ups · F Growth & closing. Section 1 keeps the `A_*` question IDs (PI auto-fill and the duplicate-PI check depend on them); other IDs as in §4.
+- Follow-ups E1–E5 are short per-workload lists (max 3 entries), each starting with a workload picker, so a group with two long-running codes can describe both.
+- `X_problems_where` is one checkbox for all problems ticked (not a problem × system matrix).
+- The checkpoint question lives only in E1 (not duplicated in the workload card).
+- The workload table is core for everyone (pending confirmation, §10). Making it optional for "no problems" groups is one line: `"optionalWhen"` on Section C.
+- Drafts use a v3 storage key, so a v1/v2 draft on the same device is not loaded into v3.
+- Scratch triggers: one job > 532 GB (1 % of Raman's ~52 TB scratch) or scratch × concurrent jobs > 2.6 TB (5 %); scratch assumed 50 % of usable storage.

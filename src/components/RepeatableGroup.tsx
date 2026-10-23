@@ -70,8 +70,8 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
 
   // Build a display label for each row card header
   const getRowLabel = (rowIndex: number): string => {
-    // Try to find a meaningful value from the first sub-question
-    const firstSub = subQuestions[0]
+    // Use the first text or workload-picker answer as the card title
+    const firstSub = subQuestions.find(q => q.type === 'text' || q.type === 'workloadRef')
     if (firstSub) {
       const val = rows[rowIndex]?.[firstSub.id]
       if (typeof val === 'string' && val.trim()) {

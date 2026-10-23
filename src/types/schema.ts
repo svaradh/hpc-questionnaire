@@ -261,7 +261,8 @@ export interface RowsCondition {
  * blank answers, and unset thresholds, never satisfy a comparison.
  */
 export type RowPredicate =
-  | { field: string; op: 'gt' | 'gte' | 'lt' | 'lte'; value?: number; configRef?: string }
+  /** `field` may list several fields: their base values are multiplied (e.g. scratch per job × concurrent jobs). */
+  | { field: string | string[]; op: 'gt' | 'gte' | 'lt' | 'lte'; value?: number; configRef?: string }
   | { field: string; op: 'in'; values: string[] }
   | { all: RowPredicate[] }
   | { any: RowPredicate[] }

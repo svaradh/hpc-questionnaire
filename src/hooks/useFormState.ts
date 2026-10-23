@@ -1,16 +1,17 @@
 /**
  * useFormState — localStorage-backed form state hook.
  *
- * Draft answers are stored under 'hpc_questionnaire_draft'.
+ * Draft answers are stored under 'hpc_questionnaire_v3_draft'.
  * After a successful submission, the submission is stored under
- * 'hpc_questionnaire_submitted' so the user can return to edit it
+ * 'hpc_questionnaire_v3_submitted' so the user can return to edit it
  * on the same device.
  */
 
 import { useState, useCallback, useEffect } from 'react'
 
-const DRAFT_KEY     = 'hpc_questionnaire_draft'
-const SUBMITTED_KEY = 'hpc_questionnaire_submitted'
+// Versioned keys: a v1/v2 draft on the same device is not loaded into the v3 form.
+const DRAFT_KEY     = 'hpc_questionnaire_v3_draft'
+const SUBMITTED_KEY = 'hpc_questionnaire_v3_submitted'
 
 export interface SubmittedRecord {
   submissionId: string

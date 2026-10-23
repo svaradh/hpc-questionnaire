@@ -1,0 +1,2162 @@
+{
+  "version": "2.0.0",
+  "title": "HPC Workload Characterisation Questionnaire",
+  "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
+  "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
+  "sections": [
+    {
+      "id": "A",
+      "title": "A. About Your Group",
+      "description": "Basic contact details. You are not asked to classify your research — all research groups are equally welcome to use the facility. The PI may ask a group member who runs the calculations to complete the technical sections.",
+      "questions": [
+        {
+          "id": "A_group_name",
+          "type": "text",
+          "label": "Research group name",
+          "required": true,
+          "placeholder": "e.g. Sharma Group / Computational Materials Lab",
+          "helpText": "The name by which your group is commonly known within the department."
+        },
+        {
+          "id": "A_department",
+          "type": "select",
+          "label": "Department / School",
+          "required": true,
+          "helpText": "Select the department or school your group belongs to.",
+          "options": [
+            {
+              "value": "biological_sciences",
+              "label": "Biological Sciences"
+            },
+            {
+              "value": "chemistry",
+              "label": "Chemistry"
+            },
+            {
+              "value": "earth_environmental",
+              "label": "Earth and Environmental Sciences"
+            },
+            {
+              "value": "economics",
+              "label": "Economics"
+            },
+            {
+              "value": "humanities_social_sciences",
+              "label": "Humanities and Social Sciences"
+            },
+            {
+              "value": "mathematics",
+              "label": "Mathematics"
+            },
+            {
+              "value": "physics",
+              "label": "Physics"
+            },
+            {
+              "value": "interdisciplinary",
+              "label": "Interdisciplinary / Cross-departmental"
+            },
+            {
+              "value": "other",
+              "label": "Other"
+            }
+          ]
+        },
+        {
+          "id": "A_department_other",
+          "type": "text",
+          "label": "Department / School (if 'Other')",
+          "required": false,
+          "placeholder": "Please specify your department",
+          "conditionalOn": {
+            "questionId": "A_department",
+            "values": [
+              "other"
+            ]
+          }
+        },
+        {
+          "id": "A_pi_salutation",
+          "type": "select",
+          "label": "PI salutation",
+          "required": true,
+          "options": [
+            {
+              "value": "Prof.",
+              "label": "Prof."
+            },
+            {
+              "value": "Dr.",
+              "label": "Dr."
+            }
+          ]
+        },
+        {
+          "id": "A_pi_name",
+          "type": "text",
+          "label": "Principal Investigator (PI) — full name",
+          "required": true,
+          "placeholder": "First and last name"
+        },
+        {
+          "id": "A_pi_email",
+          "type": "text",
+          "label": "PI email address",
+          "required": true,
+          "placeholder": "pi@iiserb.ac.in",
+          "helpText": "Used for correspondence from the HPC Users' Committee. The PI will be sent a summary to review before the submission is finalised."
+        },
+        {
+          "id": "A_pi_is_respondent",
+          "type": "radio",
+          "label": "Is the PI filling out this form?",
+          "required": true,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Yes"
+            },
+            {
+              "value": "no",
+              "label": "No — another group member is completing the technical sections"
+            }
+          ]
+        },
+        {
+          "id": "A_completed_by_name",
+          "type": "text",
+          "label": "Name of person completing this form",
+          "required": true,
+          "placeholder": "Full name",
+          "helpText": "The person running the calculations often knows the workload in greatest detail.",
+          "mirrorFromPI": true
+        },
+        {
+          "id": "A_completed_by_email",
+          "type": "text",
+          "label": "Email address of person completing this form",
+          "required": true,
+          "placeholder": "name@iiserb.ac.in",
+          "mirrorFromPI": true
+        },
+        {
+          "id": "A_completed_by_role",
+          "type": "select",
+          "label": "Role of person completing this form",
+          "required": true,
+          "helpText": "Select the role that best describes your position within the group.",
+          "mirrorFromPI": true,
+          "options": [
+            {
+              "value": "pi",
+              "label": "Principal Investigator (PI)"
+            },
+            {
+              "value": "postdoctoral_researcher",
+              "label": "Postdoctoral researcher"
+            },
+            {
+              "value": "phd_student",
+              "label": "PhD student"
+            },
+            {
+              "value": "designated_computational_member",
+              "label": "Designated computational group member"
+            },
+            {
+              "value": "technical_staff",
+              "label": "Technical / research staff"
+            },
+            {
+              "value": "other",
+              "label": "Other"
+            }
+          ]
+        },
+        {
+          "id": "A_completed_by_role_other",
+          "type": "text",
+          "label": "Role (if 'Other')",
+          "required": false,
+          "placeholder": "Please describe your role",
+          "conditionalOn": {
+            "questionId": "A_completed_by_role",
+            "values": [
+              "other"
+            ]
+          }
+        },
+        {
+          "id": "A_hpc_users_now",
+          "type": "number",
+          "label": "Number of group members who currently submit HPC jobs",
+          "required": false,
+          "helpText": "Count people, including students and postdocs.",
+          "integer": true,
+          "allowUnknown": true,
+          "min": 0,
+          "committeeUse": [
+            "current_users"
+          ]
+        },
+        {
+          "id": "A_hpc_users_3y",
+          "type": "number",
+          "label": "Expected number of group members submitting HPC jobs in 3 years",
+          "required": false,
+          "integer": true,
+          "allowUnknown": true,
+          "min": 0,
+          "committeeUse": [
+            "growth_users"
+          ]
+        },
+        {
+          "id": "A_research_description",
+          "type": "text",
+          "label": "One-line description of the research that uses HPC (optional)",
+          "required": false,
+          "placeholder": "e.g. First-principles calculations of oxide surfaces for catalysis",
+          "helpText": "Please be factual and descriptive. You do not need to argue that the research is important or computationally intensive — just describe what you do."
+        }
+      ]
+    },
+    {
+      "id": "B",
+      "title": "B. Your HPC Experience",
+      "description": "Please answer from your group's experience on any HPC system you have used — not only the IISER Bhopal clusters (Gargi and Raman). Many groups will be using these clusters for the first time; experience on earlier IISER clusters, national facilities, collaborators' clusters or cloud resources is equally relevant.\n\nYour answers here and in Section C decide which short follow-up sections appear. There is no disadvantage to reporting operational difficulties.",
+      "questions": [
+        {
+          "id": "X_systems_used",
+          "type": "checkbox",
+          "label": "Systems your group has run jobs on in the last 3 years",
+          "required": false,
+          "options": [
+            {
+              "value": "gargi",
+              "label": "Gargi (IISER Bhopal)"
+            },
+            {
+              "value": "raman",
+              "label": "Raman (IISER Bhopal)"
+            },
+            {
+              "value": "iiserb_earlier",
+              "label": "An earlier IISER Bhopal cluster"
+            },
+            {
+              "value": "national",
+              "label": "National facility (e.g. PARAM)"
+            },
+            {
+              "value": "collaborator",
+              "label": "Collaborator's or another institution's cluster"
+            },
+            {
+              "value": "cloud",
+              "label": "Cloud computing"
+            },
+            {
+              "value": "workstation",
+              "label": "Workstation or local server"
+            },
+            {
+              "value": "none_yet",
+              "label": "None yet — we have not run HPC jobs",
+              "exclusive": true
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware",
+              "exclusive": true
+            }
+          ],
+          "committeeUse": [
+            "where_computing_happens"
+          ]
+        },
+        {
+          "id": "X_share_iiserb",
+          "type": "number",
+          "label": "Share of your group's computing done on IISER Bhopal clusters in the last 12 months",
+          "required": false,
+          "helpText": "Roughly, as a percentage of core-hours. 0 if none.",
+          "integer": true,
+          "allowUnknown": true,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "conditionalOn": {
+            "questionId": "X_systems_used",
+            "values": [
+              "national",
+              "collaborator",
+              "cloud",
+              "workstation"
+            ]
+          },
+          "committeeUse": [
+            "demand_served_elsewhere"
+          ]
+        },
+        {
+          "id": "X_problems",
+          "type": "checkbox",
+          "label": "Which of these operational problems has your group experienced while running jobs on any HPC system?",
+          "required": false,
+          "helpText": "Select all that apply.",
+          "options": [
+            {
+              "value": "wall_time_termination",
+              "label": "Jobs stopped by the wall-time limit before completion"
+            },
+            {
+              "value": "excessive_queue_wait",
+              "label": "Long waiting time in the queue"
+            },
+            {
+              "value": "insufficient_node_count",
+              "label": "Jobs needed more nodes or cores than allowed"
+            },
+            {
+              "value": "insufficient_memory",
+              "label": "Jobs failed for lack of memory (out-of-memory errors)"
+            },
+            {
+              "value": "insufficient_gpu_access",
+              "label": "Insufficient GPU access"
+            },
+            {
+              "value": "insufficient_total_capacity",
+              "label": "Not enough total capacity to run all planned calculations"
+            },
+            {
+              "value": "scratch_insufficient",
+              "label": "Insufficient scratch space, or jobs failed on scratch limits"
+            },
+            {
+              "value": "debug_wait",
+              "label": "Short test/debug jobs wait too long to start"
+            },
+            {
+              "value": "other",
+              "label": "Other operational problem"
+            },
+            {
+              "value": "no_problems_observed",
+              "label": "No problems observed on any HPC system we have used",
+              "exclusive": true
+            },
+            {
+              "value": "no_hpc_experience",
+              "label": "Not applicable — we have not yet run jobs on an HPC system",
+              "exclusive": true
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware",
+              "exclusive": true
+            }
+          ],
+          "committeeUse": [
+            "problem_triggers"
+          ]
+        },
+        {
+          "id": "X_problems_other",
+          "type": "text",
+          "label": "If other, describe the problem briefly",
+          "required": false,
+          "conditionalOn": {
+            "questionId": "X_problems",
+            "values": [
+              "other"
+            ]
+          }
+        },
+        {
+          "id": "X_problems_where",
+          "type": "checkbox",
+          "label": "On which systems did these problems occur?",
+          "required": false,
+          "helpText": "This tells the committee whether a problem concerns the present clusters.",
+          "options": [
+            {
+              "value": "gargi",
+              "label": "Gargi"
+            },
+            {
+              "value": "raman",
+              "label": "Raman"
+            },
+            {
+              "value": "iiserb_earlier",
+              "label": "Earlier IISER Bhopal cluster"
+            },
+            {
+              "value": "elsewhere",
+              "label": "Elsewhere"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware"
+            }
+          ],
+          "conditionalOn": {
+            "questionId": "X_problems",
+            "values": [
+              "wall_time_termination",
+              "excessive_queue_wait",
+              "insufficient_node_count",
+              "insufficient_memory",
+              "insufficient_gpu_access",
+              "insufficient_total_capacity",
+              "scratch_insufficient",
+              "debug_wait",
+              "other"
+            ]
+          },
+          "committeeUse": [
+            "present_cluster_problems"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "C",
+      "title": "C. Your Workloads",
+      "description": "Describe up to three main codes your group runs, one entry each. Numbers for a typical job are enough; ticking \"Don't know\" is always fine.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.",
+      "questions": [
+        {
+          "id": "W_workloads",
+          "type": "repeatable",
+          "label": "Main codes (up to 3)",
+          "required": false,
+          "entryLabel": "code",
+          "maxEntries": 3,
+          "subQuestions": [
+            {
+              "id": "W_h_code",
+              "type": "heading",
+              "label": "This code",
+              "required": false
+            },
+            {
+              "id": "W_code",
+              "type": "text",
+              "label": "Code / application name",
+              "required": true,
+              "placeholder": "e.g. Quantum ESPRESSO"
+            },
+            {
+              "id": "W_type",
+              "type": "checkbox",
+              "label": "Type of computation",
+              "required": false,
+              "options": [
+                {
+                  "value": "electronic_structure",
+                  "label": "Electronic structure (DFT, TDDFT, quantum chemistry)"
+                },
+                {
+                  "value": "molecular_dynamics",
+                  "label": "Molecular dynamics (classical or ab initio)"
+                },
+                {
+                  "value": "atomistic_simulation",
+                  "label": "Atomistic or coarse-grained simulation"
+                },
+                {
+                  "value": "climate_environmental",
+                  "label": "Climate, atmospheric, or environmental modelling"
+                },
+                {
+                  "value": "cfd",
+                  "label": "Computational fluid dynamics (CFD)"
+                },
+                {
+                  "value": "bioinformatics_genomics",
+                  "label": "Bioinformatics / genomics"
+                },
+                {
+                  "value": "machine_learning",
+                  "label": "Machine learning / AI"
+                },
+                {
+                  "value": "numerical_modelling",
+                  "label": "Numerical modelling / simulation (other)"
+                },
+                {
+                  "value": "many_body_exact_diagonalisation",
+                  "label": "Many-body physics / exact diagonalisation"
+                },
+                {
+                  "value": "data_analysis",
+                  "label": "Data analysis / post-processing"
+                },
+                {
+                  "value": "other",
+                  "label": "Other"
+                }
+              ],
+              "committeeUse": [
+                "workload_mix"
+              ]
+            },
+            {
+              "id": "W_type_other",
+              "type": "text",
+              "label": "Other type (describe)",
+              "required": false,
+              "conditionalOn": {
+                "questionId": "W_type",
+                "values": [
+                  "other"
+                ]
+              }
+            },
+            {
+              "id": "W_source",
+              "type": "select",
+              "label": "Where do the numbers below come from?",
+              "required": false,
+              "helpText": "Pick the main source. Estimates are welcome — please mark them as such.",
+              "options": [
+                {
+                  "value": "gargi",
+                  "label": "Jobs on Gargi"
+                },
+                {
+                  "value": "raman",
+                  "label": "Jobs on Raman"
+                },
+                {
+                  "value": "iiserb_earlier",
+                  "label": "Jobs on an earlier IISER Bhopal cluster"
+                },
+                {
+                  "value": "national",
+                  "label": "Jobs on a national facility"
+                },
+                {
+                  "value": "collaborator",
+                  "label": "Jobs on a collaborator's cluster"
+                },
+                {
+                  "value": "cloud",
+                  "label": "Jobs on cloud resources"
+                },
+                {
+                  "value": "benchmark",
+                  "label": "A benchmark run"
+                },
+                {
+                  "value": "published",
+                  "label": "Published or developer data"
+                },
+                {
+                  "value": "estimate",
+                  "label": "Estimate (no direct measurement)"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "evidence_level"
+              ]
+            },
+            {
+              "id": "W_h_job",
+              "type": "heading",
+              "label": "A typical job of this code",
+              "required": false,
+              "helpText": "\"Job\" = one submission to the scheduler. Wall time = running time, not including time waiting in the queue."
+            },
+            {
+              "id": "W_nodes",
+              "type": "number",
+              "label": "Nodes per job",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "job_size"
+              ]
+            },
+            {
+              "id": "W_cores",
+              "type": "number",
+              "label": "Total CPU cores per job",
+              "required": false,
+              "helpText": "Across all nodes. Example: 2 nodes × 128 cores = 256.",
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "job_size",
+                "core_hours"
+              ]
+            },
+            {
+              "id": "W_gpus",
+              "type": "number",
+              "label": "Total GPUs per job",
+              "required": false,
+              "helpText": "0 if the job uses no GPUs.",
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "committeeUse": [
+                "gpu_hours"
+              ]
+            },
+            {
+              "id": "W_mem_node",
+              "type": "quantity",
+              "label": "Memory used per node",
+              "required": false,
+              "dimension": "size",
+              "defaultUnit": "GB",
+              "allowUnknown": true,
+              "committeeUse": [
+                "memory_test"
+              ]
+            },
+            {
+              "id": "W_walltime",
+              "type": "quantity",
+              "label": "Wall time of a typical job",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "hours",
+              "allowUnknown": true,
+              "committeeUse": [
+                "core_hours",
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "W_scratch_min",
+              "type": "quantity",
+              "label": "Minimum scratch space one running job needs",
+              "required": false,
+              "helpText": "Temporary working files on the scratch area while the job runs. 0 if none.",
+              "dimension": "size",
+              "defaultUnit": "GB",
+              "allowUnknown": true,
+              "committeeUse": [
+                "scratch_test"
+              ]
+            },
+            {
+              "id": "W_h_volume",
+              "type": "heading",
+              "label": "How much",
+              "required": false
+            },
+            {
+              "id": "W_jobs_year",
+              "type": "number",
+              "label": "Jobs of this kind run in the last 12 months",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "committeeUse": [
+                "core_hours"
+              ]
+            },
+            {
+              "id": "W_jobs_year_unconstrained",
+              "type": "number",
+              "label": "Jobs you would have run if wall time, queue wait and capacity were not limiting",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "committeeUse": [
+                "unmet_demand"
+              ]
+            },
+            {
+              "id": "W_concurrent",
+              "type": "number",
+              "label": "Largest number of these jobs the group runs (or would run) at the same time",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "committeeUse": [
+                "peak_concurrency",
+                "scratch_test"
+              ]
+            },
+            {
+              "id": "W_h_org",
+              "type": "heading",
+              "label": "How the jobs are organised",
+              "required": false
+            },
+            {
+              "id": "W_org",
+              "type": "checkbox",
+              "label": "Which patterns describe how these jobs are organised? Select all that apply.",
+              "required": false,
+              "options": [
+                {
+                  "value": "standalone",
+                  "label": "Single stand-alone calculations"
+                },
+                {
+                  "value": "independent",
+                  "label": "Many independent jobs (parameter sweeps, ensembles, screening)"
+                },
+                {
+                  "value": "chain",
+                  "label": "Sequential chain — each job needs the previous job's output"
+                },
+                {
+                  "value": "long_calc",
+                  "label": "One calculation that needs longer than a single job is allowed to run"
+                },
+                {
+                  "value": "campaign",
+                  "label": "Many heavy jobs running together toward one result (coordinated campaign)"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware",
+                  "exclusive": true
+                }
+              ],
+              "committeeUse": [
+                "workflow_pattern"
+              ]
+            },
+            {
+              "id": "W_batch_size",
+              "type": "number",
+              "label": "Jobs submitted together in one batch",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "independent"
+                ]
+              },
+              "committeeUse": [
+                "throughput"
+              ]
+            },
+            {
+              "id": "W_chain_steps",
+              "type": "number",
+              "label": "Steps (jobs) in one chain",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "chain"
+                ]
+              },
+              "committeeUse": [
+                "pipeline"
+              ]
+            },
+            {
+              "id": "W_chain_elapsed",
+              "type": "quantity",
+              "label": "End-to-end time of one chain, including queue waits",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "days",
+              "allowUnknown": true,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "chain"
+                ]
+              },
+              "committeeUse": [
+                "pipeline",
+                "turnaround"
+              ]
+            },
+            {
+              "id": "W_long_total",
+              "type": "quantity",
+              "label": "Total running time the full calculation needs",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "days",
+              "allowUnknown": true,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "long_calc"
+                ]
+              },
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "W_campaign_cores",
+              "type": "number",
+              "label": "Total cores needed at the same time for the campaign",
+              "required": false,
+              "helpText": "Add up the cores of all jobs that must run together.",
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "campaign"
+                ]
+              },
+              "committeeUse": [
+                "large_run_test"
+              ]
+            },
+            {
+              "id": "W_campaign_duration",
+              "type": "quantity",
+              "label": "How long the campaign runs",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "days",
+              "allowUnknown": true,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "campaign"
+                ]
+              },
+              "committeeUse": [
+                "large_run_test"
+              ]
+            },
+            {
+              "id": "W_campaigns_year",
+              "type": "number",
+              "label": "Campaigns per year",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "conditionalOn": {
+                "questionId": "W_org",
+                "values": [
+                  "campaign"
+                ]
+              },
+              "committeeUse": [
+                "large_run_test"
+              ]
+            },
+            {
+              "id": "W_h_gpu",
+              "type": "heading",
+              "label": "GPU and CPU",
+              "required": false
+            },
+            {
+              "id": "W_gpu_version",
+              "type": "radio",
+              "label": "Does a GPU-accelerated version of this code exist?",
+              "required": false,
+              "options": [
+                {
+                  "value": "in_use",
+                  "label": "Yes — we use it"
+                },
+                {
+                  "value": "tested_not_adopted",
+                  "label": "Yes — tested, but not adopted"
+                },
+                {
+                  "value": "available_not_tested",
+                  "label": "Yes — available, not tested"
+                },
+                {
+                  "value": "none",
+                  "label": "No GPU version exists"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "gpu_cpu_balance"
+              ]
+            },
+            {
+              "id": "W_gpu_speedup",
+              "type": "radio",
+              "label": "Speed of one GPU node relative to one CPU-only node, for the same calculation",
+              "required": false,
+              "options": [
+                {
+                  "value": "lt_2",
+                  "label": "Less than 2× faster"
+                },
+                {
+                  "value": "2_5",
+                  "label": "2–5× faster"
+                },
+                {
+                  "value": "5_20",
+                  "label": "5–20× faster"
+                },
+                {
+                  "value": "gt_20",
+                  "label": "More than 20× faster"
+                },
+                {
+                  "value": "not_measured",
+                  "label": "Not measured"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "conditionalOn": {
+                "questionId": "W_gpu_version",
+                "values": [
+                  "in_use",
+                  "tested_not_adopted"
+                ]
+              },
+              "committeeUse": [
+                "gpu_cpu_balance"
+              ]
+            },
+            {
+              "id": "W_cpu_viable",
+              "type": "radio",
+              "label": "Could this workload run on CPU-only nodes in a usable way?",
+              "required": false,
+              "options": [
+                {
+                  "value": "similar",
+                  "label": "Yes — in similar time"
+                },
+                {
+                  "value": "2_5_slower",
+                  "label": "Yes — but 2–5× longer"
+                },
+                {
+                  "value": "gt_5_slower",
+                  "label": "Yes — but more than 5× longer"
+                },
+                {
+                  "value": "no",
+                  "label": "No — the code needs GPUs (or GPU memory)"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "conditionalOn": {
+                "questionId": "W_gpu_version",
+                "values": [
+                  "in_use"
+                ]
+              },
+              "committeeUse": [
+                "gpu_cpu_balance"
+              ]
+            }
+          ]
+        },
+        {
+          "id": "W_other_codes",
+          "type": "text",
+          "label": "Other codes your group uses (names only, optional)",
+          "required": false,
+          "placeholder": "e.g. VASP, ORCA, CP2K"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "D. Storage, Testing and Interactive Use",
+      "description": "A few group-level questions about storage, and about short test or interactive sessions.",
+      "questions": [
+        {
+          "id": "S_h",
+          "type": "heading",
+          "label": "Storage",
+          "required": false
+        },
+        {
+          "id": "S_persistent_now",
+          "type": "quantity",
+          "label": "Long-term storage (home/project) your group occupies on IISER Bhopal clusters now",
+          "required": false,
+          "dimension": "size",
+          "defaultUnit": "TB",
+          "allowUnknown": true,
+          "committeeUse": [
+            "storage_capacity"
+          ]
+        },
+        {
+          "id": "S_persistent_3y",
+          "type": "quantity",
+          "label": "Long-term storage your group expects to need in 3 years",
+          "required": false,
+          "dimension": "size",
+          "defaultUnit": "TB",
+          "allowUnknown": true,
+          "committeeUse": [
+            "storage_growth"
+          ]
+        },
+        {
+          "id": "S_scratch_residence",
+          "type": "radio",
+          "label": "After a job ends, how long must its scratch files stay before they can be moved or deleted?",
+          "required": false,
+          "options": [
+            {
+              "value": "none",
+              "label": "They can be removed immediately"
+            },
+            {
+              "value": "lt_1d",
+              "label": "Less than 1 day"
+            },
+            {
+              "value": "1_7d",
+              "label": "1–7 days"
+            },
+            {
+              "value": "gt_7d",
+              "label": "More than 7 days"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware"
+            }
+          ],
+          "committeeUse": [
+            "scratch_test"
+          ]
+        },
+        {
+          "id": "T_h",
+          "type": "heading",
+          "label": "Testing and interactive use",
+          "required": false,
+          "helpText": "Current debug queues allow 30-minute jobs."
+        },
+        {
+          "id": "T_uses_debug",
+          "type": "radio",
+          "label": "Do group members run short test/debug or interactive sessions?",
+          "required": false,
+          "options": [
+            {
+              "value": "yes",
+              "label": "Yes"
+            },
+            {
+              "value": "no",
+              "label": "No"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware"
+            }
+          ],
+          "committeeUse": [
+            "debug_service"
+          ]
+        },
+        {
+          "id": "T_sessions_week",
+          "type": "number",
+          "label": "Sessions per week, for the whole group",
+          "required": false,
+          "integer": true,
+          "allowUnknown": true,
+          "min": 0,
+          "conditionalOn": {
+            "questionId": "T_uses_debug",
+            "values": [
+              "yes"
+            ]
+          },
+          "committeeUse": [
+            "debug_service"
+          ]
+        },
+        {
+          "id": "T_session_cores",
+          "type": "number",
+          "label": "Typical cores per session",
+          "required": false,
+          "integer": true,
+          "allowUnknown": true,
+          "min": 1,
+          "conditionalOn": {
+            "questionId": "T_uses_debug",
+            "values": [
+              "yes"
+            ]
+          },
+          "committeeUse": [
+            "debug_service"
+          ]
+        },
+        {
+          "id": "T_session_length",
+          "type": "quantity",
+          "label": "Typical length of one session",
+          "required": false,
+          "dimension": "time",
+          "defaultUnit": "minutes",
+          "allowUnknown": true,
+          "conditionalOn": {
+            "questionId": "T_uses_debug",
+            "values": [
+              "yes"
+            ]
+          },
+          "committeeUse": [
+            "debug_service"
+          ]
+        },
+        {
+          "id": "T_purpose",
+          "type": "checkbox",
+          "label": "Used for",
+          "required": false,
+          "options": [
+            {
+              "value": "test_inputs",
+              "label": "Testing inputs before production runs"
+            },
+            {
+              "value": "compile_debug",
+              "label": "Compiling or debugging code"
+            },
+            {
+              "value": "visualisation",
+              "label": "Visualisation"
+            },
+            {
+              "value": "notebooks",
+              "label": "Notebooks / RStudio"
+            },
+            {
+              "value": "gui",
+              "label": "GUI applications"
+            },
+            {
+              "value": "other",
+              "label": "Other"
+            }
+          ],
+          "conditionalOn": {
+            "questionId": "T_uses_debug",
+            "values": [
+              "yes"
+            ]
+          },
+          "committeeUse": [
+            "debug_service"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E1",
+      "title": "E1. Long Jobs",
+      "description": "Shown because a wall-time problem was reported or a workload runs longer than the present limits (multi-node jobs: 72 h; single-node: up to 168 h). Please describe what is observed — the committee assesses the requirement.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "conditionalOn": [
+        {
+          "questionId": "X_problems",
+          "values": [
+            "wall_time_termination"
+          ]
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "any": [
+              {
+                "all": [
+                  {
+                    "field": "W_nodes",
+                    "op": "gt",
+                    "value": 1
+                  },
+                  {
+                    "field": "W_walltime",
+                    "op": "gt",
+                    "configRef": "thresholds.maxMultiNodeWalltimeHours"
+                  }
+                ]
+              },
+              {
+                "field": "W_walltime",
+                "op": "gt",
+                "configRef": "thresholds.maxSingleNodeWalltimeHours"
+              },
+              {
+                "field": "W_long_total",
+                "op": "gt",
+                "configRef": "thresholds.maxMultiNodeWalltimeHours"
+              }
+            ]
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_org",
+            "op": "in",
+            "values": [
+              "long_calc"
+            ]
+          }
+        }
+      ],
+      "notAwareOption": {
+        "questionId": "NA_long_jobs",
+        "label": "I am not aware of these details, or don't know how to characterise long-running jobs"
+      },
+      "questions": [
+        {
+          "id": "L_records",
+          "type": "repeatable",
+          "label": "Entries",
+          "required": false,
+          "entryLabel": "workload",
+          "maxEntries": 3,
+          "subQuestions": [
+            {
+              "id": "L_workload",
+              "type": "workloadRef",
+              "label": "Which workload (from Section C) does this entry describe?",
+              "required": false,
+              "optionsFrom": {
+                "questionId": "W_workloads",
+                "labelField": "W_code"
+              }
+            },
+            {
+              "id": "L_longest_run",
+              "type": "quantity",
+              "label": "Longest uninterrupted running time one job of this workload needs",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "hours",
+              "allowUnknown": true,
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "L_longest_cores",
+              "type": "number",
+              "label": "Cores used in that job",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "L_checkpoint",
+              "type": "radio",
+              "label": "Can the job stop and resume later without losing completed work (checkpoint/restart)?",
+              "required": false,
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "Yes"
+                },
+                {
+                  "value": "no",
+                  "label": "No"
+                },
+                {
+                  "value": "not_tested",
+                  "label": "Not tested"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "L_restart_loss",
+              "type": "quantity",
+              "label": "Time lost per restart (re-reading data, repeating work since the last checkpoint)",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "minutes",
+              "allowUnknown": true,
+              "conditionalOn": {
+                "questionId": "L_checkpoint",
+                "values": [
+                  "yes"
+                ]
+              },
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "L_doubling",
+              "type": "radio",
+              "label": "When the cores were doubled, the wall time…",
+              "required": false,
+              "helpText": "Compare the same calculation run on N cores and on 2N cores. Example: 10 h on 64 cores and 6 h on 128 cores is 0.6×.",
+              "options": [
+                {
+                  "value": "le_0_6",
+                  "label": "Wall time became about half or less (≤ 0.6× the original) — scales well"
+                },
+                {
+                  "value": "0_6_0_8",
+                  "label": "Wall time became 0.6–0.8× the original — partial benefit"
+                },
+                {
+                  "value": "gt_0_8",
+                  "label": "Wall time stayed above 0.8× the original — little benefit"
+                },
+                {
+                  "value": "longer",
+                  "label": "Wall time became longer"
+                },
+                {
+                  "value": "not_tested",
+                  "label": "Not tested"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "long_walltime_test",
+                "scaling"
+              ]
+            },
+            {
+              "id": "L_terminations_12m",
+              "type": "number",
+              "label": "Jobs stopped by the wall-time limit in the last 12 months",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E2",
+      "title": "E2. Scaling and Large Runs",
+      "description": "Shown because a node-count problem was reported, or a workload uses more cores than one job may use now (384 cores), or runs coordinated campaigns. Measured pairs of (cores, wall time) for the same calculation are the most useful evidence.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "conditionalOn": [
+        {
+          "questionId": "X_problems",
+          "values": [
+            "insufficient_node_count"
+          ]
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_cores",
+            "op": "gt",
+            "configRef": "thresholds.maxCoresPerJob"
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_org",
+            "op": "in",
+            "values": [
+              "campaign"
+            ]
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_campaign_cores",
+            "op": "gte",
+            "configRef": "thresholds.largeRunCores"
+          }
+        }
+      ],
+      "notAwareOption": {
+        "questionId": "NA_scaling",
+        "label": "I am not aware of these details, or don't know how to characterise how our codes scale"
+      },
+      "questions": [
+        {
+          "id": "P_records",
+          "type": "repeatable",
+          "label": "Entries",
+          "required": false,
+          "entryLabel": "workload",
+          "maxEntries": 3,
+          "subQuestions": [
+            {
+              "id": "P_workload",
+              "type": "workloadRef",
+              "label": "Which workload (from Section C) does this entry describe?",
+              "required": false,
+              "optionsFrom": {
+                "questionId": "W_workloads",
+                "labelField": "W_code"
+              }
+            },
+            {
+              "id": "P_h_pairs",
+              "type": "heading",
+              "label": "Measured runs of the same calculation",
+              "required": false,
+              "helpText": "Fill in as many as you have (up to 3)."
+            },
+            {
+              "id": "P_cores_1",
+              "type": "number",
+              "label": "Run 1 — cores",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_wt_1",
+              "type": "quantity",
+              "label": "Run 1 — wall time",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "hours",
+              "allowUnknown": true,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_cores_2",
+              "type": "number",
+              "label": "Run 2 — cores",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_wt_2",
+              "type": "quantity",
+              "label": "Run 2 — wall time",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "hours",
+              "allowUnknown": true,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_cores_3",
+              "type": "number",
+              "label": "Run 3 — cores",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_wt_3",
+              "type": "quantity",
+              "label": "Run 3 — wall time",
+              "required": false,
+              "dimension": "time",
+              "defaultUnit": "hours",
+              "allowUnknown": true,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_doubling",
+              "type": "radio",
+              "label": "When the cores were doubled, the wall time…",
+              "required": false,
+              "helpText": "Compare the same calculation run on N cores and on 2N cores. Example: 10 h on 64 cores and 6 h on 128 cores is 0.6×.",
+              "options": [
+                {
+                  "value": "le_0_6",
+                  "label": "Wall time became about half or less (≤ 0.6× the original) — scales well"
+                },
+                {
+                  "value": "0_6_0_8",
+                  "label": "Wall time became 0.6–0.8× the original — partial benefit"
+                },
+                {
+                  "value": "gt_0_8",
+                  "label": "Wall time stayed above 0.8× the original — little benefit"
+                },
+                {
+                  "value": "longer",
+                  "label": "Wall time became longer"
+                },
+                {
+                  "value": "not_tested",
+                  "label": "Not tested"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_max_tested",
+              "type": "number",
+              "label": "Largest number of cores tested",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
+              "id": "P_max_useful",
+              "type": "number",
+              "label": "Largest number of cores at which doubling still gave wall time ≤ 0.8×",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "committeeUse": [
+                "scaling",
+                "large_run_test"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E3",
+      "title": "E3. Memory",
+      "description": "Shown because an out-of-memory problem was reported or a workload uses more memory per node than a standard node has (Gargi: 768 GB; Raman: 96 GB).\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "conditionalOn": [
+        {
+          "questionId": "X_problems",
+          "values": [
+            "insufficient_memory"
+          ]
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_mem_node",
+            "op": "gt",
+            "configRef": "thresholds.largestStandardNodeMemoryGB"
+          }
+        }
+      ],
+      "notAwareOption": {
+        "questionId": "NA_memory",
+        "label": "I am not aware of these details, or don't know how to characterise the memory use of our jobs"
+      },
+      "questions": [
+        {
+          "id": "M_records",
+          "type": "repeatable",
+          "label": "Entries",
+          "required": false,
+          "entryLabel": "workload",
+          "maxEntries": 3,
+          "subQuestions": [
+            {
+              "id": "M_workload",
+              "type": "workloadRef",
+              "label": "Which workload (from Section C) does this entry describe?",
+              "required": false,
+              "optionsFrom": {
+                "questionId": "W_workloads",
+                "labelField": "W_code"
+              }
+            },
+            {
+              "id": "M_peak",
+              "type": "quantity",
+              "label": "Observed peak memory per node",
+              "required": false,
+              "dimension": "size",
+              "defaultUnit": "GB",
+              "allowUnknown": true,
+              "committeeUse": [
+                "memory_test"
+              ]
+            },
+            {
+              "id": "M_fits_standard",
+              "type": "radio",
+              "label": "Does the job run on a standard node of Gargi or Raman?",
+              "required": false,
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "Yes"
+                },
+                {
+                  "value": "fails_oom",
+                  "label": "No — it fails with out-of-memory"
+                },
+                {
+                  "value": "not_tested",
+                  "label": "Not tested"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "memory_test"
+              ]
+            },
+            {
+              "id": "M_distributable",
+              "type": "radio",
+              "label": "Can the memory be spread over more nodes (less memory per node)?",
+              "required": false,
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "Yes"
+                },
+                {
+                  "value": "no",
+                  "label": "No"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "memory_test"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E4",
+      "title": "E4. GPU",
+      "description": "Shown because GPU use or a GPU-access problem was reported. Gargi has no GPUs; Raman has one GPU node.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "conditionalOn": [
+        {
+          "questionId": "X_problems",
+          "values": [
+            "insufficient_gpu_access"
+          ]
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_gpus",
+            "op": "gt",
+            "value": 0
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_gpu_version",
+            "op": "in",
+            "values": [
+              "in_use"
+            ]
+          }
+        }
+      ],
+      "notAwareOption": {
+        "questionId": "NA_gpu",
+        "label": "I am not aware of these details, or don't know how to characterise our GPU use"
+      },
+      "questions": [
+        {
+          "id": "G_records",
+          "type": "repeatable",
+          "label": "Entries",
+          "required": false,
+          "entryLabel": "workload",
+          "maxEntries": 3,
+          "subQuestions": [
+            {
+              "id": "G_workload",
+              "type": "workloadRef",
+              "label": "Which workload (from Section C) does this entry describe?",
+              "required": false,
+              "optionsFrom": {
+                "questionId": "W_workloads",
+                "labelField": "W_code"
+              }
+            },
+            {
+              "id": "G_model",
+              "type": "text",
+              "label": "GPU model(s) used or targeted",
+              "required": false,
+              "placeholder": "e.g. NVIDIA A100 80 GB"
+            },
+            {
+              "id": "G_mem_per_gpu",
+              "type": "quantity",
+              "label": "GPU memory needed per GPU",
+              "required": false,
+              "dimension": "size",
+              "defaultUnit": "GB",
+              "allowUnknown": true,
+              "committeeUse": [
+                "gpu_spec"
+              ]
+            },
+            {
+              "id": "G_max_gpus",
+              "type": "number",
+              "label": "Largest number of GPUs one job uses",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 0,
+              "committeeUse": [
+                "gpu_spec"
+              ]
+            },
+            {
+              "id": "G_nvlink",
+              "type": "radio",
+              "label": "Does the job need fast GPU-to-GPU links within a node (e.g. NVLink)?",
+              "required": false,
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "Yes"
+                },
+                {
+                  "value": "no",
+                  "label": "No"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "advanced": true,
+              "committeeUse": [
+                "gpu_spec"
+              ]
+            },
+            {
+              "id": "G_multinode",
+              "type": "radio",
+              "label": "Does the job use GPUs across several nodes?",
+              "required": false,
+              "options": [
+                {
+                  "value": "yes_now",
+                  "label": "Yes — now"
+                },
+                {
+                  "value": "yes_planned",
+                  "label": "Yes — planned"
+                },
+                {
+                  "value": "no",
+                  "label": "No"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "advanced": true,
+              "committeeUse": [
+                "gpu_spec"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E5",
+      "title": "E5. Scratch Storage",
+      "description": "Shown because a scratch problem was reported or a workload's scratch needs are large relative to the shared scratch area (about 50–60 TB per cluster, shared by all users).\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "conditionalOn": [
+        {
+          "questionId": "X_problems",
+          "values": [
+            "scratch_insufficient"
+          ]
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_scratch_min",
+            "op": "gt",
+            "configRef": "thresholds.scratchPerJobTriggerGB"
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": [
+              "W_scratch_min",
+              "W_concurrent"
+            ],
+            "op": "gt",
+            "configRef": "thresholds.scratchConcurrentTriggerGB"
+          }
+        }
+      ],
+      "notAwareOption": {
+        "questionId": "NA_scratch",
+        "label": "I am not aware of these details, or don't know how to characterise our scratch use"
+      },
+      "questions": [
+        {
+          "id": "SC_records",
+          "type": "repeatable",
+          "label": "Entries",
+          "required": false,
+          "entryLabel": "workload",
+          "maxEntries": 3,
+          "subQuestions": [
+            {
+              "id": "SC_workload",
+              "type": "workloadRef",
+              "label": "Which workload (from Section C) does this entry describe?",
+              "required": false,
+              "optionsFrom": {
+                "questionId": "W_workloads",
+                "labelField": "W_code"
+              }
+            },
+            {
+              "id": "SC_peak",
+              "type": "quantity",
+              "label": "Peak scratch used by one job",
+              "required": false,
+              "dimension": "size",
+              "defaultUnit": "GB",
+              "allowUnknown": true,
+              "committeeUse": [
+                "scratch_test"
+              ]
+            },
+            {
+              "id": "SC_files",
+              "type": "radio",
+              "label": "Number of files one job writes to scratch",
+              "required": false,
+              "options": [
+                {
+                  "value": "lt_1k",
+                  "label": "Fewer than 1,000"
+                },
+                {
+                  "value": "1k_100k",
+                  "label": "1,000–100,000"
+                },
+                {
+                  "value": "gt_100k",
+                  "label": "More than 100,000"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "scratch_io"
+              ]
+            },
+            {
+              "id": "SC_pattern",
+              "type": "radio",
+              "label": "Main file pattern",
+              "required": false,
+              "options": [
+                {
+                  "value": "few_large",
+                  "label": "Few large files"
+                },
+                {
+                  "value": "many_small",
+                  "label": "Many small files"
+                },
+                {
+                  "value": "both",
+                  "label": "Both"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "scratch_io"
+              ]
+            },
+            {
+              "id": "SC_local_disk",
+              "type": "radio",
+              "label": "Could the job use a node's local disk instead of shared scratch?",
+              "required": false,
+              "options": [
+                {
+                  "value": "yes",
+                  "label": "Yes"
+                },
+                {
+                  "value": "no",
+                  "label": "No"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "scratch_io"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "E6",
+      "title": "E6. Queue and Turnaround",
+      "description": "Shown because queue-wait or capacity problems were reported.",
+      "conditionalOn": [
+        {
+          "questionId": "X_problems",
+          "values": [
+            "excessive_queue_wait",
+            "insufficient_total_capacity",
+            "debug_wait"
+          ]
+        }
+      ],
+      "notAwareOption": {
+        "questionId": "NA_queue",
+        "label": "I am not aware of these details, or don't know how to characterise our queue waiting times"
+      },
+      "questions": [
+        {
+          "id": "Q_cluster",
+          "type": "checkbox",
+          "label": "Which cluster do these answers refer to?",
+          "required": false,
+          "options": [
+            {
+              "value": "gargi",
+              "label": "Gargi"
+            },
+            {
+              "value": "raman",
+              "label": "Raman"
+            },
+            {
+              "value": "other",
+              "label": "Another system"
+            }
+          ]
+        },
+        {
+          "id": "Q_typical_wait",
+          "type": "quantity",
+          "label": "Typical wait in the queue before a job starts",
+          "required": false,
+          "dimension": "time",
+          "defaultUnit": "hours",
+          "allowUnknown": true,
+          "committeeUse": [
+            "turnaround"
+          ]
+        },
+        {
+          "id": "Q_longest_wait",
+          "type": "quantity",
+          "label": "Longest wait in the last 3 months",
+          "required": false,
+          "dimension": "time",
+          "defaultUnit": "days",
+          "allowUnknown": true,
+          "committeeUse": [
+            "turnaround"
+          ]
+        },
+        {
+          "id": "Q_share_not_run",
+          "type": "number",
+          "label": "Share of planned calculations in the last 12 months not run because of queue wait or capacity",
+          "required": false,
+          "integer": true,
+          "allowUnknown": true,
+          "min": 0,
+          "max": 100,
+          "unit": "%",
+          "committeeUse": [
+            "unmet_demand"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "F",
+      "title": "F. Growth and Closing",
+      "questions": [
+        {
+          "id": "Z_growth_3y",
+          "type": "number",
+          "label": "Expected computing demand of your group in 3 years, relative to now",
+          "required": false,
+          "helpText": "1 = same as now; 2 = twice as much.",
+          "integer": false,
+          "allowUnknown": true,
+          "min": 0,
+          "unit": "×",
+          "committeeUse": [
+            "growth_compute"
+          ]
+        },
+        {
+          "id": "Z_benchmark_help",
+          "type": "radio",
+          "label": "Would assistance with benchmarking any of your codes be useful?",
+          "required": false,
+          "helpText": "A benchmark is a representative calculation run on known hardware to measure performance objectively. It is particularly useful if you do not have runtime data from the current cluster. Your answer helps the committee gauge interest; it is not a commitment of support. Any assistance would be arranged separately — for example, with help from experienced users who volunteer.",
+          "options": [
+            {
+              "value": "yes",
+              "label": "Yes"
+            },
+            {
+              "value": "no",
+              "label": "No"
+            },
+            {
+              "value": "not_sure",
+              "label": "Not sure"
+            }
+          ]
+        },
+        {
+          "id": "Z_benchmark_codes",
+          "type": "text",
+          "label": "Which application(s) would benchmarking assistance be useful for?",
+          "required": false,
+          "conditionalOn": {
+            "questionId": "Z_benchmark_help",
+            "values": [
+              "yes",
+              "not_sure"
+            ]
+          },
+          "placeholder": "e.g. VASP, GROMACS, OpenFOAM"
+        },
+        {
+          "id": "Z_volunteer",
+          "type": "radio",
+          "label": "Would someone in your group be willing to help other users benchmark codes your group knows well?",
+          "required": false,
+          "helpText": "Entirely voluntary. This has no bearing on how your own workload is characterised.",
+          "options": [
+            {
+              "value": "yes",
+              "label": "Yes"
+            },
+            {
+              "value": "possibly",
+              "label": "Possibly — please contact us"
+            },
+            {
+              "value": "no",
+              "label": "No"
+            }
+          ]
+        },
+        {
+          "id": "Z_volunteer_codes",
+          "type": "text",
+          "label": "Which application(s) could your group help with?",
+          "required": false,
+          "conditionalOn": {
+            "questionId": "Z_volunteer",
+            "values": [
+              "yes",
+              "possibly"
+            ]
+          },
+          "placeholder": "e.g. Quantum ESPRESSO, LAMMPS"
+        },
+        {
+          "id": "Z_comments",
+          "type": "textarea",
+          "label": "Anything else the committee should know (optional)",
+          "required": false
+        }
+      ]
+    }
+  ]
+}

@@ -322,7 +322,7 @@ export function FormShell({
                     aria-current={isActive ? 'step' : undefined}
                   >
                     <span className="nav-section-id">{section.id}</span>
-                    <span className="nav-section-title">{section.title.replace(/^[A-N]\.\s*/, '')}</span>
+                    <span className="nav-section-title">{section.title.replace(/^[A-Z]\d*\.\s*/, '')}</span>
                     {prog.total > 0 && (
                       <span className="nav-section-progress">{prog.answered}/{prog.total}</span>
                     )}
