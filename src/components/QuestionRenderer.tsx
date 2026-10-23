@@ -389,7 +389,7 @@ export function QuestionRenderer({
           {names.map(n => <option key={n} value={n}>{n}</option>)}
           {stale && <option value={strVal}>{strVal} (no longer in the workload table)</option>}
         </select>
-        {names.length === 0 && (
+        {names.length === 0 && !question.helpText && (
           <span className="question-help">The codes you list in Section C (Your Workloads) appear here.</span>
         )}
       </div>

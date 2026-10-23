@@ -84,7 +84,7 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
   return (
     <div className="repeatable-group">
       {rows.length === 0 && (
-        <p className="repeatable-empty">No entries yet. Click &quot;Add entry&quot; below to begin.</p>
+        <p className="repeatable-empty">No entries yet. Click &quot;Add {question.entryLabel ?? 'entry'}&quot; below to begin.</p>
       )}
 
       {rows.map((_, rowIndex) => {

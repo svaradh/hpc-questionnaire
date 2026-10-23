@@ -425,8 +425,29 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe up to three main codes your group runs, one entry each. Numbers for a typical job are enough; ticking \"Don't know\" is always fine.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.",
+      "description": "Describe up to three main codes your group runs, one entry each. Numbers for a typical job are enough; ticking \"Don't know\" is always fine.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.\n\nLater sections ask about specific codes by picking them from this list.",
       "questions": [
+        {
+          "id": "W_problem_notice",
+          "type": "info",
+          "required": false,
+          "label": "Please include the codes affected by the problems you reported",
+          "helpText": "You reported operational problems in Section B. The follow-up sections that ask about them refer back to the codes listed here, so make sure every code involved is included. If more than three codes are affected, list the three most affected here and name the others under \"Other codes\" below.",
+          "conditionalOn": {
+            "questionId": "X_problems",
+            "values": [
+              "wall_time_termination",
+              "excessive_queue_wait",
+              "insufficient_node_count",
+              "insufficient_memory",
+              "insufficient_gpu_access",
+              "insufficient_total_capacity",
+              "scratch_insufficient",
+              "debug_wait",
+              "other"
+            ]
+          }
+        },
         {
           "id": "W_workloads",
           "type": "repeatable",
@@ -1396,7 +1417,8 @@
               "optionsFrom": {
                 "questionId": "W_workloads",
                 "labelField": "W_code"
-              }
+              },
+              "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },
             {
               "id": "L_device",
@@ -1620,7 +1642,8 @@
               "optionsFrom": {
                 "questionId": "W_workloads",
                 "labelField": "W_code"
-              }
+              },
+              "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },
             {
               "id": "P_scale_over",
@@ -1955,7 +1978,8 @@
               "optionsFrom": {
                 "questionId": "W_workloads",
                 "labelField": "W_code"
-              }
+              },
+              "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },
             {
               "id": "M_peak",
@@ -2084,7 +2108,8 @@
               "optionsFrom": {
                 "questionId": "W_workloads",
                 "labelField": "W_code"
-              }
+              },
+              "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },
             {
               "id": "G_model",
@@ -2225,7 +2250,8 @@
               "optionsFrom": {
                 "questionId": "W_workloads",
                 "labelField": "W_code"
-              }
+              },
+              "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },
             {
               "id": "SC_input_read",
@@ -2462,7 +2488,8 @@
               "optionsFrom": {
                 "questionId": "W_workloads",
                 "labelField": "W_code"
-              }
+              },
+              "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },
             {
               "id": "Q_same_as_typical",
