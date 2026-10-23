@@ -3,7 +3,7 @@
   "_notes": [
     "Raman cores per node: the site lists 'Xeon Gold 6126, 12 cores' (a 12-core CPU); 24 per node assumes 2 sockets, consistent with pilot data ('2 x 12-cores Intel Xeon Gold 6126, 96 GB RAM'). TO CONFIRM.",
     "Raman GPU node: model not listed; recalled as a Volta-generation card. Not needed by the form for now.",
-    "Scratch: not listed separately. Home:scratch is usually 60:40; assumed 50:50 of usable storage (user, 2026-10-23). Quotas and purge policy unknown."
+    "Storage split: each cluster's usable storage is divided into home and scratch by storage.scratchFraction (committee parameter; usually home:scratch 60:40, set to 50:50 for now). homeTB and scratchTB are computed from it in clusterConfig.ts."
   ],
   "clusters": [
     {
@@ -15,7 +15,7 @@
         { "id": "highmem", "count": 3, "cpu": "2x AMD EPYC 9554", "coresPerNode": 128, "memoryGB": 2304 }
       ],
       "gpuNodes": [],
-      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchTB": 60 },
+      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchFraction": 0.5 },
       "interconnect": "200 Gbps Mellanox InfiniBand HDR",
       "queues": [
         { "id": "debug",  "minNodes": 1, "maxNodes": 2, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 5 },
@@ -36,7 +36,7 @@
       "gpuNodes": [
         { "count": 1, "cpu": "2x Xeon Gold 6126", "coresPerNode": 24, "memoryGB": 96, "gpuModel": "Volta generation (unconfirmed)", "gpusPerNode": null }
       ],
-      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchTB": 52 },
+      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchFraction": 0.5 },
       "interconnect": "100 Gbps Intel Omni-Path + 1 Gbps Ethernet",
       "queues": [
         { "id": "debug",  "minNodes": 1, "maxNodes": 4, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 4 },
@@ -54,6 +54,13 @@
     "cpuPerCoreHourSevenDayQueue": 0.20,
     "gpuPerCardHour": 1.00
   },
+  "committeeParameters": {
+    "_comment": "Set by the HPC Users' Committee; used by triggers and by the analysis to check responses against policy. null = not yet decided.",
+    "maxScratchPerUserTB": null,
+    "homeGuidePerGroupTB": null,
+    "scratchPerJobTriggerFraction": 0.01,
+    "scratchConcurrentTriggerFraction": 0.05
+  },
   "thresholds": {
     "_comment": "Values that follow-up triggers compare workload answers against (via configRef). Derived from the clusters above; edit here, not in the schema. null disables the trigger.",
     "maxMultiNodeWalltimeHours": 72,
@@ -63,8 +70,6 @@
     "largestStandardNodeMemoryGB": 768,
     "largeRunCores": 768,
     "debugWalltimeHours": 0.5,
-    "_scratchComment": "Scratch is dynamic with a largest area per user (value not yet set), not equal shares. Flags (placeholders for the committee) use the smaller scratch area (Raman, ~52 TB = 53248 GB): files written by one job > 1 %, or written x concurrent jobs > 5 %.",
-    "scratchPerJobTriggerGB": 532,
-    "scratchConcurrentTriggerGB": 2662
+    "_derivedComment": "scratchPerJobTriggerGB and scratchConcurrentTriggerGB are computed in clusterConfig.ts as committeeParameters fractions of the smallest cluster scratch area."
   }
 }

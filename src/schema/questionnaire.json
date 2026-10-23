@@ -2176,7 +2176,7 @@
     {
       "id": "E5",
       "title": "E5. Scratch Storage",
-      "description": "Shown because a scratch problem was reported or a workload writes large files while it runs. Scratch is shared, dynamic space (about 50–60 TB per cluster); there is a largest area any single user may occupy rather than equal shares. Read-only inputs can usually stay in the home area, which is on the same parallel file system; scratch matters most for files written, or written and re-read, during a run.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "description": "Shown because a scratch problem was reported or a workload writes large files while it runs. Scratch is shared, dynamic space; there is a largest area any single user may occupy rather than equal shares. Read-only inputs can usually stay in the home area, which is on the same parallel file system; scratch matters most for files written, or written and re-read, during a run.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
       "conditionalOn": [
         {
           "questionId": "X_problems",
