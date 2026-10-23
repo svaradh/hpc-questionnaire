@@ -55,7 +55,8 @@
     "gpuPerCardHour": 1.00
   },
   "committeeParameters": {
-    "_comment": "Set by the HPC Users' Committee; used by triggers and by the analysis to check responses against policy. null = not yet decided.",
+    "_comment": "Set by the HPC Users' Committee; used by triggers and by the analysis to check responses against policy. null = not yet decided. targetUtilisation: share of a cluster's core-hours that can realistically be delivered over a year (maintenance, fragmentation, scheduling gaps); 0.8 is a placeholder.",
+    "targetUtilisation": 0.8,
     "maxScratchPerUserTB": null,
     "homeGuidePerGroupTB": null,
     "scratchPerJobTriggerFraction": 0.01,

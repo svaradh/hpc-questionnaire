@@ -596,6 +596,38 @@
               "helpText": "\"Job\" = one submission to the scheduler. Wall time = running time, not including time waiting in the queue."
             },
             {
+              "id": "W_cluster",
+              "type": "radio",
+              "required": false,
+              "label": "Which IISER Bhopal cluster do (or would) these jobs run on?",
+              "helpText": "Gargi has no GPUs; GPU jobs run on Raman.",
+              "options": [
+                {
+                  "value": "gargi",
+                  "label": "Gargi"
+                },
+                {
+                  "value": "raman",
+                  "label": "Raman"
+                },
+                {
+                  "value": "both",
+                  "label": "Both"
+                },
+                {
+                  "value": "not_decided",
+                  "label": "Not decided yet"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "cluster_attribution"
+              ]
+            },
+            {
               "id": "W_device",
               "type": "radio",
               "label": "Does a typical job of this code run on CPUs only, or on GPUs?",

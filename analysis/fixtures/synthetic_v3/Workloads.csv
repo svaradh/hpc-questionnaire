@@ -1,0 +1,13 @@
+submission_id,pi_name,entry_index,code,type,type_other,source,cluster,device,nodes,cores,gpus,mem_node_gb,walltime_h,scratch_write_gb,jobs_year,jobs_year_unconstrained,concurrent,organisation,batch_size,chain_steps,chain_elapsed_h,long_total_h,campaign_cores,campaign_gpus,campaign_duration_h,campaigns_year,gpu_version,gpu_speedup,cpu_viable,core_hours_year,core_hours_year_unconstrained,gpu_hours_year,peak_concurrent_cores,peak_concurrent_gpus,peak_concurrent_scratch_gb,evidence_level
+SYN-01,Dr. Synthetic PI 1,1,Quantum ESPRESSO,electronic_structure,,gargi,gargi,cpu,3,384,,300,70,150,300,500,4,independent; long_calc,,,,192,,,,,tested_not_adopted,2_5,,8064000,13440000,,1536,,600,1
+SYN-02,Dr. Synthetic PI 2,1,GROMACS,molecular_dynamics,,raman,raman,gpu,1,12,1,40,48,20,120,600,8,independent,10,,,,,,,,in_use,5_20,gt_5_slower,69120,345600,5760,96,8,160,1
+SYN-03,Dr. Synthetic PI 3,1,WRF,climate_environmental,,gargi,gargi,cpu,1,128,,200,216,400,20,30,2,long_calc,,,,216,,,,,none,,,552960,829440,,256,,800,1
+SYN-04,Dr. Synthetic PI 4,1,ED-custom,many_body_exact_diagonalisation,,gargi,gargi,cpu,1,128,,1843.2,100,0,40,60,1,standalone,,,,,,,,,dont_know,,,512000,768000,,128,,0,1
+SYN-05,Dr. Synthetic PI 5,1,GATK,bioinformatics_genomics,,gargi,gargi,cpu,1,16,,64,6,50,15000,30000,60,independent,500,,,,,,,,available_not_tested,,,1440000,2880000,,960,,3000,1
+SYN-06,Dr. Synthetic PI 6,1,PyTorch,machine_learning,,estimate,not_decided,gpu,1,16,4,128,20,500,50,300,2,standalone,,,,,,,,,in_use,gt_20,no,16000,96000,4000,32,8,1000,5
+SYN-07,Dr. Synthetic PI 7,1,Quantum ESPRESSO,electronic_structure,,gargi,gargi,cpu,1,64,,100,10,10,150,150,3,standalone,,,,,,,,,available_not_tested,,,96000,96000,,192,,30,1
+SYN-08,Dr. Synthetic PI 8,1,Stata,data_analysis,,dont_know,raman,cpu,dont_know,dont_know,,dont_know,dont_know,dont_know,dont_know,,,dont_know,,,,,,,,,dont_know,,,,,,,,,
+SYN-09,Dr. Synthetic PI 9,1,LAMMPS,molecular_dynamics; atomistic_simulation,,national,gargi,cpu,4,512,,150,96,300,60,120,4,campaign; long_calc,,,,288,2048,,120,4,available_not_tested,,,2949120,5898240,,2048,,1200,3
+SYN-10,Dr. Synthetic PI 10,1,OpenFOAM,cfd,,raman,raman,cpu,4,96,,80,60,100,80,150,6,chain,,5,480,,,,,,none,,,460800,864000,,576,,600,1
+SYN-11,Dr. Synthetic PI 11,1,Gaussian,electronic_structure,,gargi,both,cpu,1,64,,250,30,2048,400,600,4,independent,,,,,,,,,none,,,768000,1152000,,256,,8192,1
+SYN-12,Dr. Synthetic PI 12,1,R,data_analysis,,estimate,dont_know,cpu,1,32,,64,4,5,200,200,10,independent,,,,,,,,,dont_know,,,25600,25600,,320,,50,5

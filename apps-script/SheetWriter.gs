@@ -50,7 +50,7 @@ var SHEET_DEFINITIONS = [
     source: { rows: 'W_workloads' },
     columns: [
       ['code', 'W_code'], ['type', 'W_type'], ['type_other', 'W_type_other'], ['source', 'W_source'],
-      ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
+      ['cluster', 'W_cluster'], ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
       ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'], ['scratch_write_gb', 'W_scratch_write', 'q'],
       ['jobs_year', 'W_jobs_year'], ['jobs_year_unconstrained', 'W_jobs_year_unconstrained'], ['concurrent', 'W_concurrent'],
       ['organisation', 'W_org'], ['batch_size', 'W_batch_size'],

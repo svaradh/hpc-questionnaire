@@ -48,422 +48,128 @@ function generateReportForSelected() {
 }
 
 // ---------------------------------------------------------------------------
-// Core report generator
+// Core report generator (schema 2.0.0)
 // ---------------------------------------------------------------------------
 
 /**
- * generateReport — builds a Google Doc containing the full committee report
- * for the given submissionId.
+ * Report sections, in order. Each names a tab from SHEET_DEFINITIONS
+ * (SheetWriter.gs); its columns are rendered with readable labels, empty
+ * fields skipped. Repeatable tabs render one sub-table per entry, titled by
+ * `titleCol`. Cluster comparisons and triage suggestions are in the analysis
+ * notebooks (analysis/04–06), which read the cluster configuration.
+ */
+var REPORT_SECTIONS = [
+  { tab: 'Group',          title: 'A — About the group' },
+  { tab: 'Experience',     title: 'B — HPC experience (any system)' },
+  { tab: 'Workloads',      title: 'C — Workloads', titleCol: 'code' },
+  { tab: 'StorageTesting', title: 'D — Home area, testing and interactive use' },
+  { tab: 'LongJobs',       title: 'E1 — Long jobs', titleCol: 'workload' },
+  { tab: 'Scaling',        title: 'E2 — Scaling and large runs', titleCol: 'workload' },
+  { tab: 'Memory',         title: 'E3 — Memory', titleCol: 'workload' },
+  { tab: 'Gpu',            title: 'E4 — GPU', titleCol: 'workload' },
+  { tab: 'Scratch',        title: 'E5 — Scratch', titleCol: 'workload' },
+  { tab: 'Queue',          title: 'E6 — Queue and turnaround', titleCol: 'queue' },
+  { tab: 'Closing',        title: 'F — Growth and closing' }
+];
+
+/** Columns computed by the sheet writer rather than answered (shown in italics). */
+var DERIVED_COLUMNS = ['core_hours_year', 'core_hours_year_unconstrained', 'gpu_hours_year', 'peak_concurrent_cores',
+                       'peak_concurrent_gpus', 'peak_concurrent_scratch_gb', 'evidence_level', 'not_aware_sections'];
+
+/** "walltime_h" -> "Walltime (h)", "mem_node_gb" -> "Mem node (GB)". */
+function readableLabel(col) {
+  var unit = '';
+  var m = col.match(/_(h|gb|pct|tb)$/);
+  if (m) {
+    unit = { h: ' (h)', gb: ' (GB)', pct: ' (%)', tb: ' (TB)' }[m[1]];
+    col = col.slice(0, -m[0].length);
+  }
+  var words = col.replace(/_/g, ' ');
+  return words.charAt(0).toUpperCase() + words.slice(1) + unit;
+}
+
+function readableValue(v) {
+  if (v === '' || v === null || v === undefined) return '';
+  if (v === 'dont_know') return "Don't know";
+  if (typeof v === 'number') return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en-IN') : String(Math.round(v * 100) / 100);
+  return String(v).replace(/_/g, ' ');
+}
+
+/** [label, value] pairs for the non-empty answer columns of a row. */
+function rowPairs(def, row) {
+  return def.columns
+    .filter(function(c) { return readableValue(row[c[0]]) !== ''; })
+    .map(function(c) {
+      var label = readableLabel(c[0]) + (DERIVED_COLUMNS.indexOf(c[0]) >= 0 ? ' — computed' : '');
+      return [label, readableValue(row[c[0]])];
+    });
+}
+
+/**
+ * generateReport — builds a Google Doc with everything one group submitted,
+ * plus the values the sheet writer computed from it.
  *
  * @param  {string} submissionId
  * @return {string} URL of the created document
  */
 function generateReport(submissionId) {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sub = getFirstRowForSubmission(ss, 'Submissions', submissionId);
+  var groupName = sub ? sub['group_name'] || '(not provided)' : '(not provided)';
+  var piName = sub ? sub['pi_name'] || '(not provided)' : '(not provided)';
 
-  // --- Collect data from all sheets ---
-  var sub    = getFirstRowForSubmission(ss, 'Submissions', submissionId);
-  var resp   = getFirstRowForSubmission(ss, 'RespondentInfo', submissionId);
-  var wloads = getRowsForSubmission(ss, 'Workloads', submissionId);
-  var setups = getRowsForSubmission(ss, 'JobSetups', submissionId);
-  var rts    = getRowsForSubmission(ss, 'RuntimeRecords', submissionId);
-  var bmark  = getFirstRowForSubmission(ss, 'BenchmarkRequests', submissionId);
-  var wtt    = getFirstRowForSubmission(ss, 'WallTimeTerminations', submissionId);
-  var chks   = getRowsForSubmission(ss, 'CheckpointInfo', submissionId);
-  var scls   = getRowsForSubmission(ss, 'ScalingInfo', submissionId);
-  var mems   = getRowsForSubmission(ss, 'MemoryInfo', submissionId);
-  var gpus   = getRowsForSubmission(ss, 'GpuInfo', submissionId);
-  var indep  = getFirstRowForSubmission(ss, 'IndependentJobs', submissionId);
-  var pipe   = getFirstRowForSubmission(ss, 'PipelineJobs', submissionId);
-  var ext    = getFirstRowForSubmission(ss, 'ExtendedCalcs', submissionId);
-  var svc    = getFirstRowForSubmission(ss, 'ServiceObservations', submissionId);
-
-  // Convenience: pull frequently-used values
-  var groupName  = sub ? sub['group_name']  || '(not provided)' : '(not provided)';
-  var piName     = sub ? sub['pi_name']     || '(not provided)' : '(not provided)';
-  var submittedAt = sub ? sub['submitted_at'] || '' : '';
-
-  // --- Create the document ---
-  var docTitle = 'HPC Report — ' + groupName + ' — ' + submissionId;
-  var doc = DocumentApp.create(docTitle);
+  var doc = DocumentApp.create('HPC Report — ' + groupName + ' — ' + submissionId);
   var body = doc.getBody();
-
-  // Move to committee folder
   if (COMMITTEE_FOLDER_ID) {
     var file = DriveApp.getFileById(doc.getId());
     DriveApp.getFolderById(COMMITTEE_FOLDER_ID).addFile(file);
     DriveApp.getRootFolder().removeFile(file);
   }
 
-  // -------------------------------------------------------------------------
-  // Title
-  // -------------------------------------------------------------------------
   var titlePara = body.appendParagraph('HPC WORKLOAD CHARACTERISATION — COMMITTEE REPORT');
   titlePara.setHeading(DocumentApp.ParagraphHeading.HEADING1);
-  titlePara.editAsText().setBold(true);
-
+  body.appendParagraph(groupName + ' — ' + piName).setBold(true);
   body.appendParagraph(
-    'Generated: ' + new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) +
-    '   |   Submission ID: ' + submissionId +
-    '   |   Status: Submitted'
+    'Submission ' + submissionId +
+    (sub ? '   |   submitted ' + sub['submitted_at'] + '   |   questionnaire v' + sub['questionnaire_version'] : '') +
+    '   |   generated ' + new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+  ).setItalic(true);
+  body.appendParagraph(
+    'This report lists the facts the group provided and values computed from them (marked "computed"). ' +
+    'Quantities are in hours and GB. "Don\'t know" is a valid answer and is not a negative finding. ' +
+    'Comparisons with cluster limits and suggested triage categories are in the analysis notebooks (04–06).'
   ).setItalic(true);
 
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Section A — Research Group
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION A — RESEARCH GROUP');
-
-  var salutation = resp ? (resp['pi_salutation'] || '') : '';
-  var piEmail    = resp ? (resp['pi_email']    || '') : '';
-  var completedBy = resp ? ((resp['completed_by_name'] || '') + ' (' + (resp['completed_by_role'] || '') + ')') : '';
-  var researchDesc = resp ? (resp['research_description'] || 'Not provided') : 'Not provided';
-  var dept = resp ? (resp['department'] || '(not provided)') : '(not provided)';
-
-  var sectionAData = [
-    ['Research Group', groupName],
-    ['Department', dept],
-    ['PI', salutation + ' ' + piName + ' (' + piEmail + ')'],
-    ['Submitted by', completedBy || '(not provided)'],
-    ['Description', researchDesc]
-  ];
-  appendTwoColTable(body, sectionAData);
-
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Section B — Workloads
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION B — WORKLOADS');
-
-  if (wloads.length === 0 || !wloads[0]['code_name']) {
-    body.appendParagraph('No workload entries provided.').setItalic(true);
-  } else {
-    wloads.forEach(function(w) {
-      if (!w['code_name']) return;
-      appendHeading3(body, w['code_name']);
-      appendTwoColTable(body, [
-        ['Categories',   w['categories']    || '(not provided)'],
-        ['Version',      w['version']       || '(not known)'],
-        ['Annual jobs',  w['job_count_range'] || '(not provided)'],
-        ['Reference',    w['reference']     || ''],
-        ['Notes',        w['notes']         || '']
-      ]);
-      body.appendParagraph('');
+  REPORT_SECTIONS.forEach(function(sec) {
+    var def = SHEET_DEFINITIONS.filter(function(d) { return d.name === sec.tab; })[0];
+    if (!def) return;
+    var rows = getRowsForSubmission(ss, sec.tab, submissionId);
+    var isRows = def.source !== 'top';
+    if (isRows && rows.length === 0) return;      // follow-up not triggered or not answered
+    appendHeading2(body, sec.title);
+    if (!isRows) {
+      var pairs = rows.length ? rowPairs(def, rows[0]) : [];
+      if (pairs.length) appendTwoColTable(body, pairs);
+      else body.appendParagraph('No answers.').setItalic(true);
+      return;
+    }
+    rows.forEach(function(row) {
+      appendHeading3(body, readableValue(row[sec.titleCol]) || ('Entry ' + row['entry_index']));
+      var pairs = rowPairs(def, row).filter(function(p) { return p[0] !== readableLabel(sec.titleCol); });
+      if (pairs.length) appendTwoColTable(body, pairs);
     });
-  }
+  });
 
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Section D — Typical Job Setups
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION D — TYPICAL JOB SETUPS');
-
-  if (setups.length === 0 || !setups[0]['system_name']) {
-    body.appendParagraph('No job setup entries provided.').setItalic(true);
-  } else {
-    setups.forEach(function(s, idx) {
-      appendHeading3(body, 'Setup ' + (idx + 1) + (s['workload_ref'] ? ' — ' + s['workload_ref'] : ''));
-      appendTwoColTable(body, [
-        ['System',               s['system_name']          || ''],
-        ['System type',          s['system_type']          || ''],
-        ['Nodes',                s['nodes_range']          || ''],
-        ['CPU cores',            s['cores_range']          || ''],
-        ['GPU used',             s['uses_gpu']             || ''],
-        ['GPUs per node',        s['gpus_per_node_range']  || ''],
-        ['GPU model',            s['gpu_model']            || ''],
-        ['Memory per core',      s['memory_range']         || ''],
-        ['Scratch storage',      s['storage_range']        || ''],
-        ['Inter-node sensitive', s['interconnect_sensitive'] || ''],
-        ['Notes',                s['notes']                || '']
-      ]);
-      body.appendParagraph('');
-    });
-  }
-
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Section E — Runtime Observations
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION E — RUNTIME OBSERVATIONS');
-
-  if (rts.length === 0 || !rts[0]['workload_name']) {
-    body.appendParagraph('No runtime records provided.').setItalic(true);
-  } else {
-    var rtHeaders = ['Workload', 'Nodes', 'Cores', 'Wall time (h)', 'Core-hours (reported)', 'Core-hours (computed)', 'Jobs', 'Evidence source', 'Confidence'];
-    var rtRows = rts
-      .filter(function(r) { return r['workload_name']; })
-      .map(function(r) {
-        return [
-          r['workload_name']       || '',
-          r['nodes']               || '',
-          r['cores']               || '',
-          r['wall_time_hours']     || '',
-          r['cpu_gpu_hours']       || '',
-          r['computed_cpu_hours']  || '',
-          r['num_similar_jobs']    || '',
-          r['evidence_source']     || '',
-          r['evidence_level']      || ''
-        ];
-      });
-    appendTable(body, rtHeaders, rtRows);
-  }
-
-  if (bmark) {
-    appendHeading3(body, 'Benchmarking');
+  // Committee notes, if any have been entered
+  var ca = getFirstRowForSubmission(ss, 'CommitteeAssessment', submissionId);
+  if (ca && (ca['triage_category'] || ca['findings'])) {
+    appendHeading2(body, 'Committee assessment');
     appendTwoColTable(body, [
-      ['Assistance would be useful', bmark['benchmark_requested'] || ''],
-      ['Codes',                      bmark['benchmark_codes']     || ''],
-      ['Volunteer to help others',   bmark['volunteer_to_help']   || ''],
-      ['Codes they could help with', bmark['volunteer_codes']     || '']
+      ['Triage category', ca['triage_category'] || ''], ['Assessor', ca['assessor'] || ''],
+      ['Findings', ca['findings'] || ''], ['Follow-up', ca['follow_up_notes'] || '']
     ]);
   }
 
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Section F — Wall-Time Terminations
-  // -------------------------------------------------------------------------
-  if (wtt && wtt['has_been_terminated'] && wtt['has_been_terminated'] !== '') {
-    appendHeading2(body, 'SECTION F — WALL-TIME TERMINATIONS');
-    appendTwoColTable(body, [
-      ['Has been terminated',            wtt['has_been_terminated']        || ''],
-      ['Frequency',                      wtt['frequency']                  || ''],
-      ['Cores at termination',           wtt['terminated_cores']           || ''],
-      ['Requested wall time (h)',        wtt['terminated_wall_time_hours'] || ''],
-      ['Core-hours at termination',      wtt['terminated_cpu_hours']       || ''],
-      ['Completed anywhere',             wtt['completed_anywhere']         || ''],
-      ['Completed on system',            wtt['completed_system']           || ''],
-      ['Cores in completed run',         wtt['completed_cores']            || ''],
-      ['Wall time in completed run (h)', wtt['completed_wall_time_hours']  || ''],
-      ['Core-hours in completed run',    wtt['completed_cpu_hours']        || ''],
-      ['Notes',                          wtt['notes']                      || '']
-    ]);
-    body.appendParagraph('');
-  }
-
-  // -------------------------------------------------------------------------
-  // Section G — Checkpoint/Restart
-  // -------------------------------------------------------------------------
-  if (chks.length > 0 && chks.some(function(c) { return c['supported']; })) {
-    appendHeading2(body, 'SECTION G — CHECKPOINT / RESTART');
-    chks.filter(function(c) { return c['supported']; }).forEach(function(chk) {
-      appendHeading3(body, chk['workload_ref'] || '(applies to all codes)');
-      appendTwoColTable(body, [
-        ['Supported',                chk['supported']                 || ''],
-        ['Type',                     chk['checkpoint_type']           || ''],
-        ['Checkpoint interval (h)',  chk['checkpoint_interval_hours'] || ''],
-        ['Restart automatic',        chk['restart_automatic']         || ''],
-        ['Restart overhead (h)',     chk['restart_overhead_hours']    || ''],
-        ['Restart errors',           chk['restart_errors']            || ''],
-        ['Checkpointing abandoned',  chk['checkpoint_abandoned']      || ''],
-        ['Abandoned reason',         chk['abandoned_reason']          || ''],
-        ['Currently used',           chk['currently_used']            || ''],
-        ['Notes',                    chk['notes']                     || '']
-      ]);
-      body.appendParagraph('');
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  // Section H — Parallel Scaling
-  // -------------------------------------------------------------------------
-  if (scls.length > 0 && scls.some(function(s) { return s['independent_jobs']; })) {
-    appendHeading2(body, 'SECTION H — PARALLEL SCALING');
-    // Group rows by code, since each (code, resource configuration) pair is its own row.
-    var scalingByCode = {};
-    var scalingCodeOrder = [];
-    scls.forEach(function(s) {
-      var key = s['code_name'] || '(applies to all codes)';
-      if (!scalingByCode[key]) { scalingByCode[key] = []; scalingCodeOrder.push(key); }
-      scalingByCode[key].push(s);
-    });
-    scalingCodeOrder.forEach(function(code) {
-      var rows = scalingByCode[code];
-      var first = rows[0];
-      appendHeading3(body, code);
-      appendTwoColTable(body, [
-        ['Independent jobs',       first['independent_jobs']    || ''],
-        ['Scaling behaviour',      first['scaling_behaviour']   || ''],
-        ['Scaling limit (cores)',  first['scaling_limit_cores'] || ''],
-        ['Min cores (observed)',   first['min_cores']           || ''],
-        ['Max cores tested',       first['max_cores_tested']    || ''],
-        ['Notes',                  first['code_notes']          || '']
-      ]);
-      var configRows = rows.filter(function(r) { return r['nodes'] || r['cores'] || r['wall_time_hours']; });
-      if (configRows.length > 0) {
-        appendTable(body, ['Nodes', 'Cores', 'Wall time (h)', 'Evidence source', 'Confidence', 'Notes'],
-          configRows.map(function(r) {
-            return [r['nodes'] || '', r['cores'] || '', r['wall_time_hours'] || '', r['evidence_source'] || '', r['evidence_level'] || '', r['config_notes'] || ''];
-          }));
-      }
-      body.appendParagraph('');
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  // Section I — Memory
-  // -------------------------------------------------------------------------
-  var memsWithData = mems.filter(function(m) { return m['typical_memory_gb'] || m['peak_memory_gb'] || m['standard_nodes_tested']; });
-  if (memsWithData.length > 0) {
-    appendHeading2(body, 'SECTION I — MEMORY REQUIREMENTS');
-    memsWithData.forEach(function(mem) {
-      appendHeading3(body, mem['code_name'] || '(applies to all codes)');
-      appendTwoColTable(body, [
-        ['Typical memory per node (GB)',  mem['typical_memory_gb']      || ''],
-        ['Peak memory per node (GB)',     mem['peak_memory_gb']         || ''],
-        ['Min workable memory (GB)',      mem['min_workable_gb']        || ''],
-        ['Memory distribution',           mem['memory_distribution']    || ''],
-        ['Standard nodes tested',         mem['standard_nodes_tested']  || ''],
-        ['Evidence source',               mem['evidence_source']        || ''],
-        ['Confidence',                    mem['evidence_level']         || ''],
-        ['Notes',                         mem['notes']                  || '']
-      ]);
-      body.appendParagraph('');
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  // Section J — GPU and Specialised Resources
-  // -------------------------------------------------------------------------
-  var gpusWithData = gpus.filter(function(g) { return g['gpu_status']; });
-  if (gpusWithData.length > 0) {
-    appendHeading2(body, 'SECTION J — GPU AND SPECIALISED RESOURCES');
-    gpusWithData.forEach(function(gpu) {
-      appendHeading3(body, gpu['code_name'] || '(code not specified)');
-      appendTwoColTable(body, [
-        ['GPU status',                 gpu['gpu_status']             || ''],
-        ['GPU model',                  gpu['gpu_model']               || ''],
-        ['Min GPU memory needed',      gpu['gpu_memory_needed']       || ''],
-        ['Min GPUs per job',           gpu['min_gpus_per_job']        || ''],
-        ['Typical GPUs per job',       gpu['typical_gpus_per_job']    || ''],
-        ['Frameworks',                 gpu['frameworks']              || ''],
-        ['NVLink needed',              gpu['nvlink_needed']           || ''],
-        ['Multi-node GPU',             gpu['multinode_gpu']           || ''],
-        ['GPU jobs per year',          gpu['gpu_jobs_per_year']       || ''],
-        ['Evidence source',            gpu['evidence_source']         || '']
-      ]);
-      if (gpu['cpu_comparison'] === 'yes') {
-        appendTable(body, ['', 'CPU-only run', 'GPU run'], [
-          ['Cores/GPUs',  gpu['cpu_cores'] || '',       (gpu['gpu_count'] || '') + (gpu['gpu_cores'] ? ' GPU(s) + ' + gpu['gpu_cores'] + ' cores' : '')],
-          ['Wall time (h)', gpu['cpu_wall_time_hours'] || '', gpu['gpu_wall_time_hours'] || '']
-        ]);
-      } else if (gpu['cpu_comparison']) {
-        body.appendParagraph('CPU vs GPU comparison: ' + gpu['cpu_comparison']);
-      }
-      if (gpu['notes']) body.appendParagraph('Notes: ' + gpu['notes']);
-      body.appendParagraph('');
-    });
-  }
-
-  // -------------------------------------------------------------------------
-  // Section K — Workflow Patterns
-  // -------------------------------------------------------------------------
-  var hasWorkflowData = (indep && indep['job_count_per_year']) || (pipe && pipe['stages']) || (ext && ext['wall_time_hours']);
-  if (hasWorkflowData) {
-    appendHeading2(body, 'SECTION K — WORKFLOW PATTERNS');
-
-    if (indep && indep['job_count_per_year']) {
-      appendHeading3(body, 'Independent Jobs');
-      appendTwoColTable(body, [
-        ['Jobs per year',           indep['job_count_per_year'] || ''],
-        ['Wall time per job (h)',   indep['wall_time_hours']    || ''],
-        ['Concurrent jobs',         indep['concurrent_jobs']    || ''],
-        ['Typical turnaround',      indep['turnaround_range']   || ''],
-        ['CPU-hours used/yr',       indep['cpu_hours_used']     || ''],
-        ['CPU-hours needed/yr',     indep['cpu_hours_needed']   || '']
-      ]);
-      body.appendParagraph('');
-    }
-
-    if (pipe && pipe['stages']) {
-      appendHeading3(body, 'Pipeline Workflow');
-      appendTwoColTable(body, [
-        ['Stages',                   pipe['stages']               || ''],
-        ['Wall time per stage (h)',  pipe['stage_wall_time_hours'] || ''],
-        ['Stages parallelisable',    pipe['stage_parallelisable']  || ''],
-        ['Pipelines per year',       pipe['pipelines_per_year']    || ''],
-        ['End-to-end time (h)',      pipe['end_to_end_hours']      || ''],
-        ['CPU-hours used/yr',        pipe['cpu_hours_used']        || ''],
-        ['CPU-hours needed/yr',      pipe['cpu_hours_needed']      || '']
-      ]);
-      body.appendParagraph('');
-    }
-
-    if (ext && ext['wall_time_hours']) {
-      appendHeading3(body, 'Extended Calculation');
-      appendTwoColTable(body, [
-        ['Wall time needed (h)',       ext['wall_time_hours']         || ''],
-        ['Longest available (h)',      ext['longest_available_hours'] || ''],
-        ['Completed anywhere',         ext['completed']                || ''],
-        ['Completed on system',        ext['completed_system']         || ''],
-        ['Can checkpoint',             ext['can_checkpoint']           || ''],
-        ['Calculations per year',      ext['count_per_year']           || ''],
-        ['CPU-hours used/yr',          ext['cpu_hours_used']           || ''],
-        ['CPU-hours needed/yr',        ext['cpu_hours_needed']         || '']
-      ]);
-      body.appendParagraph('');
-    }
-  }
-
-  // -------------------------------------------------------------------------
-  // Section C — Observed Service Issues
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'SECTION C — OBSERVED SERVICE ISSUES');
-
-  if (svc && svc['problems_experienced'] && svc['problems_experienced'] !== '') {
-    var problems = svc['problems_experienced'].split('; ');
-    problems.forEach(function(prob) {
-      if (prob.trim()) body.appendListItem(prob.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
-    });
-    if (svc['other_problem_description']) {
-      body.appendParagraph('Other: ' + svc['other_problem_description']);
-    }
-  } else {
-    body.appendParagraph('No service observations recorded.').setItalic(true);
-  }
-
-  if (svc && svc['workload_characteristics'] && svc['workload_characteristics'] !== '') {
-    body.appendParagraph('');
-    appendHeading3(body, 'Workload Characteristics (self-reported)');
-    svc['workload_characteristics'].split('; ').forEach(function(ch) {
-      if (ch.trim()) body.appendListItem(ch.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
-    });
-  }
-
-  if (svc && svc['not_aware_sections']) {
-    body.appendParagraph('');
-    appendHeading3(body, 'Sections marked "not aware / unable to characterise"');
-    body.appendParagraph(
-      'A valid answer, not a negative finding. Possible candidate for clarification (Category 2).'
-    ).setItalic(true);
-    svc['not_aware_sections'].split('; ').forEach(function(sec) {
-      if (sec.trim()) body.appendListItem(sec.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
-    });
-  }
-
-  body.appendParagraph('');
-
-  // -------------------------------------------------------------------------
-  // Committee Assessment — to be completed manually
-  // -------------------------------------------------------------------------
-  appendHeading2(body, 'COMMITTEE ASSESSMENT (to be completed)');
-
-  var assessmentData = [
-    ['Triage Category',  '[ ] 1 — Automatically characterised   [ ] 2 — Clarification needed   [ ] 3 — Technical assessment'],
-    ['Assessor',         ''],
-    ['Date assessed',    ''],
-    ['Findings',         '\n\n\n\n'],
-    ['Recommended QoS',  ''],
-    ['Follow-up needed', '[ ] Yes   [ ] No'],
-    ['Follow-up notes',  '']
-  ];
-  appendTwoColTable(body, assessmentData);
-
-  // --- Save and return URL ---
   doc.saveAndClose();
   return doc.getUrl();
 }

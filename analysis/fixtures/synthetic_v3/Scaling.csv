@@ -1,0 +1,3 @@
+submission_id,pi_name,entry_index,workload,scale_over,cores_1,gpus_1,walltime_1_h,cores_2,gpus_2,walltime_2_h,cores_3,gpus_3,walltime_3_h,doubling_effect,max_cores_tested,max_gpus_tested,max_cores_useful,max_gpus_useful
+SYN-01,Dr. Synthetic PI 1,1,Quantum ESPRESSO,cpu,256,,100,512,,55,1024,,31,le_0_6,1024,,1024,
+SYN-09,Dr. Synthetic PI 9,1,LAMMPS,cpu,512,,96,1024,,52,,,,le_0_6,2048,,2048,

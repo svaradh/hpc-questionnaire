@@ -112,6 +112,8 @@ export interface WorkloadRecord {
   code: string
   type: string[]
   source?: EvidenceSource
+  /** IISER Bhopal cluster the jobs run (or would run) on; used to attribute demand. */
+  cluster?: 'gargi' | 'raman' | 'both' | 'not_decided' | Unknown
   // Resources and runtime of a typical job
   /** Whether the typical job is CPU-only or GPU; gives context to the numbers below. */
   device?: 'cpu' | 'gpu' | Unknown

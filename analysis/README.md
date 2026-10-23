@@ -1,115 +1,76 @@
-# HPC Questionnaire — Committee Analysis Notebooks
+# HPC Questionnaire — Committee Analysis Notebooks (schema 2.0.0)
 
-Python notebooks for the HPC Users' Committee to analyse questionnaire responses and design QoS policy.
+Python notebooks for the HPC Users' Committee. They turn the questionnaire responses into evidence about whether
+the present clusters (Gargi and Raman) meet current needs, and where extensions would help.
+The reasoning behind every analysis is in [`docs/analysis-framework.md`](../docs/analysis-framework.md). Read it first.
 
-**Important:** These notebooks visualise evidence collected from research groups. They do not score, rank, or automatically assign queues. All policy decisions are made by the committee.
-
----
-
-## What you need
-
-1. An `@iiserb.ac.in` Google account — the HPC admin will share the response sheet with you
-2. A web browser — that's it
-
-No installation, no configuration, no API keys.
+**Important:** the notebooks show evidence. They do not score, rank or assign queues. "Suggested categories" and
+flags are prompts for the committee, which makes all decisions.
 
 ---
 
-## Getting started
+## Getting started (Google Colab, nothing to install)
 
-### Step 1 — Get access to the data
+1. **Get access.** The HPC admin shares the v3 response sheet with your `@iiserb.ac.in` account (Viewer access).
+2. **Find the Spreadsheet ID**: the long string in the sheet URL between `/d/` and `/edit`.
+3. **Open a notebook** at colab.research.google.com → File → Open notebook → GitHub →
+   `https://github.com/svaradh/hpc-questionnaire` → `analysis/`.
+4. **Paste the ID** into the first code cell, then *Runtime → Run all*. Colab asks once per session to sign in.
 
-The HPC admin shares the **HPC Questionnaire Responses** Google Sheet with your IISER Google account (Viewer access). You will receive a sharing notification by email.
-
-### Step 2 — Find the Spreadsheet ID
-
-Open the sheet in your browser. The URL looks like:
-```
-https://docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit
-```
-Copy the long string between `/d/` and `/edit`. You will need this once in Step 4.
-
-### Step 3 — Open a notebook in Colab
-
-Go to **colab.research.google.com** and open any notebook:
-- File → Open notebook → GitHub → paste `https://github.com/svaradh/hpc-questionnaire`
-- Then navigate to the `analysis/` folder
-
-### Step 4 — Run the setup notebook first
-
-Open **`00_setup.ipynb`** and paste your Spreadsheet ID where indicated (one cell, clearly marked). Click **Runtime → Run all**.
-
-Colab will ask you to sign in with your Google account — click your IISER account. This happens once per Colab session. After that, open and run any other notebook directly.
-
----
+Each notebook fetches the helper modules and the cluster configuration from GitHub. `REPO_REF` in the first cell chooses
+the branch or tag: `main` normally, or `progressive-disclosure-v2` until v3 is merged.
 
 ## Notebooks
 
-| Notebook | What it shows |
+| Notebook | Question it answers |
 |---|---|
-| `00_setup.ipynb` | Connect to the sheet, verify data loaded correctly |
-| `01_workload_overview.ipynb` | Workload categories, codes used, job counts, department breakdown |
-| `02_resource_requirements.ipynb` | Memory per core, wall-time distribution, core counts, evidence levels |
-| `03_gpu_demand.ipynb` | GPU status, memory needs, frameworks, NVLink/multi-node, CPU vs GPU speedup |
-| `04_workflow_patterns.ipynb` | Independent/pipeline/extended split, CPU-hours used vs needed gap |
-| `05_service_gaps.ipynb` | Problems experienced, wall-time terminations, scaling behaviour |
-| `06_qos_clusters.ipynb` | Workload fingerprints, QoS dimension prevalence, triage priority table |
+| `00_setup` | Is the data loaded? What cluster sizes and committee parameters are in use? |
+| `01_overview` | Who responded, what problems they report (pie and share of groups), on which systems; workload mix |
+| `02_compute_capacity` | CPU-hour and GPU-hour demand vs deliverable capacity: Gargi, Raman, unattributed, combined; latent GPU demand; GPU:CPU balance |
+| `03_storage` | Home and scratch demand vs capacity per cluster; per-group and per-workload outliers |
+| `04_long_jobs` | Long-job requirements split by checkpointing (genuine need vs awareness gap) and by scaling (run wider vs run longer) |
+| `05_parallel_and_throughput` | High scalers: useful job size vs policy maximum. Low/intermediate scalers: queue fit, concurrency limits, time to finish a year's work, queue waits, debug use |
+| `06_triage` | Suggested clarification (2) and technical-assessment (3) candidates; data quality |
 
-Run them in any order after `00_setup.ipynb`.
+## What the numbers mean
 
----
+- **Demand** per workload = cores × wall time × jobs per year. *Used* = last 12 months; *desired* = what the group would run
+  if limits did not bind (an upper bound). GPU-hours likewise with GPUs.
+- **Capacity** = cores (or GPUs) × 8,760 h × `committeeParameters.targetUtilisation`. **Deficit = demand − capacity**
+  (positive = shortfall).
+- **Cluster attribution:** the cluster each workload names. "Both" is split 50:50; "Not decided" / "Don't know" go to
+  *unattributed* (shown separately and in *combined*). GPU work goes to Raman.
+- **Storage:** home and scratch capacities come from each cluster's usable storage and the committee's
+  `scratchFraction`. Scratch demand is reported as a sum of peaks (worst case) and as a time-averaged load.
+- **"Don't know" is never zero.** Workloads with unknown inputs are left out of totals, and their count is printed.
+- **Coverage:** totals cover responding groups only.
+
+## Committee parameters
+
+Set in [`src/config/clusters.json`](../src/config/clusters.json) under `committeeParameters` (and each cluster's
+`storage.scratchFraction`): target utilisation, home:scratch split, largest scratch area per user, home guide per group,
+and scratch trigger fractions. The form's follow-up triggers and these notebooks read the same file.
+
+The known-checkpoint list in `code_capabilities.json` is a starting list to verify.
 
 ## Writing your own analysis
 
-Once the data is loaded, each sheet tab is a standard pandas DataFrame. Open a new Colab notebook and write anything you like:
-
 ```python
-# Two lines to get started in any new notebook
-from sheets_client import load_sheets, explode_semicolons, map_range_labels, MEMORY_PER_CORE_LABELS
-dfs = load_sheets('YOUR_SPREADSHEET_ID')
-
-# Standard pandas from here
-df = dfs['RuntimeRecords']
-df[df['wall_time_hours'].astype(float) > 48]        # filter long jobs
-df.groupby('evidence_source').size()                 # count by source
-
-# Multi-value columns (categories, problems, frameworks, etc.)
-explode_semicolons(dfs['Workloads'], 'categories').value_counts()
-
-# Readable axis labels from range keys
-map_range_labels(dfs['JobSetups']['memory_range'], MEMORY_PER_CORE_LABELS)
+from sheets_client import load_data, load_config
+import hpc_analysis as ha
+dfs, cfg = load_data('YOUR_SPREADSHEET_ID'), load_config()
+wl = ha.workloads(dfs, cfg)          # one row per workload, numbers parsed, demand and attribution added
+wl[wl['walltime_h'] > 72]            # standard pandas from here
 ```
 
-**Helper functions** (import from `sheets_client`):
-- `load_sheets(spreadsheet_id)` — loads all tabs as DataFrames
-- `explode_semicolons(df, col)` — flattens semicolon-joined columns for counting
-- `split_semicolons(series)` — splits into lists without exploding
-- `map_range_labels(series, mapping)` — converts range keys to readable labels
-- `summarise_sheets(dfs)` — shows row counts per tab
+Sheet tabs: `Submissions, Group, Experience, Workloads, StorageTesting, LongJobs, Scaling, Memory, Gpu, Scratch,
+Queue, Closing, CommitteeAssessment`. Quantities are already in hours and GB.
 
-**Label mappings** (import from `sheets_client`):
-`CPU_HOURS_LABELS`, `WALL_TIME_LABELS`, `MEMORY_LABELS`, `MEMORY_PER_CORE_LABELS`,
-`CORES_LABELS`, `GPU_MEMORY_LABELS`, `JOB_COUNT_LABELS`
+## Testing without real data
 
----
+`fixtures/synthetic_v3/` holds 12 **fictional** groups, generated by running the real sheet writer
+(`node analysis/fixtures/make_synthetic.cjs`). To run a notebook on them locally, set `HPC_DATA_DIR=fixtures/synthetic_v3`.
+Edit the notebooks through `_build_notebooks.py`, then run `python _build_notebooks.py`.
 
-## Available data tabs
-
-| Tab | Contents |
-|---|---|
-| Submissions | Index — one row per group (submission_id, pi_name, department) |
-| RespondentInfo | Section A — PI and respondent details |
-| Workloads | Section B — codes used, categories, job counts (one row per code) |
-| JobSetups | Section D — typical job configurations (one row per code+system) |
-| RuntimeRecords | Section E — observed runtimes (nodes, cores, memory, wall time) with evidence source and level; includes a computed_cpu_hours cross-check against the reported cpu_gpu_hours |
-| WallTimeTerminations | Section F — wall-time termination events |
-| CheckpointInfo | Section G — checkpoint/restart capability per code |
-| ScalingInfo | Section H — parallel scaling observations |
-| MemoryInfo | Section I — memory requirements per code |
-| GpuInfo | Section J — GPU requirements and CPU vs GPU comparison |
-| IndependentJobs | Section K — independent job workflow data |
-| PipelineJobs | Section K — pipeline workflow data |
-| ExtendedCalcs | Section K — extended single calculation data |
-| BenchmarkRequests | Section E — interest in benchmarking assistance, and offers to help other users |
-| ServiceObservations | Section C — problems experienced (on any HPC system) and workload characteristics; `not_aware_sections` lists sections F–K the respondent marked "not aware / unable to characterise" |
-| CommitteeAssessment | Committee triage and notes (filled in by committee) |
+The v1 pilot responses are **not** used as test data. Their questions, units and dimensions differ from v3, and they
+contain real names. They stay in the archived v1 sheet.

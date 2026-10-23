@@ -217,7 +217,9 @@ All thresholds live under `thresholds` in the config; `null` disables a trigger.
 
 - [x] Step 1 engine: `quantity` type (time/size, normalised to hours/GB), integer/min/max inline validation, Don't-know tick-box (`allowUnknown`), `maxEntries`, `workloadRef`, row-based and compound conditions with `configRef` thresholds, `committeeUse` tag, cluster config. Verified with condition unit tests and in the browser; v1.3 form unchanged.
 - [x] Step 2 v3 schema (`src/schema/questionnaire.json`, 2.0.0) and declarative sheet writer (`apps-script/SheetWriter.gs`). Verified: every answerable question maps to a sheet column; derived values (core-hours/yr, GPU-hours/yr, peak concurrent cores and scratch, evidence level) computed by the writer; all six follow-up triggers fire in the browser; answers of hidden or "not aware" sections are dropped on submit.
-- [ ] Step 3 report generator, analysis notebooks and pilot test fixture for the v3 tabs.
+- [x] Step 3 report generator (`apps-script/ReportGenerator.gs`, driven by the sheet definitions) and analysis notebooks 00–06 (`analysis/`, computations in `hpc_analysis.py`, principles in `docs/analysis-framework.md`). Tested on a synthetic dataset of 12 fictional groups generated through the real sheet writer; all notebooks execute and the report renders for every group. Pilot data deliberately **not** used as a fixture (different semantics; real names in a public repo).
+- Added for the analysis: per-workload cluster question (`W_cluster`: Gargi / Raman / Both / Not decided / Don't know) and `committeeParameters.targetUtilisation` (0.8 placeholder).
+- Old versions archived as tags (`docs/ARCHIVE.md`).
 
 ### Implementation decisions taken in step 2 (differences from §4)
 

@@ -1,0 +1,13 @@
+submission_id,pi_name,home_now_gb,home_3y_gb,output_stay,uses_debug,sessions_week,session_device,session_cores,session_gpus,session_length_h,purpose,other_codes
+SYN-01,Dr. Synthetic PI 1,1536,2560,1_4w,yes,15,cpu,64,,0.75,test_inputs,
+SYN-02,Dr. Synthetic PI 2,800,1228.8,lt_1w,no,,,,,,,
+SYN-03,Dr. Synthetic PI 3,3072,5120,gt_3m,dont_know,,,,,,,
+SYN-04,Dr. Synthetic PI 4,300,500,1_4w,no,,,,,,,
+SYN-05,Dr. Synthetic PI 5,4096,10240,1_3m,yes,30,cpu,8,,2,notebooks; test_inputs,
+SYN-06,Dr. Synthetic PI 6,2048,6144,dont_know,yes,10,gpu,8,1,3,notebooks,
+SYN-07,Dr. Synthetic PI 7,200,300,lt_1w,no,,,,,,,
+SYN-08,Dr. Synthetic PI 8,dont_know,dont_know,,dont_know,,,,,,,
+SYN-09,Dr. Synthetic PI 9,1024,1536,1_4w,yes,5,cpu,128,,0.416667,compile_debug,
+SYN-10,Dr. Synthetic PI 10,600,1024,1_4w,no,,,,,,,
+SYN-11,Dr. Synthetic PI 11,500,800,1_4w,no,,,,,,,
+SYN-12,Dr. Synthetic PI 12,100,300,dont_know,yes,3,cpu,4,,1,notebooks,

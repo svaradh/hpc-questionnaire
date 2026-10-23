@@ -1,0 +1,2 @@
+submission_id,pi_name,entry_index,workload,input_read_gb,input_read_only,rereads_own_output,io_time_share,files_per_job,local_disk_possible,residence_after_job
+SYN-11,Dr. Synthetic PI 11,1,Gaussian,5,yes,yes,gt_30,lt_1k,dont_know,lt_1d

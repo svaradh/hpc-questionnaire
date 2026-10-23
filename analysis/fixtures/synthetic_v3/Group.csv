@@ -1,0 +1,13 @@
+submission_id,pi_name,pi_salutation,pi_email,group_name,department,department_other,completed_by_name,completed_by_email,completed_by_role,completed_by_role_other,hpc_users_now,hpc_users_3y,research_description
+SYN-01,Dr. Synthetic PI 1,Dr.,pi1@example.org,Synthetic Group 1,chemistry,,Synthetic PI 1,pi1@example.org,pi,,6,9,
+SYN-02,Dr. Synthetic PI 2,Dr.,pi2@example.org,Synthetic Group 2,chemistry,,Synthetic PI 2,pi2@example.org,pi,,5,8,
+SYN-03,Dr. Synthetic PI 3,Dr.,pi3@example.org,Synthetic Group 3,earth_environmental,,Synthetic PI 3,pi3@example.org,pi,,3,4,
+SYN-04,Dr. Synthetic PI 4,Dr.,pi4@example.org,Synthetic Group 4,physics,,Synthetic PI 4,pi4@example.org,pi,,2,2,
+SYN-05,Dr. Synthetic PI 5,Dr.,pi5@example.org,Synthetic Group 5,biological_sciences,,Synthetic PI 5,pi5@example.org,pi,,8,12,
+SYN-06,Dr. Synthetic PI 6,Dr.,pi6@example.org,Synthetic Group 6,mathematics,,Synthetic PI 6,pi6@example.org,pi,,4,10,
+SYN-07,Dr. Synthetic PI 7,Dr.,pi7@example.org,Synthetic Group 7,physics,,Synthetic PI 7,pi7@example.org,pi,,2,2,
+SYN-08,Dr. Synthetic PI 8,Dr.,pi8@example.org,Synthetic Group 8,humanities_social_sciences,,Synthetic PI 8,pi8@example.org,pi,,dont_know,dont_know,
+SYN-09,Dr. Synthetic PI 9,Dr.,pi9@example.org,Synthetic Group 9,physics,,Synthetic PI 9,pi9@example.org,pi,,4,5,
+SYN-10,Dr. Synthetic PI 10,Dr.,pi10@example.org,Synthetic Group 10,earth_environmental,,Synthetic PI 10,pi10@example.org,pi,,3,3,
+SYN-11,Dr. Synthetic PI 11,Dr.,pi11@example.org,Synthetic Group 11,chemistry,,Synthetic PI 11,pi11@example.org,pi,,3,4,
+SYN-12,Dr. Synthetic PI 12,Dr.,pi12@example.org,Synthetic Group 12,economics,,Synthetic PI 12,pi12@example.org,pi,,0,3,
