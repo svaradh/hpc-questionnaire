@@ -58,6 +58,7 @@
     "_comment": "Values that follow-up triggers compare workload answers against (via configRef). Derived from the clusters above; edit here, not in the schema. null disables the trigger.",
     "maxMultiNodeWalltimeHours": 72,
     "maxSingleNodeWalltimeHours": 168,
+    "maxGpuWalltimeHours": 24,
     "maxCoresPerJob": 384,
     "largestStandardNodeMemoryGB": 768,
     "largeRunCores": 768,

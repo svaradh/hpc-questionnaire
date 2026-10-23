@@ -111,7 +111,10 @@ export interface WorkloadRecord {
   type: string[]
   source?: EvidenceSource
   // Resources and runtime of a typical job
+  /** Whether the typical job is CPU-only or GPU; gives context to the numbers below. */
+  device?: 'cpu' | 'gpu' | Unknown
   nodes?: NumOrUnknown
+  /** CPU cores (for GPU jobs: the cores allocated alongside the GPUs). */
   cores?: NumOrUnknown
   gpus?: NumOrUnknown
   memNodeGb?: NumOrUnknown
@@ -128,6 +131,7 @@ export interface WorkloadRecord {
   chainElapsedH?: NumOrUnknown
   longTotalH?: NumOrUnknown
   campaignCores?: NumOrUnknown
+  campaignGpus?: NumOrUnknown
   campaignDurationH?: NumOrUnknown
   campaignsYear?: NumOrUnknown
   // GPU / CPU balance
@@ -139,6 +143,7 @@ export interface WorkloadRecord {
   coreHoursYearUnconstrained?: number
   gpuHoursYear?: number
   peakConcurrentCores?: number
+  peakConcurrentGpus?: number
   peakConcurrentScratchGb?: number
   evidenceLevel?: EvidenceLevel
 }
@@ -150,7 +155,9 @@ export interface StorageTestingRecord {
   scratchResidence?: 'none' | 'lt_1d' | '1_7d' | 'gt_7d' | Unknown
   usesDebug?: 'yes' | 'no' | Unknown
   sessionsWeek?: NumOrUnknown
+  sessionDevice?: 'cpu' | 'gpu' | Unknown
   sessionCores?: NumOrUnknown
+  sessionGpus?: NumOrUnknown
   sessionLengthH?: NumOrUnknown
   purpose?: string[]
   otherCodes?: string
@@ -163,21 +170,27 @@ export interface StorageTestingRecord {
 /** E1 — tab "LongJobs" (includes checkpoint/restart information). */
 export interface LongJobRecord {
   workload: string
+  device?: 'cpu' | 'gpu' | Unknown
   longestRunH?: NumOrUnknown
   longestCores?: NumOrUnknown
+  longestGpus?: NumOrUnknown
   checkpoint?: 'yes' | 'no' | 'not_tested' | Unknown
   restartLossH?: NumOrUnknown
   doublingEffect?: DoublingEffect
   terminations12m?: NumOrUnknown
 }
 
-/** E2 — tab "Scaling". Up to three measured (cores, wall time) pairs. */
+/** E2 — tab "Scaling". Up to three measured (CPU cores or GPUs, wall time) pairs. */
 export interface ScalingRecord {
   workload: string
-  points: Array<{ cores?: NumOrUnknown; walltimeH?: NumOrUnknown }>
+  /** Which resource the measurements vary. */
+  scaleOver?: 'cpu' | 'gpu' | Unknown
+  points: Array<{ cores?: NumOrUnknown; gpus?: NumOrUnknown; walltimeH?: NumOrUnknown }>
   doublingEffect?: DoublingEffect
   maxCoresTested?: NumOrUnknown
+  maxGpusTested?: NumOrUnknown
   maxCoresUseful?: NumOrUnknown
+  maxGpusUseful?: NumOrUnknown
 }
 
 /** E3 — tab "Memory". */

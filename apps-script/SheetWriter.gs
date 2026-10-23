@@ -50,18 +50,19 @@ var SHEET_DEFINITIONS = [
     source: { rows: 'W_workloads' },
     columns: [
       ['code', 'W_code'], ['type', 'W_type'], ['type_other', 'W_type_other'], ['source', 'W_source'],
-      ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
+      ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
       ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'], ['scratch_min_gb', 'W_scratch_min', 'q'],
       ['jobs_year', 'W_jobs_year'], ['jobs_year_unconstrained', 'W_jobs_year_unconstrained'], ['concurrent', 'W_concurrent'],
       ['organisation', 'W_org'], ['batch_size', 'W_batch_size'],
       ['chain_steps', 'W_chain_steps'], ['chain_elapsed_h', 'W_chain_elapsed', 'q'],
       ['long_total_h', 'W_long_total', 'q'],
-      ['campaign_cores', 'W_campaign_cores'], ['campaign_duration_h', 'W_campaign_duration', 'q'], ['campaigns_year', 'W_campaigns_year'],
+      ['campaign_cores', 'W_campaign_cores'], ['campaign_gpus', 'W_campaign_gpus'], ['campaign_duration_h', 'W_campaign_duration', 'q'], ['campaigns_year', 'W_campaigns_year'],
       ['gpu_version', 'W_gpu_version'], ['gpu_speedup', 'W_gpu_speedup'], ['cpu_viable', 'W_cpu_viable'],
       ['core_hours_year', 'core_hours_year', 'd'],
       ['core_hours_year_unconstrained', 'core_hours_year_unconstrained', 'd'],
       ['gpu_hours_year', 'gpu_hours_year', 'd'],
       ['peak_concurrent_cores', 'peak_concurrent_cores', 'd'],
+      ['peak_concurrent_gpus', 'peak_concurrent_gpus', 'd'],
       ['peak_concurrent_scratch_gb', 'peak_concurrent_scratch_gb', 'd'],
       ['evidence_level', 'evidence_level', 'd']
     ]
@@ -72,7 +73,8 @@ var SHEET_DEFINITIONS = [
     columns: [
       ['persistent_now_gb', 'S_persistent_now', 'q'], ['persistent_3y_gb', 'S_persistent_3y', 'q'],
       ['scratch_residence', 'S_scratch_residence'],
-      ['uses_debug', 'T_uses_debug'], ['sessions_week', 'T_sessions_week'], ['session_cores', 'T_session_cores'],
+      ['uses_debug', 'T_uses_debug'], ['sessions_week', 'T_sessions_week'],
+      ['session_device', 'T_session_device'], ['session_cores', 'T_session_cores'], ['session_gpus', 'T_session_gpus'],
       ['session_length_h', 'T_session_length', 'q'], ['purpose', 'T_purpose'],
       ['other_codes', 'W_other_codes']
     ]
@@ -81,7 +83,8 @@ var SHEET_DEFINITIONS = [
     name: 'LongJobs',
     source: { rows: 'L_records' },
     columns: [
-      ['workload', 'L_workload'], ['longest_run_h', 'L_longest_run', 'q'], ['longest_cores', 'L_longest_cores'],
+      ['workload', 'L_workload'], ['device', 'L_device'], ['longest_run_h', 'L_longest_run', 'q'],
+      ['longest_cores', 'L_longest_cores'], ['longest_gpus', 'L_longest_gpus'],
       ['checkpoint', 'L_checkpoint'], ['restart_loss_h', 'L_restart_loss', 'q'],
       ['doubling_effect', 'L_doubling'], ['terminations_12m', 'L_terminations_12m']
     ]
@@ -90,11 +93,13 @@ var SHEET_DEFINITIONS = [
     name: 'Scaling',
     source: { rows: 'P_records' },
     columns: [
-      ['workload', 'P_workload'],
-      ['cores_1', 'P_cores_1'], ['walltime_1_h', 'P_wt_1', 'q'],
-      ['cores_2', 'P_cores_2'], ['walltime_2_h', 'P_wt_2', 'q'],
-      ['cores_3', 'P_cores_3'], ['walltime_3_h', 'P_wt_3', 'q'],
-      ['doubling_effect', 'P_doubling'], ['max_cores_tested', 'P_max_tested'], ['max_cores_useful', 'P_max_useful']
+      ['workload', 'P_workload'], ['scale_over', 'P_scale_over'],
+      ['cores_1', 'P_cores_1'], ['gpus_1', 'P_gpus_1'], ['walltime_1_h', 'P_wt_1', 'q'],
+      ['cores_2', 'P_cores_2'], ['gpus_2', 'P_gpus_2'], ['walltime_2_h', 'P_wt_2', 'q'],
+      ['cores_3', 'P_cores_3'], ['gpus_3', 'P_gpus_3'], ['walltime_3_h', 'P_wt_3', 'q'],
+      ['doubling_effect', 'P_doubling'],
+      ['max_cores_tested', 'P_max_tested'], ['max_gpus_tested', 'P_max_tested_gpus'],
+      ['max_cores_useful', 'P_max_useful'], ['max_gpus_useful', 'P_max_useful_gpus']
     ]
   },
   {
@@ -180,6 +185,7 @@ var DERIVED = {
   },
   gpu_hours_year: function(r) { return product(num(r, 'W_gpus'), base(r, 'W_walltime'), num(r, 'W_jobs_year')); },
   peak_concurrent_cores: function(r) { return product(num(r, 'W_cores'), num(r, 'W_concurrent')); },
+  peak_concurrent_gpus: function(r) { return product(num(r, 'W_gpus'), num(r, 'W_concurrent')); },
   peak_concurrent_scratch_gb: function(r) { return product(base(r, 'W_scratch_min'), num(r, 'W_concurrent')); },
   evidence_level: function(r) {
     var s = r['W_source'];

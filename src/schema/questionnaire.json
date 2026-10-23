@@ -280,7 +280,7 @@
           "type": "number",
           "label": "Share of your group's computing done on IISER Bhopal clusters in the last 12 months",
           "required": false,
-          "helpText": "Roughly, as a percentage of core-hours. 0 if none.",
+          "helpText": "Roughly, as a percentage of core-hours (GPU-hours for GPU work). 0 if none.",
           "integer": true,
           "allowUnknown": true,
           "min": 0,
@@ -575,6 +575,31 @@
               "helpText": "\"Job\" = one submission to the scheduler. Wall time = running time, not including time waiting in the queue."
             },
             {
+              "id": "W_device",
+              "type": "radio",
+              "label": "Does a typical job of this code run on CPUs only, or on GPUs?",
+              "required": false,
+              "options": [
+                {
+                  "value": "cpu",
+                  "label": "CPU only"
+                },
+                {
+                  "value": "gpu",
+                  "label": "GPUs (with some CPU cores alongside)"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "helpText": "The numbers below describe that typical job.",
+              "committeeUse": [
+                "job_size",
+                "gpu_cpu_balance"
+              ]
+            },
+            {
               "id": "W_nodes",
               "type": "number",
               "label": "Nodes per job",
@@ -589,9 +614,9 @@
             {
               "id": "W_cores",
               "type": "number",
-              "label": "Total CPU cores per job",
+              "label": "CPU cores per job (total across all nodes)",
               "required": false,
-              "helpText": "Across all nodes. Example: 2 nodes × 128 cores = 256.",
+              "helpText": "Example: 2 nodes × 128 cores = 256. For a GPU job, the CPU cores allocated alongside the GPUs.",
               "integer": true,
               "allowUnknown": true,
               "min": 1,
@@ -603,15 +628,20 @@
             {
               "id": "W_gpus",
               "type": "number",
-              "label": "Total GPUs per job",
+              "label": "GPUs per job (total across all nodes)",
               "required": false,
-              "helpText": "0 if the job uses no GPUs.",
               "integer": true,
               "allowUnknown": true,
-              "min": 0,
+              "min": 1,
               "committeeUse": [
                 "gpu_hours"
-              ]
+              ],
+              "conditionalOn": {
+                "questionId": "W_device",
+                "values": [
+                  "gpu"
+                ]
+              }
             },
             {
               "id": "W_mem_node",
@@ -628,7 +658,7 @@
             {
               "id": "W_walltime",
               "type": "quantity",
-              "label": "Wall time of a typical job",
+              "label": "Wall time of this typical job (with the CPU cores / GPUs above)",
               "required": false,
               "dimension": "time",
               "defaultUnit": "hours",
@@ -812,7 +842,7 @@
             {
               "id": "W_campaign_cores",
               "type": "number",
-              "label": "Total cores needed at the same time for the campaign",
+              "label": "Total CPU cores needed at the same time for the campaign",
               "required": false,
               "helpText": "Add up the cores of all jobs that must run together.",
               "integer": true,
@@ -826,6 +856,36 @@
               },
               "committeeUse": [
                 "large_run_test"
+              ]
+            },
+            {
+              "id": "W_campaign_gpus",
+              "type": "number",
+              "label": "Total GPUs needed at the same time for the campaign",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "helpText": "Add up the GPUs of all jobs that must run together.",
+              "conditionalOn": {
+                "all": [
+                  {
+                    "questionId": "W_org",
+                    "values": [
+                      "campaign"
+                    ]
+                  },
+                  {
+                    "questionId": "W_device",
+                    "values": [
+                      "gpu"
+                    ]
+                  }
+                ]
+              },
+              "committeeUse": [
+                "large_run_test",
+                "gpu_spec"
               ]
             },
             {
@@ -971,9 +1031,19 @@
                 }
               ],
               "conditionalOn": {
-                "questionId": "W_gpu_version",
-                "values": [
-                  "in_use"
+                "any": [
+                  {
+                    "questionId": "W_gpu_version",
+                    "values": [
+                      "in_use"
+                    ]
+                  },
+                  {
+                    "questionId": "W_device",
+                    "values": [
+                      "gpu"
+                    ]
+                  }
                 ]
               },
               "committeeUse": [
@@ -1106,9 +1176,38 @@
           ]
         },
         {
+          "id": "T_session_device",
+          "type": "radio",
+          "label": "Do these sessions use GPUs?",
+          "required": false,
+          "options": [
+            {
+              "value": "cpu",
+              "label": "CPU only"
+            },
+            {
+              "value": "gpu",
+              "label": "Yes — GPUs"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware"
+            }
+          ],
+          "conditionalOn": {
+            "questionId": "T_uses_debug",
+            "values": [
+              "yes"
+            ]
+          },
+          "committeeUse": [
+            "debug_service"
+          ]
+        },
+        {
           "id": "T_session_cores",
           "type": "number",
-          "label": "Typical cores per session",
+          "label": "Typical CPU cores per session",
           "required": false,
           "integer": true,
           "allowUnknown": true,
@@ -1117,6 +1216,24 @@
             "questionId": "T_uses_debug",
             "values": [
               "yes"
+            ]
+          },
+          "committeeUse": [
+            "debug_service"
+          ]
+        },
+        {
+          "id": "T_session_gpus",
+          "type": "number",
+          "label": "Typical GPUs per session",
+          "required": false,
+          "integer": true,
+          "allowUnknown": true,
+          "min": 1,
+          "conditionalOn": {
+            "questionId": "T_session_device",
+            "values": [
+              "gpu"
             ]
           },
           "committeeUse": [
@@ -1187,7 +1304,7 @@
     {
       "id": "E1",
       "title": "E1. Long Jobs",
-      "description": "Shown because a wall-time problem was reported or a workload runs longer than the present limits (multi-node jobs: 72 h; single-node: up to 168 h). Please describe what is observed — the committee assesses the requirement.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "description": "Shown because a wall-time problem was reported or a workload runs longer than the present limits (CPU multi-node jobs: 72 h; CPU single-node: up to 168 h; GPU jobs: 24 h). Please describe what is observed — the committee assesses the requirement.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
       "conditionalOn": [
         {
           "questionId": "X_problems",
@@ -1229,6 +1346,25 @@
         {
           "rowsOf": "W_workloads",
           "where": {
+            "all": [
+              {
+                "field": "W_device",
+                "op": "in",
+                "values": [
+                  "gpu"
+                ]
+              },
+              {
+                "field": "W_walltime",
+                "op": "gt",
+                "configRef": "thresholds.maxGpuWalltimeHours"
+              }
+            ]
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
             "field": "W_org",
             "op": "in",
             "values": [
@@ -1261,6 +1397,29 @@
               }
             },
             {
+              "id": "L_device",
+              "type": "radio",
+              "label": "Does this long job run on CPUs only, or on GPUs?",
+              "required": false,
+              "options": [
+                {
+                  "value": "cpu",
+                  "label": "CPU only"
+                },
+                {
+                  "value": "gpu",
+                  "label": "GPUs (with some CPU cores alongside)"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
               "id": "L_longest_run",
               "type": "quantity",
               "label": "Longest uninterrupted running time one job of this workload needs",
@@ -1275,11 +1434,29 @@
             {
               "id": "L_longest_cores",
               "type": "number",
-              "label": "Cores used in that job",
+              "label": "CPU cores used in that job",
               "required": false,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
+              "committeeUse": [
+                "long_walltime_test"
+              ]
+            },
+            {
+              "id": "L_longest_gpus",
+              "type": "number",
+              "label": "GPUs used in that job",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "L_device",
+                "values": [
+                  "gpu"
+                ]
+              },
               "committeeUse": [
                 "long_walltime_test"
               ]
@@ -1332,7 +1509,7 @@
             {
               "id": "L_doubling",
               "type": "radio",
-              "label": "When the cores were doubled, the wall time…",
+              "label": "When the resources were doubled (CPU cores; or GPUs, for a GPU job), the wall time…",
               "required": false,
               "helpText": "Compare the same calculation run on N cores and on 2N cores. Example: 10 h on 64 cores and 6 h on 128 cores is 0.6×.",
               "options": [
@@ -1385,7 +1562,7 @@
     {
       "id": "E2",
       "title": "E2. Scaling and Large Runs",
-      "description": "Shown because a node-count problem was reported, or a workload uses more cores than one job may use now (384 cores), or runs coordinated campaigns. Measured pairs of (cores, wall time) for the same calculation are the most useful evidence.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
+      "description": "Shown because a node-count problem was reported, or a workload uses more cores than one job may use now (384 cores), or runs coordinated campaigns. Measured pairs of (CPU cores or GPUs, wall time) for the same calculation are the most useful evidence.\n\nAdd one entry per workload concerned; only the workloads this applies to.",
       "conditionalOn": [
         {
           "questionId": "X_problems",
@@ -1444,6 +1621,29 @@
               }
             },
             {
+              "id": "P_scale_over",
+              "type": "radio",
+              "label": "Do these measurements vary the number of CPU cores or the number of GPUs?",
+              "required": false,
+              "options": [
+                {
+                  "value": "cpu",
+                  "label": "CPU cores"
+                },
+                {
+                  "value": "gpu",
+                  "label": "GPUs"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware"
+                }
+              ],
+              "committeeUse": [
+                "scaling"
+              ]
+            },
+            {
               "id": "P_h_pairs",
               "type": "heading",
               "label": "Measured runs of the same calculation",
@@ -1453,11 +1653,36 @@
             {
               "id": "P_cores_1",
               "type": "number",
-              "label": "Run 1 — cores",
+              "label": "Run 1 — CPU cores",
               "required": false,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
+              "committeeUse": [
+                "scaling"
+              ],
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "cpu",
+                  "dont_know"
+                ]
+              }
+            },
+            {
+              "id": "P_gpus_1",
+              "type": "number",
+              "label": "Run 1 — GPUs",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "gpu"
+                ]
+              },
               "committeeUse": [
                 "scaling"
               ]
@@ -1477,11 +1702,36 @@
             {
               "id": "P_cores_2",
               "type": "number",
-              "label": "Run 2 — cores",
+              "label": "Run 2 — CPU cores",
               "required": false,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
+              "committeeUse": [
+                "scaling"
+              ],
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "cpu",
+                  "dont_know"
+                ]
+              }
+            },
+            {
+              "id": "P_gpus_2",
+              "type": "number",
+              "label": "Run 2 — GPUs",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "gpu"
+                ]
+              },
               "committeeUse": [
                 "scaling"
               ]
@@ -1501,11 +1751,36 @@
             {
               "id": "P_cores_3",
               "type": "number",
-              "label": "Run 3 — cores",
+              "label": "Run 3 — CPU cores",
               "required": false,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
+              "committeeUse": [
+                "scaling"
+              ],
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "cpu",
+                  "dont_know"
+                ]
+              }
+            },
+            {
+              "id": "P_gpus_3",
+              "type": "number",
+              "label": "Run 3 — GPUs",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "gpu"
+                ]
+              },
               "committeeUse": [
                 "scaling"
               ]
@@ -1525,7 +1800,7 @@
             {
               "id": "P_doubling",
               "type": "radio",
-              "label": "When the cores were doubled, the wall time…",
+              "label": "When the CPU cores (or GPUs) were doubled, the wall time…",
               "required": false,
               "helpText": "Compare the same calculation run on N cores and on 2N cores. Example: 10 h on 64 cores and 6 h on 128 cores is 0.6×.",
               "options": [
@@ -1561,11 +1836,36 @@
             {
               "id": "P_max_tested",
               "type": "number",
-              "label": "Largest number of cores tested",
+              "label": "Largest number of CPU cores tested",
               "required": false,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
+              "committeeUse": [
+                "scaling"
+              ],
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "cpu",
+                  "dont_know"
+                ]
+              }
+            },
+            {
+              "id": "P_max_tested_gpus",
+              "type": "number",
+              "label": "Largest number of GPUs tested",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "gpu"
+                ]
+              },
               "committeeUse": [
                 "scaling"
               ]
@@ -1573,7 +1873,7 @@
             {
               "id": "P_max_useful",
               "type": "number",
-              "label": "Largest number of cores at which doubling still gave wall time ≤ 0.8×",
+              "label": "Largest number of CPU cores at which doubling still gave wall time ≤ 0.8×",
               "required": false,
               "integer": true,
               "allowUnknown": true,
@@ -1581,6 +1881,31 @@
               "committeeUse": [
                 "scaling",
                 "large_run_test"
+              ],
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "cpu",
+                  "dont_know"
+                ]
+              }
+            },
+            {
+              "id": "P_max_useful_gpus",
+              "type": "number",
+              "label": "Largest number of GPUs at which doubling still gave wall time ≤ 0.8×",
+              "required": false,
+              "integer": true,
+              "allowUnknown": true,
+              "min": 1,
+              "conditionalOn": {
+                "questionId": "P_scale_over",
+                "values": [
+                  "gpu"
+                ]
+              },
+              "committeeUse": [
+                "scaling"
               ]
             }
           ]
@@ -1722,6 +2047,16 @@
             "op": "in",
             "values": [
               "in_use"
+            ]
+          }
+        },
+        {
+          "rowsOf": "W_workloads",
+          "where": {
+            "field": "W_device",
+            "op": "in",
+            "values": [
+              "gpu"
             ]
           }
         }
@@ -2005,16 +2340,20 @@
         {
           "id": "Q_cluster",
           "type": "checkbox",
-          "label": "Which cluster do these answers refer to?",
+          "label": "Which cluster or queue do these answers refer to?",
           "required": false,
           "options": [
             {
               "value": "gargi",
-              "label": "Gargi"
+              "label": "Gargi (CPU queues)"
             },
             {
               "value": "raman",
-              "label": "Raman"
+              "label": "Raman (CPU queues)"
+            },
+            {
+              "value": "raman_gpu",
+              "label": "Raman GPU queue"
             },
             {
               "value": "other",
