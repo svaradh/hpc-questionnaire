@@ -24,6 +24,7 @@
 import type { Question } from '../types/schema'
 import { RepeatableGroup } from './RepeatableGroup'
 import { UNKNOWN, DEFAULT_UNITS, isQuantityValue, type QuantityValue } from '../utils/quantity'
+import { queueOptions } from '../config/clusterConfig'
 
 interface QuestionRendererProps {
   question: Question
@@ -217,6 +218,7 @@ export function QuestionRenderer({
   // -------------------------------------------------------------------------
   if (question.type === 'select') {
     const strVal = typeof value === 'string' ? value : ''
+    const options = [...(question.configOptions === 'queues' ? queueOptions() : []), ...(question.options ?? [])]
     return (
       <div className="question-block">
         {renderLabel()}
@@ -230,7 +232,7 @@ export function QuestionRenderer({
           disabled={disabled}
         >
           <option value="">— Select —</option>
-          {question.options?.map(opt => (
+          {options.map(opt => (
             <option key={opt.value} value={opt.value}>
               {opt.label}
             </option>

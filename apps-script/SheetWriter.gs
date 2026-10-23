@@ -14,7 +14,6 @@
  *   d — derived: computed by DERIVED[key] from the row being written
  * A tab is either one row per submission (`source: 'top'`) or one row per
  * entry of a repeatable question (`source: { rows: '<questionId>' }`).
- * `writeIf` (optional) skips the tab for a submission when it returns false.
  *
  * "Don't know" answers are written as 'dont_know', never as 0 or blank.
  */
@@ -42,6 +41,7 @@ var SHEET_DEFINITIONS = [
     columns: [
       ['systems_used', 'X_systems_used'], ['share_iiserb_pct', 'X_share_iiserb'],
       ['problems', 'X_problems'], ['problems_other', 'X_problems_other'], ['problems_where', 'X_problems_where'],
+      ['share_not_run_pct', 'Q_share_not_run'],
       ['not_aware_sections', 'not_aware_sections', 'd']
     ]
   },
@@ -51,7 +51,7 @@ var SHEET_DEFINITIONS = [
     columns: [
       ['code', 'W_code'], ['type', 'W_type'], ['type_other', 'W_type_other'], ['source', 'W_source'],
       ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
-      ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'], ['scratch_min_gb', 'W_scratch_min', 'q'],
+      ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'], ['scratch_write_gb', 'W_scratch_write', 'q'],
       ['jobs_year', 'W_jobs_year'], ['jobs_year_unconstrained', 'W_jobs_year_unconstrained'], ['concurrent', 'W_concurrent'],
       ['organisation', 'W_org'], ['batch_size', 'W_batch_size'],
       ['chain_steps', 'W_chain_steps'], ['chain_elapsed_h', 'W_chain_elapsed', 'q'],
@@ -71,8 +71,7 @@ var SHEET_DEFINITIONS = [
     name: 'StorageTesting',
     source: 'top',
     columns: [
-      ['persistent_now_gb', 'S_persistent_now', 'q'], ['persistent_3y_gb', 'S_persistent_3y', 'q'],
-      ['scratch_residence', 'S_scratch_residence'],
+      ['home_now_gb', 'S_home_now', 'q'], ['home_3y_gb', 'S_home_3y', 'q'], ['output_stay', 'S_output_stay'],
       ['uses_debug', 'T_uses_debug'], ['sessions_week', 'T_sessions_week'],
       ['session_device', 'T_session_device'], ['session_cores', 'T_session_cores'], ['session_gpus', 'T_session_gpus'],
       ['session_length_h', 'T_session_length', 'q'], ['purpose', 'T_purpose'],
@@ -122,20 +121,19 @@ var SHEET_DEFINITIONS = [
     name: 'Scratch',
     source: { rows: 'SC_records' },
     columns: [
-      ['workload', 'SC_workload'], ['peak_gb', 'SC_peak', 'q'], ['files_per_job', 'SC_files'],
-      ['file_pattern', 'SC_pattern'], ['local_disk_possible', 'SC_local_disk']
+      ['workload', 'SC_workload'], ['input_read_gb', 'SC_input_read', 'q'], ['input_read_only', 'SC_input_readonly'],
+      ['rereads_own_output', 'SC_reread'], ['io_time_share', 'SC_io_share'], ['files_per_job', 'SC_files'],
+      ['local_disk_possible', 'SC_local_disk'], ['residence_after_job', 'SC_residence']
     ]
   },
   {
     name: 'Queue',
-    source: 'top',
-    writeIf: function(answers) {
-      return ['Q_cluster', 'Q_typical_wait', 'Q_longest_wait', 'Q_share_not_run']
-        .some(function(k) { return answers[k] !== undefined; });
-    },
+    source: { rows: 'Q_records' },
     columns: [
-      ['cluster', 'Q_cluster'], ['typical_wait_h', 'Q_typical_wait', 'q'],
-      ['longest_wait_h', 'Q_longest_wait', 'q'], ['share_not_run_pct', 'Q_share_not_run']
+      ['queue', 'Q_queue'], ['workload', 'Q_workload'], ['same_as_typical_job', 'Q_same_as_typical'],
+      ['req_nodes', 'Q_req_nodes'], ['req_cores', 'Q_req_cores'], ['req_gpus', 'Q_req_gpus'],
+      ['req_walltime_h', 'Q_req_walltime', 'q'],
+      ['typical_wait_h', 'Q_typical_wait', 'q'], ['longest_wait_h', 'Q_longest_wait', 'q']
     ]
   },
   {
@@ -186,7 +184,7 @@ var DERIVED = {
   gpu_hours_year: function(r) { return product(num(r, 'W_gpus'), base(r, 'W_walltime'), num(r, 'W_jobs_year')); },
   peak_concurrent_cores: function(r) { return product(num(r, 'W_cores'), num(r, 'W_concurrent')); },
   peak_concurrent_gpus: function(r) { return product(num(r, 'W_gpus'), num(r, 'W_concurrent')); },
-  peak_concurrent_scratch_gb: function(r) { return product(base(r, 'W_scratch_min'), num(r, 'W_concurrent')); },
+  peak_concurrent_scratch_gb: function(r) { return product(base(r, 'W_scratch_write'), num(r, 'W_concurrent')); },
   evidence_level: function(r) {
     var s = r['W_source'];
     return EVIDENCE_LEVEL_BY_SOURCE.hasOwnProperty(s) ? EVIDENCE_LEVEL_BY_SOURCE[s] : '';
@@ -323,7 +321,6 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
   ]);
 
   SHEET_DEFINITIONS.forEach(function(def) {
-    if (def.writeIf && !def.writeIf(answers)) return;
     if (def.source === 'top') {
       appendRow(def.name, [submissionId, piName].concat(def.columns.map(function(c) { return cell(c, answers, answers); })));
       return;

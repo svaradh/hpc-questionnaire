@@ -63,7 +63,7 @@
     "largestStandardNodeMemoryGB": 768,
     "largeRunCores": 768,
     "debugWalltimeHours": 0.5,
-    "_scratchComment": "Scratch flags use the smaller scratch area (Raman, 52 TB = 53248 GB): one job > 1 %, or a group's concurrent jobs together > 5 % (users currently request 8-10 % each).",
+    "_scratchComment": "Scratch is dynamic with a largest area per user (value not yet set), not equal shares. Flags (placeholders for the committee) use the smaller scratch area (Raman, ~52 TB = 53248 GB): files written by one job > 1 %, or written x concurrent jobs > 5 %.",
     "scratchPerJobTriggerGB": 532,
     "scratchConcurrentTriggerGB": 2662
   }

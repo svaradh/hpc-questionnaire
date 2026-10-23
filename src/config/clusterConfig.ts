@@ -9,6 +9,20 @@ import clusters from './clusters.json'
 
 export const CLUSTER_CONFIG = clusters
 
+function formatHours(h: number): string {
+  return h < 1 ? `${Math.round(h * 60)} min` : `${h} h`
+}
+
+/** Every queue as a select option, e.g. { value: "gargi.medium", label: "Gargi · medium (1–3 nodes, 72 h)" }. */
+export function queueOptions(): Array<{ value: string; label: string }> {
+  return CLUSTER_CONFIG.clusters.flatMap(c =>
+    c.queues.map(q => {
+      const nodes = q.minNodes === q.maxNodes ? `${q.maxNodes} node` : `${q.minNodes}–${q.maxNodes} nodes`
+      return { value: `${c.id}.${q.id}`, label: `${c.name} · ${q.id} (${nodes}, ${formatHours(q.walltimeHours)})` }
+    })
+  )
+}
+
 /**
  * Resolves a dotted path (e.g. "thresholds.maxCoresPerJob") to a number.
  * Returns null for missing or non-numeric values; conditions treat null as

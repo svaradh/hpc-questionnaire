@@ -111,6 +111,12 @@ export interface Question {
    */
   optionsFrom?: { questionId: string; labelField: string }
   /**
+   * For 'select': options generated from the cluster config, placed before
+   * any static `options`. 'queues' lists every cluster queue with its limits
+   * (value "<cluster>.<queue>", e.g. "gargi.medium").
+   */
+  configOptions?: 'queues'
+  /**
    * Which committee computation or test this answer feeds (free-form tags,
    * e.g. "core_hours_per_year", "long_walltime_test"). Documentation for the
    * analysis layer; a question with no use should not exist.

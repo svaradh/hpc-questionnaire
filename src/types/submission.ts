@@ -97,6 +97,8 @@ export interface ExperienceRecord {
   problemsOther?: string
   /** Systems on which the problems occurred (gargi / raman / iiserb_earlier / elsewhere). */
   problemsWhere?: string[]
+  /** % of planned calculations in the last 12 months not run because of queue wait or capacity (E6). */
+  shareNotRunPct?: NumOrUnknown
   /** Follow-up sections declared "not aware / unable to characterise". */
   notAwareSections?: string[]
 }
@@ -119,7 +121,8 @@ export interface WorkloadRecord {
   gpus?: NumOrUnknown
   memNodeGb?: NumOrUnknown
   walltimeH?: NumOrUnknown
-  scratchMinGb?: NumOrUnknown
+  /** Largest volume of files one job writes while it runs (the scratch requirement). */
+  scratchWriteGb?: NumOrUnknown
   // Volume
   jobsYear?: NumOrUnknown
   jobsYearUnconstrained?: NumOrUnknown
@@ -150,9 +153,11 @@ export interface WorkloadRecord {
 
 /** Section D — tab "StorageTesting". */
 export interface StorageTestingRecord {
-  persistentNowGb?: NumOrUnknown
-  persistent3yGb?: NumOrUnknown
-  scratchResidence?: 'none' | 'lt_1d' | '1_7d' | 'gt_7d' | Unknown
+  /** Home-area working space (staging, run inputs, checkpoints, parameters, own codes, outputs awaiting transfer). */
+  homeNowGb?: NumOrUnknown
+  home3yGb?: NumOrUnknown
+  /** How long final outputs stay on the cluster before moving to the group's own storage. */
+  outputStay?: 'lt_1w' | '1_4w' | '1_3m' | 'gt_3m' | Unknown
   usesDebug?: 'yes' | 'no' | Unknown
   sessionsWeek?: NumOrUnknown
   sessionDevice?: 'cpu' | 'gpu' | Unknown
@@ -214,18 +219,29 @@ export interface GpuRecord {
 /** E5 — tab "Scratch". */
 export interface ScratchRecord {
   workload: string
-  peakGb?: NumOrUnknown
+  inputReadGb?: NumOrUnknown
+  /** Read-only inputs can stay in the home area (same parallel file system). */
+  inputReadOnly?: 'yes' | 'no' | Unknown
+  rereadsOwnOutput?: 'yes' | 'no' | Unknown
+  ioTimeShare?: 'lt_10' | '10_30' | 'gt_30' | Unknown
   filesPerJob?: 'lt_1k' | '1k_100k' | 'gt_100k' | Unknown
-  filePattern?: 'few_large' | 'many_small' | 'both' | Unknown
   localDiskPossible?: 'yes' | 'no' | Unknown
+  residenceAfterJob?: 'none' | 'lt_1d' | '1_7d' | 'gt_7d' | Unknown
 }
 
-/** E6 — tab "Queue". */
+/** E6 — tab "Queue", one row per queue / kind of job (max 3). */
 export interface QueueRecord {
-  cluster?: string[]
+  /** "<cluster>.<queue>" from the cluster config, or "other". */
+  queue?: string
+  workload?: string
+  /** If 'yes', the requested resources are the workload's typical job (join on workload). */
+  sameAsTypicalJob?: 'yes' | 'no' | Unknown
+  reqNodes?: NumOrUnknown
+  reqCores?: NumOrUnknown
+  reqGpus?: NumOrUnknown
+  reqWalltimeH?: NumOrUnknown
   typicalWaitH?: NumOrUnknown
   longestWaitH?: NumOrUnknown
-  shareNotRunPct?: NumOrUnknown
 }
 
 /** Section F — tab "Closing". */
@@ -278,7 +294,7 @@ export interface Submission {
   memory: MemoryRecord[]
   gpu: GpuRecord[]
   scratch: ScratchRecord[]
-  queue?: QueueRecord
+  queue: QueueRecord[]
   closing: ClosingRecord
   committeeAssessment?: CommitteeAssessment
 
