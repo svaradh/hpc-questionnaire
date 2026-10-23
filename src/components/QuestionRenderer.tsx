@@ -378,20 +378,19 @@ export function QuestionRenderer({
       <div className="question-block">
         {renderLabel()}
         {renderHelpText()}
-        {names.length === 0 ? (
-          <p className="question-help">Add your codes in the workload table first; they will be listed here.</p>
-        ) : (
-          <select
-            id={fieldId}
-            value={strVal}
-            onChange={e => onChange(e.target.value)}
-            className={`question-select${disabled ? ' input-disabled' : ''}`}
-            disabled={disabled}
-          >
-            <option value="">— Select —</option>
-            {names.map(n => <option key={n} value={n}>{n}</option>)}
-            {stale && <option value={strVal}>{strVal} (no longer in the workload table)</option>}
-          </select>
+        <select
+          id={fieldId}
+          value={strVal}
+          onChange={e => onChange(e.target.value)}
+          className={`question-select${disabled || names.length === 0 ? ' input-disabled' : ''}`}
+          disabled={disabled || (names.length === 0 && !stale)}
+        >
+          <option value="">{names.length === 0 ? '— No codes entered in Section C yet —' : '— Select —'}</option>
+          {names.map(n => <option key={n} value={n}>{n}</option>)}
+          {stale && <option value={strVal}>{strVal} (no longer in the workload table)</option>}
+        </select>
+        {names.length === 0 && (
+          <span className="question-help">The codes you list in Section C (Your Workloads) appear here.</span>
         )}
       </div>
     )

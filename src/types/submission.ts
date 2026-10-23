@@ -233,6 +233,8 @@ export interface ScratchRecord {
 export interface QueueRecord {
   /** "<cluster>.<queue>" from the cluster config, or "other". */
   queue?: string
+  /** Name of the system when queue is "other". */
+  otherSystem?: string
   workload?: string
   /** If 'yes', the requested resources are the workload's typical job (join on workload). */
   sameAsTypicalJob?: 'yes' | 'no' | Unknown

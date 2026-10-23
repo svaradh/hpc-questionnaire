@@ -130,7 +130,7 @@ var SHEET_DEFINITIONS = [
     name: 'Queue',
     source: { rows: 'Q_records' },
     columns: [
-      ['queue', 'Q_queue'], ['workload', 'Q_workload'], ['same_as_typical_job', 'Q_same_as_typical'],
+      ['queue', 'Q_queue'], ['other_system', 'Q_other_system'], ['workload', 'Q_workload'], ['same_as_typical_job', 'Q_same_as_typical'],
       ['req_nodes', 'Q_req_nodes'], ['req_cores', 'Q_req_cores'], ['req_gpus', 'Q_req_gpus'],
       ['req_walltime_h', 'Q_req_walltime', 'q'],
       ['typical_wait_h', 'Q_typical_wait', 'q'], ['longest_wait_h', 'Q_longest_wait', 'q']

@@ -240,7 +240,7 @@ export interface Section {
  * Visibility / trigger predicate.
  * - ValueCondition: the answer (string or string[]) includes one of `values`.
  * - RowsCondition: at least one row of a repeatable satisfies `where`.
- * - { all } / { any }: compound conditions.
+ * - { all } / { any } / { not }: compound conditions.
  * Arrays of conditions in conditionalOn / optionalWhen keep their OR meaning.
  */
 export type Condition =
@@ -248,6 +248,7 @@ export type Condition =
   | RowsCondition
   | { all: Condition[] }
   | { any: Condition[] }
+  | { not: Condition }
 
 export interface ValueCondition {
   questionId: string

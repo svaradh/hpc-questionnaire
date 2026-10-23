@@ -49,6 +49,7 @@ function matchesRow(pred: RowPredicate, row: Answers): boolean {
 export function matchesCondition(cond: Condition, answers: Answers): boolean {
   if ('all' in cond) return cond.all.every(c => matchesCondition(c, answers))
   if ('any' in cond) return cond.any.some(c => matchesCondition(c, answers))
+  if ('not' in cond) return !matchesCondition(cond.not, answers)
   if ('rowsOf' in cond) {
     const rows = answers[cond.rowsOf]
     return Array.isArray(rows) && rows.some(r => r && typeof r === 'object' && matchesRow(cond.where, r as Answers))

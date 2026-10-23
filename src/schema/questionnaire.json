@@ -2442,6 +2442,19 @@
               ]
             },
             {
+              "id": "Q_other_system",
+              "type": "text",
+              "required": false,
+              "label": "Which system?",
+              "placeholder": "e.g. PARAM Shakti, a collaborator's cluster",
+              "conditionalOn": {
+                "questionId": "Q_queue",
+                "values": [
+                  "other"
+                ]
+              }
+            },
+            {
               "id": "Q_workload",
               "type": "workloadRef",
               "required": false,
@@ -2473,7 +2486,15 @@
               "helpText": "If yes, the resource questions below are skipped.",
               "committeeUse": [
                 "turnaround"
-              ]
+              ],
+              "conditionalOn": {
+                "not": {
+                  "questionId": "Q_queue",
+                  "values": [
+                    "other"
+                  ]
+                }
+              }
             },
             {
               "id": "Q_req_nodes",
@@ -2484,10 +2505,20 @@
               "allowUnknown": true,
               "min": 1,
               "conditionalOn": {
-                "questionId": "Q_same_as_typical",
-                "values": [
-                  "no",
-                  "dont_know"
+                "any": [
+                  {
+                    "questionId": "Q_same_as_typical",
+                    "values": [
+                      "no",
+                      "dont_know"
+                    ]
+                  },
+                  {
+                    "questionId": "Q_queue",
+                    "values": [
+                      "other"
+                    ]
+                  }
                 ]
               },
               "committeeUse": [
@@ -2503,10 +2534,20 @@
               "allowUnknown": true,
               "min": 1,
               "conditionalOn": {
-                "questionId": "Q_same_as_typical",
-                "values": [
-                  "no",
-                  "dont_know"
+                "any": [
+                  {
+                    "questionId": "Q_same_as_typical",
+                    "values": [
+                      "no",
+                      "dont_know"
+                    ]
+                  },
+                  {
+                    "questionId": "Q_queue",
+                    "values": [
+                      "other"
+                    ]
+                  }
                 ]
               },
               "committeeUse": [
@@ -2520,14 +2561,24 @@
               "required": false,
               "integer": true,
               "allowUnknown": true,
-              "min": 1,
+              "min": 0,
               "conditionalOn": {
                 "all": [
                   {
-                    "questionId": "Q_same_as_typical",
-                    "values": [
-                      "no",
-                      "dont_know"
+                    "any": [
+                      {
+                        "questionId": "Q_same_as_typical",
+                        "values": [
+                          "no",
+                          "dont_know"
+                        ]
+                      },
+                      {
+                        "questionId": "Q_queue",
+                        "values": [
+                          "other"
+                        ]
+                      }
                     ]
                   },
                   {
@@ -2541,7 +2592,8 @@
               },
               "committeeUse": [
                 "turnaround"
-              ]
+              ],
+              "helpText": "0 if the job used no GPUs."
             },
             {
               "id": "Q_req_walltime",
@@ -2552,10 +2604,20 @@
               "defaultUnit": "hours",
               "allowUnknown": true,
               "conditionalOn": {
-                "questionId": "Q_same_as_typical",
-                "values": [
-                  "no",
-                  "dont_know"
+                "any": [
+                  {
+                    "questionId": "Q_same_as_typical",
+                    "values": [
+                      "no",
+                      "dont_know"
+                    ]
+                  },
+                  {
+                    "questionId": "Q_queue",
+                    "values": [
+                      "other"
+                    ]
+                  }
                 ]
               },
               "committeeUse": [
