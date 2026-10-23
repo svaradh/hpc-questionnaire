@@ -3,7 +3,7 @@
  * Content-Type: text/plain avoids a CORS preflight that Apps Script cannot handle.
  */
 
-import { APPS_SCRIPT_URL } from '../config'
+import { APPS_SCRIPT_URL } from '../config/env'
 
 export interface SubmitResult {
   success: boolean

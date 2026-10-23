@@ -13,14 +13,18 @@
 
 import type { Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
+import { matchesCondition } from '../utils/conditions'
 
 interface RepeatableGroupProps {
   question: Question
   rows: Record<string, unknown>[]
   onChange: (rows: Record<string, unknown>[]) => void
+  /** Whole-form answers, passed through for workloadRef sub-questions. */
+  allAnswers?: Record<string, unknown>
 }
 
-export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupProps) {
+export function RepeatableGroup({ question, rows, onChange, allAnswers }: RepeatableGroupProps) {
+  const atCap = question.maxEntries !== undefined && rows.length >= question.maxEntries
   const subQuestions = question.subQuestions ?? []
   const coreSubQuestions = subQuestions.filter(q => !q.advanced)
   const advancedSubQuestions = subQuestions.filter(q => q.advanced)
@@ -45,20 +49,9 @@ export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupPro
     return rows[rowIndex]?.[subId] ?? undefined
   }
 
-  // Check conditional visibility of a sub-question within a row
-  const isSubQuestionVisible = (rowIndex: number, subQ: Question): boolean => {
-    if (!subQ.conditionalOn) return true
-    const depVal = getRowValue(rowIndex, subQ.conditionalOn.questionId)
-    const depStr =
-      typeof depVal === 'string'
-        ? depVal
-        : Array.isArray(depVal)
-          ? (depVal as string[]).join(',')
-          : ''
-    return subQ.conditionalOn.values.some(v =>
-      depStr === v || (Array.isArray(depVal) && (depVal as string[]).includes(v))
-    )
-  }
+  // Sub-question conditions are evaluated against the row's own answers
+  const isSubQuestionVisible = (rowIndex: number, subQ: Question): boolean =>
+    !subQ.conditionalOn || matchesCondition(subQ.conditionalOn, rows[rowIndex] ?? {})
 
   const renderSubQuestion = (rowIndex: number, subQ: Question) => {
     if (!isSubQuestionVisible(rowIndex, subQ)) return null
@@ -70,6 +63,7 @@ export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupPro
         value={rowVal}
         onChange={val => handleRowChange(rowIndex, subQ.id, val)}
         idPrefix={`${question.id}_row${rowIndex}_`}
+        allAnswers={allAnswers}
       />
     )
   }
@@ -128,13 +122,19 @@ export function RepeatableGroup({ question, rows, onChange }: RepeatableGroupPro
         )
       })}
 
-      <button
-        type="button"
-        className="btn-add-row"
-        onClick={handleAddRow}
-      >
-        + Add {rows.length === 0 ? '' : 'another '}{question.entryLabel ?? 'entry'}
-      </button>
+      {atCap ? (
+        <p className="repeatable-cap-note">
+          Maximum of {question.maxEntries} {question.entryLabel ?? 'entrie'}s reached.
+        </p>
+      ) : (
+        <button
+          type="button"
+          className="btn-add-row"
+          onClick={handleAddRow}
+        >
+          + Add {rows.length === 0 ? '' : 'another '}{question.entryLabel ?? 'entry'}
+        </button>
+      )}
 
       {question.googleFormsNote && (
         <p className="google-forms-note">

@@ -34,7 +34,12 @@ export type QuestionType =
   | 'repeatable'
   | 'info'
   | 'duration'
+  | 'quantity'
+  | 'workloadRef'
   | 'heading'
+
+/** Physical dimension of a 'quantity' question; selects its unit list and base unit. */
+export type QuantityDimension = 'time' | 'size'
 
 /** A single selectable option within a radio, checkbox, or select question. */
 export interface QuestionOption {
@@ -83,6 +88,34 @@ export interface Question {
    * Compound conditions may be added in a future schema version.
    */
   conditionalOn?: Condition
+  /**
+   * For 'quantity': the dimension (time → base hours; size → base GB).
+   * 'duration' is treated as a time quantity.
+   */
+  dimension?: QuantityDimension
+  /** For 'number': only whole numbers are valid. */
+  integer?: boolean
+  /**
+   * For 'number' / 'quantity' / 'duration': show a "Don't know" tick-box
+   * beside the input. When ticked the stored value is "dont_know" — never
+   * 0 or blank, so it is not mistaken for a measurement.
+   */
+  allowUnknown?: boolean
+  /** For 'repeatable': maximum number of entries (the Add button hides at the cap). */
+  maxEntries?: number
+  /**
+   * For 'workloadRef': options are taken from the rows of another
+   * (top-level) repeatable question — e.g. the code names entered in the
+   * workload table — so follow-up sections refer to a workload instead of
+   * re-entering it. The stored value is the selected row's label.
+   */
+  optionsFrom?: { questionId: string; labelField: string }
+  /**
+   * Which committee computation or test this answer feeds (free-form tags,
+   * e.g. "core_hours_per_year", "long_walltime_test"). Documentation for the
+   * analysis layer; a question with no use should not exist.
+   */
+  committeeUse?: string[]
   /**
    * Sub-questions rendered inside each row of a repeatable group.
    * Only meaningful when type === 'repeatable'.
@@ -197,11 +230,41 @@ export interface Section {
   questions: Question[]
 }
 
-/** Single-question predicate: true when the answer is one of `values`. */
-export interface Condition {
+/**
+ * Visibility / trigger predicate.
+ * - ValueCondition: the answer (string or string[]) includes one of `values`.
+ * - RowsCondition: at least one row of a repeatable satisfies `where`.
+ * - { all } / { any }: compound conditions.
+ * Arrays of conditions in conditionalOn / optionalWhen keep their OR meaning.
+ */
+export type Condition =
+  | ValueCondition
+  | RowsCondition
+  | { all: Condition[] }
+  | { any: Condition[] }
+
+export interface ValueCondition {
   questionId: string
   values: string[]
 }
+
+export interface RowsCondition {
+  /** ID of the repeatable question whose rows are tested. */
+  rowsOf: string
+  where: RowPredicate
+}
+
+/**
+ * Predicate on one row. Numeric comparisons convert quantities to base
+ * units (hours / GB) and compare against `value` or a cluster-config
+ * threshold (`configRef`, e.g. "thresholds.maxCoresPerJob"). Unknown or
+ * blank answers, and unset thresholds, never satisfy a comparison.
+ */
+export type RowPredicate =
+  | { field: string; op: 'gt' | 'gte' | 'lt' | 'lte'; value?: number; configRef?: string }
+  | { field: string; op: 'in'; values: string[] }
+  | { all: RowPredicate[] }
+  | { any: RowPredicate[] }
 
 /**
  * Top-level questionnaire schema.

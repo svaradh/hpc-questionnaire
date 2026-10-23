@@ -131,6 +131,7 @@ export function SectionRenderer({ section, answers, onAnswer }: SectionRendererP
               value={answers[question.id]}
               onChange={val => handleAnswer(question.id, val)}
               disabled={isMirrored}
+              allAnswers={answers}
             />
           )
         })}

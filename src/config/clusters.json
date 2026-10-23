@@ -1,0 +1,67 @@
+{
+  "_source": "hpc.iiserb.ac.in cluster pages and 'Policies & Usage Charges', as supplied by the user on 2026-10-23.",
+  "_notes": [
+    "Raman cores per node: the site lists 'Xeon Gold 6126, 12 cores' (a 12-core CPU); 24 per node assumes 2 sockets, consistent with pilot data ('2 x 12-cores Intel Xeon Gold 6126, 96 GB RAM'). TO CONFIRM.",
+    "Raman GPU node: GPU model and count not listed. TO CONFIRM.",
+    "Scratch: only total usable storage is listed; scratch size, quotas and purge policy unknown. Scratch-based triggers stay disabled (null) until filled in."
+  ],
+  "clusters": [
+    {
+      "id": "gargi",
+      "name": "Gargi",
+      "established": 2025,
+      "nodeTypes": [
+        { "id": "compute", "count": 17, "cpu": "2x AMD EPYC 9554", "coresPerNode": 128, "memoryGB": 768 },
+        { "id": "highmem", "count": 3, "cpu": "2x AMD EPYC 9554", "coresPerNode": 128, "memoryGB": 2304 }
+      ],
+      "gpuNodes": [],
+      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchTB": null },
+      "interconnect": "200 Gbps Mellanox InfiniBand HDR",
+      "queues": [
+        { "id": "debug",  "minNodes": 1, "maxNodes": 2, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 5 },
+        { "id": "short",  "minNodes": 1, "maxNodes": 3, "walltimeHours": 36,  "maxConcurrentJobs": 3, "priority": 4 },
+        { "id": "medium", "minNodes": 1, "maxNodes": 3, "walltimeHours": 72,  "maxConcurrentJobs": 3, "priority": 3 },
+        { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "priority": 2 },
+        { "id": "xlong",  "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "priority": 5 },
+        { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "priority": 3, "nodeType": "highmem" }
+      ]
+    },
+    {
+      "id": "raman",
+      "name": "Raman",
+      "nodeTypes": [
+        { "id": "compute", "count": 64, "cpu": "2x Xeon Gold 6126", "coresPerNode": 24, "memoryGB": 96 },
+        { "id": "highmem", "count": 1, "cpu": "Xeon Platinum 8160", "coresPerNode": 24, "memoryGB": 1152 }
+      ],
+      "gpuNodes": [
+        { "count": 1, "cpu": "2x Xeon Gold 6126", "coresPerNode": 24, "memoryGB": 96, "gpuModel": null, "gpusPerNode": null }
+      ],
+      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchTB": null },
+      "interconnect": "100 Gbps Intel Omni-Path + 1 Gbps Ethernet",
+      "queues": [
+        { "id": "debug",  "minNodes": 1, "maxNodes": 4, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 4 },
+        { "id": "short",  "minNodes": 5, "maxNodes": 8, "walltimeHours": 48,  "maxConcurrentJobs": 8, "priority": 3 },
+        { "id": "medium", "minNodes": 2, "maxNodes": 4, "walltimeHours": 72,  "maxConcurrentJobs": 4, "priority": 2 },
+        { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "priority": 1 },
+        { "id": "gpu",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 24,  "maxConcurrentJobs": 1, "priority": 1, "nodeType": "gpu" },
+        { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 72,  "maxConcurrentJobs": 1, "priority": 3, "nodeType": "highmem" }
+      ]
+    }
+  ],
+  "charges": {
+    "currency": "INR",
+    "cpuPerCoreHour": 0.10,
+    "cpuPerCoreHourSevenDayQueue": 0.20,
+    "gpuPerCardHour": 1.00
+  },
+  "thresholds": {
+    "_comment": "Values that follow-up triggers compare workload answers against (via configRef). Derived from the clusters above; edit here, not in the schema. null disables the trigger.",
+    "maxMultiNodeWalltimeHours": 72,
+    "maxSingleNodeWalltimeHours": 168,
+    "maxCoresPerJob": 384,
+    "largestStandardNodeMemoryGB": 768,
+    "largeRunCores": 768,
+    "debugWalltimeHours": 0.5,
+    "scratchPerJobTriggerGB": null
+  }
+}

@@ -10,7 +10,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react'
-import { GOOGLE_CLIENT_ID } from '../config'
+import { GOOGLE_CLIENT_ID } from '../config/env'
 
 // ---------------------------------------------------------------------------
 // Global type augmentation for the GIS library

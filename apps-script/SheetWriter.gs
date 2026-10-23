@@ -193,26 +193,32 @@ function val(answers, key) {
 }
 
 /**
- * Converts a duration question value { value, unit } to hours.
- * Stores 6 decimal places to preserve precision down to 10 seconds
- * (10 s = 0.002778 h). Returns '' if value is absent or not a number.
- *
- * TODO (future harmonisation): wall-time fields in Section E currently
- * store a plain number in hours. When those sections are revised, route
- * them through this function for consistent normalisation.
+ * Unit factors to base units — time → hours, size → GB. Must match
+ * src/utils/quantity.ts (UNIT_FACTORS).
  */
-function durationToHours(answers, key) {
+var UNIT_FACTORS = {
+  seconds: 1 / 3600, minutes: 1 / 60, hours: 1, days: 24, weeks: 168,
+  MB: 1 / 1024, GB: 1, TB: 1024
+};
+
+/**
+ * Converts a quantity/duration answer { value, unit } to base units
+ * (hours or GB), 6 decimal places. Returns 'dont_know' when the respondent
+ * ticked "Don't know", and '' when absent or not a number.
+ */
+function quantityToBase(answers, key) {
   var v = answers[key];
+  if (v === 'dont_know') return 'dont_know';
   if (!v || typeof v !== 'object') return '';
   var num = parseFloat(v.value);
   if (isNaN(num) || v.value === '' || v.value === undefined) return '';
-  switch (String(v.unit)) {
-    case 'seconds': return parseFloat((num / 3600).toFixed(6));
-    case 'minutes': return parseFloat((num / 60).toFixed(6));
-    case 'hours':   return parseFloat(num.toFixed(6));
-    case 'days':    return parseFloat((num * 24).toFixed(6));
-    default:        return parseFloat(num.toFixed(6));
-  }
+  var factor = UNIT_FACTORS.hasOwnProperty(String(v.unit)) ? UNIT_FACTORS[String(v.unit)] : 1;
+  return parseFloat((num * factor).toFixed(6));
+}
+
+/** Duration answers → hours (time quantities). Kept for existing writers. */
+function durationToHours(answers, key) {
+  return quantityToBase(answers, key);
 }
 
 /**

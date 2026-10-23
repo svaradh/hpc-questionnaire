@@ -1278,3 +1278,38 @@ body {
 .not-aware-declaration .question-help {
   margin: 0.25rem 0 0.35rem 2rem;
 }
+
+/* ---- Numeric validation, Don't-know toggle, repeatable cap ---- */
+.input-invalid {
+  border-color: var(--color-danger) !important;
+}
+
+.question-error {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--color-danger);
+  margin-top: 0.3rem;
+}
+
+.unknown-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  margin-left: 0.5rem;
+}
+
+.repeatable-cap-note {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  font-style: italic;
+  margin-top: 0.25rem;
+}
+
+.input-with-unit,
+.duration-input {
+  flex-wrap: wrap;
+}
