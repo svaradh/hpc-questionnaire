@@ -1,3 +1,5 @@
 # TODO
 
 - **Verify the rewritten `ReportGenerator.gs` against real data.** The GPU/Scaling/Memory/Checkpoint multi-row rendering, the Workflow Patterns (Section K) block, and the Benchmark Request / Service Observations field fixes were corrected by inspection against the actual sheet schemas, but have not been exercised against a live Apps Script deployment. Before trusting it for committee use, generate one real report (e.g. from the existing pilot submissions — Singh, Thakur, or Sharma) via the "HPC Committee" menu → "Generate Report for Selected Row," and eyeball every section against the underlying sheet rows.
+
+- **Sync live sheet headers before deploying v1.3.0.** v1.3.0 appends columns to two existing tabs: `BenchmarkRequests` (`volunteer_to_help`, `volunteer_codes`) and `ServiceObservations` (`not_aware_sections`). `initializeSheets()` only writes headers to empty tabs, so on the live sheet these columns will receive data with no header label. Add the three labels to row 1 by hand (or apply the deferred header-sync fix for `ScalingInfo`/`ServiceObservations` at the same time).

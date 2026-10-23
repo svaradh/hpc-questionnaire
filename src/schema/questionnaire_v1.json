@@ -1,5 +1,5 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your research workloads so that the HPC Users' Committee can design and assign appropriate Quality-of-Service (QoS) classes. You are asked to describe what you observe and what evidence you have — the committee applies the agreed tests and makes the policy judgements.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -353,14 +353,14 @@
     {
       "id": "C",
       "title": "C. Your Experience and Workload Characteristics",
-      "description": "Your answers here determine which follow-up sections the form will show. Only sections relevant to your workload will appear — you will not be asked to complete sections that do not apply. There is no disadvantage to reporting operational difficulties.\n\nThe sections after this one (job setup, runtime data, and beyond) are all optional supplementary detail — add as much or as little as you have readily available.",
+      "description": "Your answers here determine which follow-up sections the form will show. Only sections relevant to your workload will appear — you will not be asked to complete sections that do not apply. There is no disadvantage to reporting operational difficulties.\n\nPlease answer from your group's experience on any HPC system you have used — not only the current IISER Bhopal cluster. The current cluster is relatively new, and many groups will be using it for the first time; problems encountered on earlier IISER clusters, national facilities, collaborators' clusters, or cloud resources are equally relevant.\n\nThe sections after this one (job setup, runtime data, and beyond) are all optional supplementary detail — add as much or as little as you have readily available.",
       "questions": [
         {
           "id": "N_problems",
           "type": "checkbox",
-          "label": "Which of the following operational problems has your group experienced?",
+          "label": "Which of the following operational problems has your group experienced while running jobs on any HPC system?",
           "required": false,
-          "helpText": "Select all that apply. If you have not experienced any of these problems, select 'No problems observed'.",
+          "helpText": "Select all that apply, on any HPC system your group has used — for example the current or an earlier IISER cluster, a national facility (e.g. PARAM), a collaborator's cluster, or cloud resources. If you have not experienced any of these problems, select 'No problems observed'. If your group has not yet run jobs on any HPC system, select the last option.",
           "options": [
             { "value": "wall_time_termination", "label": "Jobs terminated by the wall-time limit before completion" },
             { "value": "excessive_queue_wait", "label": "Excessive waiting time in the queue" },
@@ -368,8 +368,9 @@
             { "value": "insufficient_memory", "label": "Jobs failing due to insufficient memory (out-of-memory errors)" },
             { "value": "insufficient_gpu_access", "label": "Insufficient GPU access" },
             { "value": "insufficient_total_capacity", "label": "Insufficient total capacity — unable to complete all planned calculations" },
-            { "value": "no_problems_observed", "label": "No problems observed — current access has been adequate", "exclusive": true },
-            { "value": "other", "label": "Other operational problem" }
+            { "value": "other", "label": "Other operational problem" },
+            { "value": "no_problems_observed", "label": "No problems observed on any HPC system we have used", "exclusive": true },
+            { "value": "no_hpc_experience", "label": "Not applicable — we have not yet run jobs on an HPC system", "exclusive": true }
           ]
         },
         {
@@ -400,6 +401,7 @@
       "id": "D",
       "title": "D. Typical Job Setup",
       "description": "For each code or application you run on HPC, describe how you typically set up a job — which system you run it on and approximately what resources you use.\n\nYou do not need to know exact hardware specifications. Range estimates and \"Don't know\" are always valid answers. If you run the same code on different systems, or in very different configurations, add a separate entry for each.\n\nThis section is optional — skip it if this level of detail isn't readily on hand. The committee can follow up if more is needed. Each entry starts with a short core set of fields; memory, storage, and interconnect detail are tucked behind a \"show more\" toggle if you have them.",
+      "optionalWhen": { "questionId": "N_problems", "values": ["no_problems_observed", "no_hpc_experience"] },
       "questions": [
         {
           "id": "C_configs",
@@ -720,6 +722,7 @@
       "id": "E",
       "title": "E. Runtime and Wall-Time Behaviour",
       "description": "This section collects observed (resource configuration, wall-clock time) pairs for your workloads. It is optional — skip it if this data isn't readily on hand.\n\nIMPORTANT: 'Wall time' means the elapsed clock time while a job is actually running — it does NOT include time spent waiting in the queue. Runtime is affected by the resources allocated, so please record the resource configuration alongside each runtime observation.\n\nPlease do not enter a single 'required wall time' — instead, enter the wall time that was actually observed for a specific configuration. The committee will analyse these pairs.\n\nIf you have already described a typical job setup in Section D, you may cross-reference it here by noting the code and system name.\n\nIf your group has not recently used the current IISER HPC cluster, evidence from past usage on other systems, national facilities, or published benchmarks is equally valid. Current cluster usage is not the only accepted source of evidence.\n\nEvidence confidence levels used throughout this questionnaire (here and in later sections):\nLevel 1: Direct production observation — actual jobs with documented resource use and runtime.\nLevel 2: Reproducible benchmark — a representative calculation on known hardware.\nLevel 3: Historical/external production evidence — actual production on another HPC system.\nLevel 4: Software/scaling evidence — published, developer, or vendor information.\nLevel 5: Projection — estimated future workload without direct measurements.",
+      "optionalWhen": { "questionId": "N_problems", "values": ["no_problems_observed", "no_hpc_experience"] },
       "questions": [
         {
           "id": "D_runtime_records",
@@ -913,9 +916,9 @@
         {
           "id": "D_benchmark_request",
           "type": "radio",
-          "label": "Would you like the HPC team to run a standard benchmark for any of your codes?",
+          "label": "Would assistance with benchmarking any of your codes be useful?",
           "required": false,
-          "helpText": "The HPC facility can run representative benchmark calculations for common codes to provide objective performance data. This is particularly useful if you do not have access to runtime data from the current cluster.",
+          "helpText": "A benchmark is a representative calculation run on known hardware to measure performance objectively. It is particularly useful if you do not have runtime data from the current cluster. Your answer helps the committee gauge interest; it is not a commitment of support. Any assistance would be arranged separately — for example, with help from experienced users who volunteer.",
           "options": [
             { "value": "yes", "label": "Yes" },
             { "value": "no", "label": "No" },
@@ -925,10 +928,30 @@
         {
           "id": "D_benchmark_codes",
           "type": "text",
-          "label": "Which application(s) would you like benchmarked?",
+          "label": "Which application(s) would benchmarking assistance be useful for?",
           "required": false,
           "conditionalOn": { "questionId": "D_benchmark_request", "values": ["yes", "not_sure"] },
           "placeholder": "e.g. VASP, GROMACS, OpenFOAM"
+        },
+        {
+          "id": "D_benchmark_volunteer",
+          "type": "radio",
+          "label": "Would someone in your group be willing to help other users benchmark codes your group knows well?",
+          "required": false,
+          "helpText": "Entirely voluntary. This has no bearing on how your own workload is characterised.",
+          "options": [
+            { "value": "yes", "label": "Yes" },
+            { "value": "possibly", "label": "Possibly — please contact us" },
+            { "value": "no", "label": "No" }
+          ]
+        },
+        {
+          "id": "D_benchmark_volunteer_codes",
+          "type": "text",
+          "label": "Which application(s) could your group help with?",
+          "required": false,
+          "conditionalOn": { "questionId": "D_benchmark_volunteer", "values": ["yes", "possibly"] },
+          "placeholder": "e.g. Quantum ESPRESSO, LAMMPS"
         }
       ]
     },
@@ -939,6 +962,10 @@
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["wall_time_termination"] }
       ],
+      "notAwareOption": {
+        "questionId": "NA_wall_time",
+        "label": "I am not aware of these details, or don't know how to characterise wall-time terminations"
+      },
       "questions": [
         {
           "id": "E_terminated",
@@ -1096,6 +1123,10 @@
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["wall_time_termination"] }
       ],
+      "notAwareOption": {
+        "questionId": "NA_checkpoint",
+        "label": "I am not aware of these details, or don't know how to characterise checkpoint/restart for our codes"
+      },
       "questions": [
         {
           "id": "F_checkpoint_records",
@@ -1388,6 +1419,10 @@
         { "questionId": "N_problems", "values": ["insufficient_node_count"] },
         { "questionId": "N_workload_chars", "values": ["char_scaling"] }
       ],
+      "notAwareOption": {
+        "questionId": "NA_scaling",
+        "label": "I am not aware of these details, or don't know how to characterise how our codes scale"
+      },
       "questions": [
         {
           "id": "G_scaling_records",
@@ -1630,6 +1665,10 @@
       "conditionalOn": [
         { "questionId": "N_problems", "values": ["insufficient_memory"] }
       ],
+      "notAwareOption": {
+        "questionId": "NA_memory",
+        "label": "I am not aware of these details, or don't know how to characterise the memory use of our jobs"
+      },
       "questions": [
         {
           "id": "H_memory_records",
@@ -1828,6 +1867,10 @@
         { "questionId": "N_problems", "values": ["insufficient_gpu_access"] },
         { "questionId": "N_workload_chars", "values": ["char_gpu"] }
       ],
+      "notAwareOption": {
+        "questionId": "NA_gpu",
+        "label": "I am not aware of these details, or don't know how to characterise GPU use for our codes"
+      },
       "questions": [
         {
           "id": "I_gpu_records",
@@ -2108,6 +2151,10 @@
         { "questionId": "N_problems", "values": ["excessive_queue_wait", "insufficient_total_capacity"] },
         { "questionId": "N_workload_chars", "values": ["char_throughput", "char_pipeline", "char_extended"] }
       ],
+      "notAwareOption": {
+        "questionId": "NA_workflow",
+        "label": "I am not aware of these details, or don't know how to characterise how our workflows are organised"
+      },
       "questions": [
         {
           "id": "J_workflow_types",

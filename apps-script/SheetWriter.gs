@@ -124,12 +124,16 @@ var SHEET_DEFINITIONS = [
   },
   {
     name: 'BenchmarkRequests',
-    headers: ['submission_id', 'pi_name', 'benchmark_requested', 'benchmark_codes']
+    headers: [
+      'submission_id', 'pi_name', 'benchmark_requested', 'benchmark_codes',
+      'volunteer_to_help', 'volunteer_codes'
+    ]
   },
   {
     name: 'ServiceObservations',
     headers: [
-      'submission_id', 'pi_name', 'problems_experienced', 'other_problem_description', 'workload_characteristics'
+      'submission_id', 'pi_name', 'problems_experienced', 'other_problem_description', 'workload_characteristics',
+      'not_aware_sections'
     ]
   },
   {
@@ -554,12 +558,29 @@ function writeExtendedCalcs(submissionId, piName, answers) {
 
 function writeBenchmarkRequests(submissionId, piName, answers) {
   var requested = val(answers, 'D_benchmark_request');
-  if (!requested || requested === 'no') return;
+  var volunteer = val(answers, 'D_benchmark_volunteer');
+  var wantsHelp = requested && requested !== 'no';
+  var offersHelp = volunteer && volunteer !== 'no';
+  if (!wantsHelp && !offersHelp) return;
   appendRow('BenchmarkRequests', [
     submissionId, piName,
     requested,
-    val(answers, 'D_benchmark_codes')
+    val(answers, 'D_benchmark_codes'),
+    volunteer,
+    val(answers, 'D_benchmark_volunteer_codes')
   ]);
+}
+
+/**
+ * Sections where the respondent ticked the top-level "not aware / don't know
+ * how to characterise" declaration. Each declaration is stored as
+ * NA_<topic> = true; returns the topics (e.g. "wall_time; memory").
+ */
+function notAwareSections(answers) {
+  return Object.keys(answers)
+    .filter(function(k) { return k.indexOf('NA_') === 0 && answers[k] === true; })
+    .map(function(k) { return k.substring(3); })
+    .join('; ');
 }
 
 function writeServiceObservations(submissionId, piName, answers) {
@@ -567,7 +588,8 @@ function writeServiceObservations(submissionId, piName, answers) {
     submissionId, piName,
     joinArr(answers['N_problems']),
     val(answers, 'N_problems_other'),
-    joinArr(answers['N_workload_chars'])
+    joinArr(answers['N_workload_chars']),
+    notAwareSections(answers)
   ]);
 }
 

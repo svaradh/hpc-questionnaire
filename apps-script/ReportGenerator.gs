@@ -212,11 +212,13 @@ function generateReport(submissionId) {
     appendTable(body, rtHeaders, rtRows);
   }
 
-  if (bmark && bmark['benchmark_requested'] && bmark['benchmark_requested'] !== 'no') {
-    appendHeading3(body, 'Benchmark Request');
+  if (bmark) {
+    appendHeading3(body, 'Benchmarking');
     appendTwoColTable(body, [
-      ['Requested',  bmark['benchmark_requested'] || ''],
-      ['Codes',      bmark['benchmark_codes']      || '']
+      ['Assistance would be useful', bmark['benchmark_requested'] || ''],
+      ['Codes',                      bmark['benchmark_codes']     || ''],
+      ['Volunteer to help others',   bmark['volunteer_to_help']   || ''],
+      ['Codes they could help with', bmark['volunteer_codes']     || '']
     ]);
   }
 
@@ -429,6 +431,17 @@ function generateReport(submissionId) {
     appendHeading3(body, 'Workload Characteristics (self-reported)');
     svc['workload_characteristics'].split('; ').forEach(function(ch) {
       if (ch.trim()) body.appendListItem(ch.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
+    });
+  }
+
+  if (svc && svc['not_aware_sections']) {
+    body.appendParagraph('');
+    appendHeading3(body, 'Sections marked "not aware / unable to characterise"');
+    body.appendParagraph(
+      'A valid answer, not a negative finding. Possible candidate for clarification (Category 2).'
+    ).setItalic(true);
+    svc['not_aware_sections'].split('; ').forEach(function(sec) {
+      if (sec.trim()) body.appendListItem(sec.trim()).setGlyphType(DocumentApp.GlyphType.BULLET);
     });
   }
 

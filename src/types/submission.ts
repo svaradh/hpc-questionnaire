@@ -93,6 +93,7 @@ export type OperationalProblem =
   | 'insufficient_gpu_access'
   | 'insufficient_total_capacity'
   | 'no_problems_observed'
+  | 'no_hpc_experience'
   | 'other'
 
 /** System type for resource records (Section D). */
@@ -257,9 +258,14 @@ export interface RuntimeRecord {
  * Evidence from benchmarks run by the facility is accepted as Level 2 evidence.
  */
 export interface BenchmarkRequest {
+  /** Whether benchmarking assistance would be useful (gauges interest; not a commitment). */
   status: 'yes' | 'no' | 'not_sure'
-  /** Application(s) the group would like benchmarked. */
+  /** Application(s) for which assistance would be useful. */
   codes?: string
+  /** Whether a group member would volunteer to help others benchmark (D_benchmark_volunteer). */
+  volunteer?: 'yes' | 'possibly' | 'no'
+  /** Application(s) the group could help with. */
+  volunteerCodes?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -430,6 +436,12 @@ export interface QoSObservation {
   otherDescription?: string
   /** Factual workload characteristics (N_workload_chars values). */
   workloadCharacteristics: string[]
+  /**
+   * Sections where the respondent declared "not aware / don't know how to
+   * characterise" (NA_* questionIds, prefix stripped, e.g. 'wall_time').
+   * A valid answer — flags possible clarification, never a negative finding.
+   */
+  notAwareSections?: string[]
 }
 
 // ---------------------------------------------------------------------------

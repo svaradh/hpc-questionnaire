@@ -14,6 +14,7 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type { QuestionnaireSchema } from '../types/schema'
 import { SectionRenderer } from './SectionRenderer'
+import { isSectionVisible, isSectionNotAware, answersForSubmission } from '../utils/conditions'
 import { GoogleSignIn } from './GoogleSignIn'
 import { SubmissionConfirmation } from './SubmissionConfirmation'
 import { useGoogleAuth } from '../hooks/useGoogleAuth'
@@ -44,27 +45,13 @@ const REQUIRED_FIELDS: Array<{ id: string; label: string }> = [
   { id: 'A_completed_by_role', label: 'Role of person completing this form' },
 ]
 
-function isSectionVisible(
-  section: QuestionnaireSchema['sections'][number],
-  answers: Record<string, unknown>
-): boolean {
-  if (!section.conditionalOn) return true
-  const conditions = Array.isArray(section.conditionalOn)
-    ? section.conditionalOn
-    : [section.conditionalOn]
-  return conditions.some(cond => {
-    const val = answers[cond.questionId]
-    if (Array.isArray(val)) return (val as string[]).some(v => cond.values.includes(v))
-    if (typeof val === 'string') return cond.values.includes(val)
-    return false
-  })
-}
-
 function sectionProgress(
   section: QuestionnaireSchema['sections'][number],
   answers: Record<string, unknown>
 ): { answered: number; total: number } {
   const required = section.questions.filter(q => q.required && q.type !== 'info')
+  // A "not aware" declaration answers the whole section.
+  if (isSectionNotAware(section, answers)) return { answered: required.length, total: required.length }
   const answered = required.filter(q => {
     const v = answers[q.id]
     if (v === undefined || v === null || v === '') return false
@@ -181,7 +168,7 @@ export function FormShell({
     setSubmitError(null)
 
     const result = await submitForm(
-      answers,
+      answersForSubmission(schema.sections, answers),
       user.credential,
       schema.version,
       editingSubmissionId ?? undefined
@@ -354,7 +341,7 @@ export function FormShell({
                 <span className="section-counter">Section {safeIndex + 1} of {visibleSections.length}</span>
               </div>
 
-              <SectionRenderer section={currentSection} answers={answers} onAnswer={onAnswer} />
+              <SectionRenderer key={currentSection.id} section={currentSection} answers={answers} onAnswer={onAnswer} />
 
               <div className="section-nav-buttons">
                 <button type="button" className="btn-nav btn-prev" onClick={() => safeIndex > 0 && handleNav(safeIndex - 1)} disabled={safeIndex === 0}>

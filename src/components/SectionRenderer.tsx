@@ -5,13 +5,19 @@
  * - Renders the section title and description callout.
  * - Maps questions to QuestionRenderer.
  * - Evaluates conditional visibility for each question.
+ * - Renders the optional top-level "not aware" declaration; when ticked,
+ *   the section's questions are hidden.
+ * - Collapses sections whose optionalWhen condition holds behind a
+ *   "this section is optional" notice until the respondent expands them.
  * - Handles the PI-is-respondent auto-fill for Section A:
  *   when A_pi_is_respondent = 'yes', mirrors PI details into the
  *   "completed by" fields and disables them.
  */
 
+import { useState } from 'react'
 import type { Section, Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
+import { matchesCondition, isSectionOptional, isSectionNotAware, sectionHasAnswers } from '../utils/conditions'
 
 interface SectionRendererProps {
   section: Section
@@ -20,18 +26,12 @@ interface SectionRendererProps {
 }
 
 function isQuestionVisible(question: Question, answers: Record<string, unknown>): boolean {
-  if (!question.conditionalOn) return true
-  const { questionId, values } = question.conditionalOn
-  const currentValue = answers[questionId]
-
-  if (Array.isArray(currentValue)) {
-    return (currentValue as string[]).some(v => values.includes(v))
-  }
-  if (typeof currentValue === 'string') {
-    return values.includes(currentValue)
-  }
-  return false
+  return !question.conditionalOn || matchesCondition(question.conditionalOn, answers)
 }
+
+const NOT_AWARE_DEFAULT_HELP =
+  "This is a valid answer and is not treated as a negative finding. The rest of this section will be skipped; " +
+  "the committee may get in touch if a short conversation would help characterise your workload."
 
 /** Derive the display name from PI salutation + name fields. */
 function piFullName(answers: Record<string, unknown>, overrides?: Record<string, unknown>): string {
@@ -43,6 +43,11 @@ function piFullName(answers: Record<string, unknown>, overrides?: Record<string,
 
 export function SectionRenderer({ section, answers, onAnswer }: SectionRendererProps) {
   const piIsRespondent = answers['A_pi_is_respondent'] === 'yes'
+  // Expansion of an optional (collapsed) section. Parent keys this component by
+  // section id, so the state resets per section. Already-entered answers keep it open.
+  const [expanded, setExpanded] = useState(false)
+  const collapsed = isSectionOptional(section, answers) && !expanded && !sectionHasAnswers(section, answers)
+  const notAware = isSectionNotAware(section, answers)
 
   /**
    * Intercepts answer changes to implement Section A auto-fill:
@@ -86,6 +91,33 @@ export function SectionRenderer({ section, answers, onAnswer }: SectionRendererP
         </div>
       )}
 
+      {collapsed && (
+        <div className="optional-section-notice" role="note">
+          <p>
+            Based on your earlier answers, this section is optional. You can skip it,
+            or add details if you have them readily available.
+          </p>
+          <button type="button" className="btn-add-row" onClick={() => setExpanded(true)}>
+            Add details for this section
+          </button>
+        </div>
+      )}
+
+      {!collapsed && section.notAwareOption && (
+        <div className="not-aware-declaration">
+          <label className="checkbox-label">
+            <input
+              type="checkbox"
+              checked={notAware}
+              onChange={e => onAnswer(section.notAwareOption!.questionId, e.target.checked)}
+            />
+            <span>{section.notAwareOption.label}</span>
+          </label>
+          <span className="question-help">{section.notAwareOption.helpText ?? NOT_AWARE_DEFAULT_HELP}</span>
+        </div>
+      )}
+
+      {!collapsed && !notAware && (
       <div className="section-questions">
         {section.questions.map(question => {
           if (!isQuestionVisible(question, answers)) return null
@@ -103,6 +135,7 @@ export function SectionRenderer({ section, answers, onAnswer }: SectionRendererP
           )
         })}
       </div>
+      )}
     </div>
   )
 }

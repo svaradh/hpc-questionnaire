@@ -82,10 +82,7 @@ export interface Question {
    * value is one of the listed values.
    * Compound conditions may be added in a future schema version.
    */
-  conditionalOn?: {
-    questionId: string
-    values: string[]
-  }
+  conditionalOn?: Condition
   /**
    * Sub-questions rendered inside each row of a repeatable group.
    * Only meaningful when type === 'repeatable'.
@@ -176,10 +173,34 @@ export interface Section {
    * Used to hide GPU, long-wall-time, or other specialist sections
    * until triggered by earlier answers.
    */
-  conditionalOn?:
-    | { questionId: string; values: string[] }
-    | Array<{ questionId: string; values: string[] }>
+  conditionalOn?: Condition | Condition[]
+  /**
+   * When the condition(s) are satisfied (same OR semantics as conditionalOn),
+   * the section stays visible but opens collapsed behind a notice saying it
+   * is optional; the respondent can expand it to add details. Used e.g. to
+   * make job-setup and runtime detail skippable for groups reporting no
+   * operational problems, without discarding the option to provide it.
+   */
+  optionalWhen?: Condition | Condition[]
+  /**
+   * Top-level "I am not aware / don't know how to characterise this"
+   * declaration, rendered as a checkbox above the section's questions.
+   * When ticked (stored as `true` under questionId), the rest of the section
+   * is hidden and its answers are omitted from the submission. This is a
+   * valid answer, never a negative finding — the committee may follow up.
+   */
+  notAwareOption?: {
+    questionId: string
+    label: string
+    helpText?: string
+  }
   questions: Question[]
+}
+
+/** Single-question predicate: true when the answer is one of `values`. */
+export interface Condition {
+  questionId: string
+  values: string[]
 }
 
 /**

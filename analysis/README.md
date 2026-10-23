@@ -110,6 +110,6 @@ map_range_labels(dfs['JobSetups']['memory_range'], MEMORY_PER_CORE_LABELS)
 | IndependentJobs | Section K — independent job workflow data |
 | PipelineJobs | Section K — pipeline workflow data |
 | ExtendedCalcs | Section K — extended single calculation data |
-| BenchmarkRequests | Section E — benchmark requests |
-| ServiceObservations | Section C — problems experienced and workload characteristics |
+| BenchmarkRequests | Section E — interest in benchmarking assistance, and offers to help other users |
+| ServiceObservations | Section C — problems experienced (on any HPC system) and workload characteristics; `not_aware_sections` lists sections F–K the respondent marked "not aware / unable to characterise" |
 | CommitteeAssessment | Committee triage and notes (filled in by committee) |
