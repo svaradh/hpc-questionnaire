@@ -425,7 +425,7 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe up to five main codes your group runs, one entry each. Numbers for a typical job are enough; ticking \"Don't know\" is always fine.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.\n\nLater sections ask about specific codes by picking them from this list.",
+      "description": "Describe up to five main codes your group runs, one entry each. Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for a typical job are enough; ticking \"Don't know\" always counts as an answer.\n\nThe committee calculates totals (such as core-hours per year) from these numbers — you do not need to.\n\nLater sections ask about specific codes by picking them from this list.",
       "questions": [
         {
           "id": "W_problem_notice",
@@ -452,7 +452,7 @@
           "id": "W_workloads",
           "type": "repeatable",
           "label": "Main codes (up to 5)",
-          "required": false,
+          "required": true,
           "entryLabel": "code",
           "maxEntries": 5,
           "subQuestions": [
@@ -598,7 +598,7 @@
             {
               "id": "W_cluster",
               "type": "radio",
-              "required": false,
+              "required": true,
               "label": "Which IISER Bhopal cluster do (or would) these jobs run on?",
               "helpText": "Gargi has no GPUs; GPU jobs run on Raman.",
               "options": [
@@ -631,7 +631,7 @@
               "id": "W_device",
               "type": "radio",
               "label": "Does a typical job of this code run on CPUs only, or on GPUs?",
-              "required": false,
+              "required": true,
               "options": [
                 {
                   "value": "cpu",
@@ -668,7 +668,7 @@
               "id": "W_cores",
               "type": "number",
               "label": "CPU cores per job (total across all nodes)",
-              "required": false,
+              "required": true,
               "helpText": "Example: 2 nodes × 128 cores = 256. For a GPU job, the CPU cores allocated alongside the GPUs.",
               "integer": true,
               "allowUnknown": true,
@@ -682,7 +682,7 @@
               "id": "W_gpus",
               "type": "number",
               "label": "GPUs per job (total across all nodes)",
-              "required": false,
+              "required": true,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
@@ -712,7 +712,7 @@
               "id": "W_walltime",
               "type": "quantity",
               "label": "Wall time of this typical job (with the CPU cores / GPUs above)",
-              "required": false,
+              "required": true,
               "dimension": "time",
               "defaultUnit": "hours",
               "allowUnknown": true,
@@ -744,25 +744,27 @@
               "id": "W_jobs_year",
               "type": "number",
               "label": "Jobs of this kind run in the last 12 months",
-              "required": false,
+              "required": true,
               "integer": true,
               "allowUnknown": true,
               "min": 0,
               "committeeUse": [
                 "core_hours"
-              ]
+              ],
+              "helpText": "0 if you have not run these jobs yet."
             },
             {
               "id": "W_jobs_year_unconstrained",
               "type": "number",
-              "label": "Jobs you would have run if wall time, queue wait and capacity were not limiting",
-              "required": false,
+              "label": "Jobs of this kind per year you need — what you would run if wall time, queue wait and capacity were not limiting",
+              "required": true,
               "integer": true,
               "allowUnknown": true,
               "min": 0,
               "committeeUse": [
                 "unmet_demand"
-              ]
+              ],
+              "helpText": "If limits did not hold you back, this can be the same as the number above."
             },
             {
               "id": "W_concurrent",
@@ -787,7 +789,7 @@
               "id": "W_org",
               "type": "checkbox",
               "label": "Which patterns describe how these jobs are organised? Select all that apply.",
-              "required": false,
+              "required": true,
               "options": [
                 {
                   "value": "standalone",

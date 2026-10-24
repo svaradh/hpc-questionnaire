@@ -3,9 +3,9 @@
  * and section-level helpers built on them.
  */
 
-import type { Condition, RowPredicate, Section } from '../types/schema'
+import type { Condition, Question, RowPredicate, Section } from '../types/schema'
 import { configNumber } from '../config/clusterConfig'
-import { toBaseNumber } from './quantity'
+import { isQuantityValue, toBaseNumber } from './quantity'
 
 type Answers = Record<string, unknown>
 
@@ -106,6 +106,63 @@ export function answersForSubmission(
     if (!visible && section.notAwareOption) delete out[section.notAwareOption.questionId]
     if (!visible || isSectionNotAware(section, answers)) {
       for (const q of section.questions) delete out[q.id]
+    }
+  }
+  return out
+}
+
+/**
+ * True when a stored answer counts as given. "Don't know" counts; an empty
+ * string, empty list, or a quantity with no number does not.
+ */
+export function isAnswered(v: unknown): boolean {
+  if (v === undefined || v === null || v === '' || v === false) return false
+  if (Array.isArray(v)) return v.length > 0
+  if (isQuantityValue(v)) return v.value !== ''
+  return true
+}
+
+export interface MissingAnswer {
+  sectionId: string
+  /** Human-readable location and question, e.g. "Code 2 (VASP): Wall time". */
+  label: string
+}
+
+const questionVisible = (q: Question, scope: Answers) =>
+  !q.conditionalOn || matchesCondition(q.conditionalOn, scope)
+
+/**
+ * Required questions left unanswered, in form order. Skips hidden sections,
+ * sections declared "not aware", and hidden questions. A required
+ * repeatable needs at least one entry; required sub-questions are checked
+ * in every entry (with row-local conditions).
+ */
+export function missingRequired(sections: Section[], answers: Answers): MissingAnswer[] {
+  const out: MissingAnswer[] = []
+  for (const section of sections) {
+    if (!isSectionVisible(section, answers) || isSectionNotAware(section, answers)) continue
+    for (const q of section.questions) {
+      if (q.type === 'info' || q.type === 'heading' || !questionVisible(q, answers)) continue
+      if (q.type === 'repeatable') {
+        const rows = Array.isArray(answers[q.id]) ? (answers[q.id] as Answers[]) : []
+        if (q.required && rows.length === 0) {
+          out.push({ sectionId: section.id, label: `${q.label}: add at least one ${q.entryLabel ?? 'entry'}` })
+        }
+        const entry = q.entryLabel ? q.entryLabel[0].toUpperCase() + q.entryLabel.slice(1) : 'Entry'
+        rows.forEach((row, i) => {
+          const name = (q.subQuestions ?? [])
+            .filter(s => s.type === 'text' || s.type === 'workloadRef')
+            .map(s => row?.[s.id]).find(v => typeof v === 'string' && v.trim())
+          const where = `${entry} ${i + 1}${name ? ` (${name})` : ''}`
+          for (const sq of q.subQuestions ?? []) {
+            if (sq.required && questionVisible(sq, row ?? {}) && !isAnswered(row?.[sq.id])) {
+              out.push({ sectionId: section.id, label: `${where}: ${sq.label}` })
+            }
+          }
+        })
+      } else if (q.required && !isAnswered(answers[q.id])) {
+        out.push({ sectionId: section.id, label: q.label })
+      }
     }
   }
   return out

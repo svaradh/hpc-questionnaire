@@ -86,7 +86,7 @@ One card per main code (max 5; a free-text field after the table lists any other
 | ID | Question | Input |
 |---|---|---|
 | W_jobs_year | Jobs of this kind run in the last 12 months | integer, DK |
-| W_jobs_year_unconstrained | Jobs you would have run if wall time, queue and capacity were not limiting | integer, DK |
+| W_jobs_year_unconstrained | Jobs of this kind per year you need — what you would run if wall time, queue wait and capacity were not limiting | integer, DK |
 | W_concurrent | Largest number of these jobs your group runs (or would run) at the same time | integer, DK |
 
 Derived: core-hours/yr (used, unconstrained), GPU-hours/yr, peak concurrent cores, peak concurrent scratch = `W_scratch_min × W_concurrent`.
@@ -151,7 +151,7 @@ Code version/reference · per-row notes (~15 boxes) · per-row evidence source *
 
 Kept optional per committee request: NVLink, multi-node GPU (collapsed inside 5D).
 
-Committee comment "D & E optional when no problems": in v3 the heavy parts of D/E are now the follow-up sections, which do not appear without a trigger. The compact workload table stays **core** for everyone, because the primary purpose (whole-cluster viability) needs every group's demand, not only groups reporting problems. → **to confirm.**
+Committee comment "D & E optional when no problems": in v3 the heavy parts of D/E are now the follow-up sections, which do not appear without a trigger. The compact workload table stays **core** for everyone, because the primary purpose (whole-cluster viability) needs every group's demand, not only groups reporting problems. **Confirmed (2026-10-24):** every group, including "no problems" groups, must give at least one workload entry with its yearly figures and job organisation. Required in each entry: cluster, CPU/GPU, cores (and GPUs for GPU jobs), wall time, jobs in the last 12 months, jobs needed per year, and job organisation. Each has a "Don't know" option, which counts as an answer. Submit now checks required questions in every visible section and entry, not only Section A.
 
 ## 6. Engine changes required
 
@@ -227,7 +227,7 @@ All thresholds live under `thresholds` in the config; `null` disables a trigger.
 - Follow-ups E1–E5 are short per-workload lists (max 5 entries), each starting with a workload picker, so a group with two long-running codes can describe both.
 - `X_problems_where` is one checkbox for all problems ticked (not a problem × system matrix).
 - The checkpoint question lives only in E1 (not duplicated in the workload card).
-- The workload table is core for everyone (pending confirmation, §10). Making it optional for "no problems" groups is one line: `"optionalWhen"` on Section C.
+- The workload table is core for everyone, with at least one entry required (confirmed 2026-10-24).
 - Drafts use a v3 storage key, so a v1/v2 draft on the same device is not loaded into v3.
 - Every cores / GPU / wall-time question is preceded by a CPU-vs-GPU question (workload card, debug sessions, E1, E2); E1 also fires for GPU jobs over the 24 h GPU-queue limit; E6 distinguishes the Raman GPU queue.
 - **Home area** (D) asks only for working space: run inputs and data files, checkpoint files, parameter files, own production/analysis codes, and final outputs awaiting transfer to the group's own storage; plus how long outputs stay before transfer. The section states that home is not long-term storage. (Policy context: ≥ 30–50 concurrent users; ~1 TB per group is already large.)

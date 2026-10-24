@@ -5,7 +5,7 @@
  * - Section navigation and progress tracking
  * - Google Sign-In
  * - Submission window check (on mount via doGet)
- * - Section A required-field validation before submit
+ * - Required-field validation before submit (all visible sections, incl. repeatable entries)
  * - Duplicate submission detection (PI email)
  * - Same-device edit mode (loads previous submission from localStorage)
  * - Post-submit confirmation screen with "Edit your response"
@@ -14,7 +14,8 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type { QuestionnaireSchema } from '../types/schema'
 import { SectionRenderer } from './SectionRenderer'
-import { isSectionVisible, isSectionNotAware, answersForSubmission } from '../utils/conditions'
+import { isSectionVisible, isSectionNotAware, answersForSubmission, isAnswered, missingRequired } from '../utils/conditions'
+import type { MissingAnswer } from '../utils/conditions'
 import { GoogleSignIn } from './GoogleSignIn'
 import { SubmissionConfirmation } from './SubmissionConfirmation'
 import { useGoogleAuth } from '../hooks/useGoogleAuth'
@@ -32,19 +33,6 @@ interface FormShellProps {
   onSaveSubmission: (submissionId: string, answers: Record<string, unknown>) => void
 }
 
-// Section A required fields — the minimal core
-const REQUIRED_FIELDS: Array<{ id: string; label: string }> = [
-  { id: 'A_group_name',        label: 'Research group name' },
-  { id: 'A_department',        label: 'Department / School' },
-  { id: 'A_pi_salutation',     label: 'PI salutation' },
-  { id: 'A_pi_name',           label: 'PI full name' },
-  { id: 'A_pi_email',          label: 'PI email address' },
-  { id: 'A_pi_is_respondent',  label: 'Is the PI filling out this form?' },
-  { id: 'A_completed_by_name', label: 'Name of person completing this form' },
-  { id: 'A_completed_by_email',label: 'Email of person completing this form' },
-  { id: 'A_completed_by_role', label: 'Role of person completing this form' },
-]
-
 function sectionProgress(
   section: QuestionnaireSchema['sections'][number],
   answers: Record<string, unknown>
@@ -52,23 +40,10 @@ function sectionProgress(
   const required = section.questions.filter(q => q.required && q.type !== 'info')
   // A "not aware" declaration answers the whole section.
   if (isSectionNotAware(section, answers)) return { answered: required.length, total: required.length }
-  const answered = required.filter(q => {
-    const v = answers[q.id]
-    if (v === undefined || v === null || v === '') return false
-    if (Array.isArray(v)) return v.length > 0
-    return true
-  })
+  const answered = required.filter(q => isAnswered(answers[q.id]))
   return { answered: answered.length, total: required.length }
 }
 
-function getMissingRequired(answers: Record<string, unknown>): string[] {
-  return REQUIRED_FIELDS
-    .filter(f => {
-      const v = answers[f.id]
-      return v === undefined || v === null || v === ''
-    })
-    .map(f => f.label)
-}
 
 export function FormShell({
   schema,
@@ -87,7 +62,7 @@ export function FormShell({
   const [isSubmitting, setIsSubmitting]     = useState(false)
   const [submissionResult, setSubmissionResult] = useState<{ submissionId: string; isEdit: boolean } | null>(null)
   const [submitError, setSubmitError]       = useState<string | null>(null)
-  const [validationErrors, setValidationErrors] = useState<string[]>([])
+  const [validationErrors, setValidationErrors] = useState<MissingAnswer[]>([])
 
   // Edit mode — set when user chooses to edit a previous submission
   const [editingSubmissionId, setEditingSubmissionId] = useState<string | null>(null)
@@ -154,12 +129,12 @@ export function FormShell({
     if (!user) return
 
     // Validate required fields
-    const missing = getMissingRequired(answers)
+    const missing = missingRequired(schema.sections, answers)
     if (missing.length > 0) {
       setValidationErrors(missing)
-      // Jump to Section A
-      const sectionAIndex = visibleSections.findIndex(s => s.id === 'A')
-      if (sectionAIndex >= 0) handleNav(sectionAIndex)
+      // Jump to the first section with a missing answer
+      const firstIndex = visibleSections.findIndex(s => s.id === missing[0].sectionId)
+      if (firstIndex >= 0) handleNav(firstIndex)
       return
     }
     setValidationErrors([])
@@ -278,9 +253,16 @@ export function FormShell({
       {/* Validation errors */}
       {validationErrors.length > 0 && (
         <div className="validation-banner" role="alert">
-          <strong>Please complete the following required fields in Section A before submitting:</strong>
+          <strong>Please answer the following before submitting. Ticking "Don't know" counts as an answer.</strong>
           <ul className="validation-list">
-            {validationErrors.map(e => <li key={e}>{e}</li>)}
+            {validationErrors.map((e, i) => (
+              <li key={i}>
+                <button type="button" className="link-button" onClick={() => {
+                  const idx = visibleSections.findIndex(s => s.id === e.sectionId)
+                  if (idx >= 0) handleNav(idx)
+                }}>Section {e.sectionId}</button>: {e.label}
+              </li>
+            ))}
           </ul>
         </div>
       )}
