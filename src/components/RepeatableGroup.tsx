@@ -77,6 +77,32 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
     )
   }
 
+  const blockDomId = (rowIndex: number, block: Question) => `${question.id}_row${rowIndex}_${block.id}`
+
+  // Panels open in this row, listed at the top of the entry so they are not missed further down.
+  const renderOpenBlocksNote = (rowIndex: number) => {
+    const open = subQuestions.filter(q => q.type === 'block' && isSubQuestionVisible(rowIndex, q))
+    if (open.length === 0) return null
+    return (
+      <p className="row-blocks-note" role="status">
+        Extra questions for this code:{' '}
+        {open.map((b, i) => (
+          <span key={b.id}>
+            {i > 0 && ', '}
+            <button
+              type="button"
+              className="link-button"
+              onClick={() => document.getElementById(blockDomId(rowIndex, b))?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            >
+              {b.label}
+            </button>
+          </span>
+        ))}
+        {' '}— further down this entry.
+      </p>
+    )
+  }
+
   const renderBlock = (rowIndex: number, block: Question) => {
     const children = block.questions ?? []
     const na = block.notAwareOption
@@ -84,7 +110,7 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
     const core = children.filter(q => !q.advanced)
     const advanced = children.filter(q => q.advanced && isSubQuestionVisible(rowIndex, q))
     return (
-      <section key={block.id} className="row-block" aria-label={block.label}>
+      <section key={block.id} id={blockDomId(rowIndex, block)} className="row-block" aria-label={block.label}>
         <h4 className="row-block-title"><RichText text={block.label} /></h4>
         {block.helpText && <p className="row-block-why"><RichText text={block.helpText} /></p>}
         {na && (
@@ -147,6 +173,7 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
             </div>
 
             <div className="repeatable-row-body">
+              {renderOpenBlocksNote(rowIndex)}
               {coreSubQuestions.map(subQ => renderSubQuestion(rowIndex, subQ))}
 
               {visibleAdvanced.length > 0 && (
