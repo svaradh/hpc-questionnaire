@@ -10,7 +10,8 @@
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "deploy": "npm run build && gh-pages -d dist",
-    "deploy:preview": "tsc && vite build --base=/hpc-questionnaire/v3-preview/ && gh-pages -d dist --dest v3-preview --add -m 'Deploy v3 preview'"
+    "deploy:preview": "tsc && vite build --base=/hpc-questionnaire/v3-preview/ && gh-pages -d dist --dest v3-preview --add -m 'Deploy v3 preview'",
+    "deploy:layout": "tsc && VITE_SUBMIT_DISABLED=true vite build --base=/hpc-questionnaire/v3-draft/ && gh-pages -d dist --dest v3-draft --add -m 'Deploy v3 layout draft'"
   },
   "dependencies": {
     "react": "^18.3.1",

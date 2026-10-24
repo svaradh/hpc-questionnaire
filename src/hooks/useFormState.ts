@@ -7,11 +7,15 @@
  * on the same device.
  */
 
+import { SUBMIT_DISABLED } from '../config/env'
 import { useState, useCallback, useEffect } from 'react'
 
 // Versioned keys: a v1/v2 draft on the same device is not loaded into the v3 form.
-const DRAFT_KEY     = 'hpc_questionnaire_v3_draft'
-const SUBMITTED_KEY = 'hpc_questionnaire_v3_submitted'
+// Layout-only builds (submitting disabled) keep their own draft, so trying one
+// does not mix answers with the real form served from the same site.
+const KEY_SUFFIX    = SUBMIT_DISABLED ? '_layout' : ''
+const DRAFT_KEY     = 'hpc_questionnaire_v3_draft' + KEY_SUFFIX
+const SUBMITTED_KEY = 'hpc_questionnaire_v3_submitted' + KEY_SUFFIX
 
 export interface SubmittedRecord {
   submissionId: string
