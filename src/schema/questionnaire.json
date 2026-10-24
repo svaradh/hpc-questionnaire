@@ -425,7 +425,7 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe up to five main codes your group runs, one entry each. Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for a typical job are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, a few extra questions about it appear inside its entry.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
+      "description": "Describe up to five main codes your group runs, one entry each (or two entries for a code that runs quite different kinds of jobs). Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, a few extra questions about it appear inside its entry.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
       "questions": [
         {
           "id": "W_problem_notice",
@@ -467,7 +467,7 @@
               "type": "text",
               "label": "Code / application name",
               "required": true,
-              "placeholder": "e.g. Quantum ESPRESSO"
+              "placeholder": "e.g. Quantum ESPRESSO, or \"QE – phonon workflow\""
             },
             {
               "id": "W_source",
@@ -706,19 +706,20 @@
               ],
               "committeeUse": [
                 "workflow_pattern"
-              ]
+              ],
+              "helpText": "Tick all that describe these jobs, e.g. a chain whose longest step needs restarts. If different patterns apply to different jobs with different set-ups (say, many small screening jobs and a few large production runs), give each its own entry; the same code can have two entries."
             },
             {
               "id": "W_h_job",
               "type": "heading",
-              "label": "A typical job of this code",
+              "label": "The heaviest job of this entry",
               "required": false,
-              "helpText": "A {job} is one submission to the scheduler. For a {chain}, describe its heaviest step: the one that uses the most cores, memory or time."
+              "helpText": "A {job} is one submission to the scheduler. Describe the heaviest job of this entry: the one that uses the most cores, memory or time. For a {chain}, that is its heaviest step."
             },
             {
               "id": "W_device",
               "type": "radio",
-              "label": "Does a typical job of this code run on CPUs only, or on {GPUs|gpu}?",
+              "label": "Does this job run on CPUs only, or on {GPUs|gpu}?",
               "required": true,
               "options": [
                 {
@@ -734,7 +735,7 @@
                   "label": "Don't know / not aware"
                 }
               ],
-              "helpText": "The numbers below describe that typical job.",
+              "helpText": "The numbers below describe this job.",
               "committeeUse": [
                 "job_size",
                 "gpu_cpu_balance"
@@ -2766,7 +2767,7 @@
             {
               "id": "Q_same_as_typical",
               "type": "radio",
-              "label": "Was the request the typical job you described for this workload in Section C?",
+              "label": "Was the request the job you described for this code in Section C?",
               "required": false,
               "options": [
                 {
