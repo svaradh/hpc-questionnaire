@@ -5,14 +5,21 @@
  * Rows can be added and deleted. Values are stored as an array of
  * Record<subQuestionId, unknown> objects.
  *
+ * A sub-question of type 'block' renders as a titled panel of further
+ * questions (e.g. "Long runs") that appears when its condition holds for
+ * the row. Conditions see the row's answers, and the whole form's answers
+ * through `{ form: … }`.
+ *
  * NOTE: Google Forms does not support repeatable groups natively.
  * This component implements the "add another entry" pattern for the
  * React prototype. When exporting to Google Forms, repeatable groups
  * must be implemented as a separate linked Google Form or as fixed rows.
  */
 
+import type { ReactNode } from 'react'
 import type { Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
+import { RichText } from './RichText'
 import { matchesCondition } from '../utils/conditions'
 
 interface RepeatableGroupProps {
@@ -50,11 +57,13 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
   }
 
   // Sub-question conditions are evaluated against the row's own answers
+  // (and the whole form's, for { form: … } conditions)
   const isSubQuestionVisible = (rowIndex: number, subQ: Question): boolean =>
-    !subQ.conditionalOn || matchesCondition(subQ.conditionalOn, rows[rowIndex] ?? {})
+    !subQ.conditionalOn || matchesCondition(subQ.conditionalOn, rows[rowIndex] ?? {}, allAnswers ?? {})
 
-  const renderSubQuestion = (rowIndex: number, subQ: Question) => {
+  const renderSubQuestion = (rowIndex: number, subQ: Question): ReactNode => {
     if (!isSubQuestionVisible(rowIndex, subQ)) return null
+    if (subQ.type === 'block') return renderBlock(rowIndex, subQ)
     const rowVal = getRowValue(rowIndex, subQ.id)
     return (
       <QuestionRenderer
@@ -65,6 +74,39 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
         idPrefix={`${question.id}_row${rowIndex}_`}
         allAnswers={allAnswers}
       />
+    )
+  }
+
+  const renderBlock = (rowIndex: number, block: Question) => {
+    const children = block.questions ?? []
+    const na = block.notAwareOption
+    const notAware = !!na && rows[rowIndex]?.[na.questionId] === true
+    const core = children.filter(q => !q.advanced)
+    const advanced = children.filter(q => q.advanced && isSubQuestionVisible(rowIndex, q))
+    return (
+      <section key={block.id} className="row-block" aria-label={block.label}>
+        <h4 className="row-block-title"><RichText text={block.label} /></h4>
+        {block.helpText && <p className="row-block-why"><RichText text={block.helpText} /></p>}
+        {na && (
+          <label className="checkbox-label row-block-not-aware">
+            <input
+              type="checkbox"
+              checked={notAware}
+              onChange={e => handleRowChange(rowIndex, na.questionId, e.target.checked)}
+            />
+            <span>{na.label}</span>
+          </label>
+        )}
+        {!notAware && core.map(q => renderSubQuestion(rowIndex, q))}
+        {!notAware && advanced.length > 0 && (
+          <details className="repeatable-row-advanced">
+            <summary>+ Show {advanced.length} more optional field{advanced.length > 1 ? 's' : ''}</summary>
+            <div className="repeatable-row-advanced-body">
+              {advanced.map(q => renderSubQuestion(rowIndex, q))}
+            </div>
+          </details>
+        )}
+      </section>
     )
   }
 

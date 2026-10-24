@@ -17,6 +17,7 @@
 import { useState } from 'react'
 import type { Section, Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
+import { RichText } from './RichText'
 import { matchesCondition, isSectionOptional, isSectionNotAware, sectionHasAnswers } from '../utils/conditions'
 
 interface SectionRendererProps {
@@ -86,7 +87,7 @@ export function SectionRenderer({ section, answers, onAnswer }: SectionRendererP
       {section.description && (
         <div className="section-description">
           {section.description.split('\n\n').map((para, i) => (
-            <p key={i}>{para}</p>
+            <p key={i}><RichText text={para} /></p>
           ))}
         </div>
       )}

@@ -14,3 +14,7 @@ export const APPS_SCRIPT_URL =
 
 export const GOOGLE_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_CLIENT_ID as string) ?? ''
+
+/** When "true", the Submit button is disabled (layout-only preview builds). */
+export const SUBMIT_DISABLED =
+  (import.meta.env.VITE_SUBMIT_DISABLED as string | undefined) === 'true'

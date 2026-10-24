@@ -14,6 +14,9 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
 import type { QuestionnaireSchema } from '../types/schema'
 import { SectionRenderer } from './SectionRenderer'
+import { GlossaryContext, GlossaryList } from './RichText'
+import { indexGlossary } from '../utils/glossary'
+import { SUBMIT_DISABLED } from '../config/env'
 import { isSectionVisible, isSectionNotAware, answersForSubmission, isAnswered, missingRequired } from '../utils/conditions'
 import type { MissingAnswer } from '../utils/conditions'
 import { GoogleSignIn } from './GoogleSignIn'
@@ -70,6 +73,9 @@ export function FormShell({
   // Window status
   const [windowOpen, setWindowOpen]   = useState(true)
   const [windowDeadline, setWindowDeadline] = useState<string | null>(null)
+
+  const glossaryIndex = useMemo(() => indexGlossary(schema.glossary), [schema.glossary])
+  const [showGlossary, setShowGlossary] = useState(false)
 
   // Section navigation
   const visibleSections = useMemo(
@@ -197,6 +203,7 @@ export function FormShell({
 
   // ── Main form UI ──────────────────────────────────────────────────────────
   return (
+    <GlossaryContext.Provider value={glossaryIndex}>
     <div className="form-shell">
       {/* Header */}
       <header className="form-header">
@@ -216,7 +223,22 @@ export function FormShell({
       {/* Core notice */}
       <div className="core-notice" role="note">
         <strong>Core principle: </strong>{schema.coreNotice}
+        {(schema.glossary?.length ?? 0) > 0 && (
+          <p className="glossary-hint">
+            Underlined terms show a short definition when you point at or tap them.{' '}
+            <button type="button" className="link-button" onClick={() => setShowGlossary(v => !v)} aria-expanded={showGlossary}>
+              {showGlossary ? 'Hide the list of terms' : 'See all terms used in this form'}
+            </button>
+          </p>
+        )}
+        {showGlossary && schema.glossary && <GlossaryList entries={schema.glossary} />}
       </div>
+
+      {SUBMIT_DISABLED && (
+        <div className="window-closed-banner" role="note">
+          <strong>Layout preview.</strong> This copy of the form is for checking how it looks; submitting is turned off.
+        </div>
+      )}
 
       {/* Submission window closed banner */}
       {!windowOpen && (
@@ -340,7 +362,7 @@ export function FormShell({
                       type="button"
                       className="btn-nav btn-submit"
                       onClick={handleSubmit}
-                      disabled={!user || isSubmitting || !windowOpen}
+                      disabled={SUBMIT_DISABLED || !user || isSubmitting || !windowOpen}
                       title={
                         !windowOpen ? 'Submissions are closed' :
                         !user ? 'Sign in with your @iiserb.ac.in account to submit' : undefined
@@ -377,5 +399,6 @@ export function FormShell({
         </div>
       </footer>
     </div>
+    </GlossaryContext.Provider>
   )
 }

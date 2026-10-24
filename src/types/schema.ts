@@ -37,6 +37,7 @@ export type QuestionType =
   | 'quantity'
   | 'workloadRef'
   | 'heading'
+  | 'block'
 
 /** Physical dimension of a 'quantity' question; selects its unit list and base unit. */
 export type QuantityDimension = 'time' | 'size'
@@ -53,6 +54,12 @@ export interface QuestionOption {
    * Only meaningful for checkbox questions.
    */
   exclusive?: boolean
+  /**
+   * Show this option only when the condition holds. Evaluated against the
+   * whole form (so an option list can follow an earlier answer, e.g. only
+   * the problems ticked in Section B).
+   */
+  conditionalOn?: Condition
 }
 
 /**
@@ -184,6 +191,34 @@ export interface Question {
    * from the schema or hiding them entirely.
    */
   advanced?: boolean
+  /**
+   * For 'block': the questions inside the block. A block is a titled panel
+   * inside a repeatable row that appears as a whole when its conditionalOn
+   * holds (e.g. "Long runs" when this code's wall time exceeds the limits).
+   * Its questions store their answers flat in the row, like any other
+   * sub-question, and their conditions see the same row.
+   */
+  questions?: Question[]
+  /**
+   * For 'block': a "don't know these details" tick-box shown at the top of
+   * the block (stored as `true` under questionId in the row). When ticked the
+   * block's questions are hidden. A valid answer, never a negative finding.
+   */
+  notAwareOption?: { questionId: string; label: string }
+}
+
+/**
+ * A glossary entry. In labels, help texts, option labels and descriptions,
+ * `{term}` or `{shown text|id}` marks a term; the form renders it with a
+ * definition pop-up (hover, focus, or click/tap).
+ */
+export interface GlossaryEntry {
+  id: string
+  /** The term as shown in the pop-up heading. */
+  term: string
+  /** Other spellings matched by `{…}` markup (case-insensitive). */
+  aliases?: string[]
+  definition: string
 }
 
 /**
@@ -241,6 +276,10 @@ export interface Section {
  * - ValueCondition: the answer (string or string[]) includes one of `values`.
  * - RowsCondition: at least one row of a repeatable satisfies `where`.
  * - { all } / { any } / { not }: compound conditions.
+ * - { where }: a predicate on the current scope itself — inside a repeatable
+ *   row, that row (e.g. "this code's wall time > 168 h").
+ * - { form }: evaluate the inner condition against the whole form's answers,
+ *   from inside a repeatable row (e.g. "a problem ticked in Section B").
  * Arrays of conditions in conditionalOn / optionalWhen keep their OR meaning.
  */
 export type Condition =
@@ -249,6 +288,8 @@ export type Condition =
   | { all: Condition[] }
   | { any: Condition[] }
   | { not: Condition }
+  | { where: RowPredicate }
+  | { form: Condition }
 
 export interface ValueCondition {
   questionId: string
@@ -289,5 +330,7 @@ export interface QuestionnaireSchema {
    * This text must remain visible to the respondent throughout.
    */
   coreNotice: string
+  /** Definitions for terms marked with `{…}` in question text. */
+  glossary?: GlossaryEntry[]
   sections: Section[]
 }

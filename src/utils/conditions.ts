@@ -6,6 +6,7 @@
 import type { Condition, Question, RowPredicate, Section } from '../types/schema'
 import { configNumber } from '../config/clusterConfig'
 import { isQuantityValue, toBaseNumber } from './quantity'
+import { plainText } from './glossary'
 
 type Answers = Record<string, unknown>
 
@@ -44,16 +45,20 @@ function matchesRow(pred: RowPredicate, row: Answers): boolean {
 
 /**
  * Evaluates a condition against an answers object. Inside a repeatable row
- * pass the row object as `answers`, so row-local questionIds resolve.
+ * pass the row object as `answers`, so row-local questionIds resolve, and
+ * the whole form's answers as `form`, for `{ form: … }` conditions.
  */
-export function matchesCondition(cond: Condition, answers: Answers): boolean {
-  if ('all' in cond) return cond.all.every(c => matchesCondition(c, answers))
-  if ('any' in cond) return cond.any.some(c => matchesCondition(c, answers))
-  if ('not' in cond) return !matchesCondition(cond.not, answers)
+export function matchesCondition(cond: Condition, answers: Answers, form: Answers = answers): boolean {
+  if ('all' in cond) return cond.all.every(c => matchesCondition(c, answers, form))
+  if ('any' in cond) return cond.any.some(c => matchesCondition(c, answers, form))
+  if ('not' in cond) return !matchesCondition(cond.not, answers, form)
+  if ('form' in cond) return matchesCondition(cond.form, form, form)
   if ('rowsOf' in cond) {
     const rows = answers[cond.rowsOf]
     return Array.isArray(rows) && rows.some(r => r && typeof r === 'object' && matchesRow(cond.where, r as Answers))
   }
+  // After rowsOf (which also has `where`): a predicate on the scope itself.
+  if ('where' in cond) return matchesRow(cond.where, answers)
   return includesAny(answers[cond.questionId], cond.values)
 }
 
@@ -128,8 +133,8 @@ export interface MissingAnswer {
   label: string
 }
 
-const questionVisible = (q: Question, scope: Answers) =>
-  !q.conditionalOn || matchesCondition(q.conditionalOn, scope)
+const questionVisible = (q: Question, scope: Answers, form: Answers = scope) =>
+  !q.conditionalOn || matchesCondition(q.conditionalOn, scope, form)
 
 /**
  * Required questions left unanswered, in form order. Skips hidden sections,
@@ -146,7 +151,7 @@ export function missingRequired(sections: Section[], answers: Answers): MissingA
       if (q.type === 'repeatable') {
         const rows = Array.isArray(answers[q.id]) ? (answers[q.id] as Answers[]) : []
         if (q.required && rows.length === 0) {
-          out.push({ sectionId: section.id, label: `${q.label}: add at least one ${q.entryLabel ?? 'entry'}` })
+          out.push({ sectionId: section.id, label: `${plainText(q.label)}: add at least one ${q.entryLabel ?? 'entry'}` })
         }
         const entry = q.entryLabel ? q.entryLabel[0].toUpperCase() + q.entryLabel.slice(1) : 'Entry'
         rows.forEach((row, i) => {
@@ -155,13 +160,13 @@ export function missingRequired(sections: Section[], answers: Answers): MissingA
             .map(s => row?.[s.id]).find(v => typeof v === 'string' && v.trim())
           const where = `${entry} ${i + 1}${name ? ` (${name})` : ''}`
           for (const sq of q.subQuestions ?? []) {
-            if (sq.required && questionVisible(sq, row ?? {}) && !isAnswered(row?.[sq.id])) {
-              out.push({ sectionId: section.id, label: `${where}: ${sq.label}` })
+            if (sq.required && questionVisible(sq, row ?? {}, answers) && !isAnswered(row?.[sq.id])) {
+              out.push({ sectionId: section.id, label: `${where}: ${plainText(sq.label)}` })
             }
           }
         })
       } else if (q.required && !isAnswered(answers[q.id])) {
-        out.push({ sectionId: section.id, label: q.label })
+        out.push({ sectionId: section.id, label: plainText(q.label) })
       }
     }
   }

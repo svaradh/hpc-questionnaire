@@ -16,13 +16,19 @@
  * number / quantity / duration validate inline (integer, min, max) and,
  * with allowUnknown, offer a "Don't know" tick-box stored as "dont_know".
  *
+ * Text may carry glossary markup ({term}); see RichText. Options with a
+ * conditionalOn are shown only when it holds for the whole form.
+ *
  * The idPrefix prop allows sub-questions inside repeatable rows to
  * have unique DOM ids even though their question.id values are shared
  * across rows.
  */
 
-import type { Question } from '../types/schema'
+import type { Question, QuestionOption } from '../types/schema'
 import { RepeatableGroup } from './RepeatableGroup'
+import { RichText } from './RichText'
+import { plainText } from '../utils/glossary'
+import { matchesCondition } from '../utils/conditions'
 import { UNKNOWN, DEFAULT_UNITS, isQuantityValue, type QuantityValue } from '../utils/quantity'
 import { queueOptions } from '../config/clusterConfig'
 
@@ -67,10 +73,14 @@ export function QuestionRenderer({
   allAnswers,
 }: QuestionRendererProps) {
   const fieldId = `${idPrefix}${question.id}`
+  const form = allAnswers ?? {}
+  const visibleOptions: QuestionOption[] = (question.options ?? []).filter(
+    o => !o.conditionalOn || matchesCondition(o.conditionalOn, form, form)
+  )
 
   const renderLabel = () => (
     <label htmlFor={fieldId} className={`question-label ${question.type === 'radio' || question.type === 'checkbox' ? 'fieldset-legend' : ''}`}>
-      {question.label}
+      <RichText text={question.label} />
       {question.required && <span className="required-mark" aria-label="required"> *</span>}
       {disabled && <span className="mirrored-badge" aria-label="auto-filled from PI details"> (auto-filled)</span>}
     </label>
@@ -78,7 +88,7 @@ export function QuestionRenderer({
 
   const renderHelpText = () =>
     question.helpText ? (
-      <span className="question-help">{question.helpText}</span>
+      <span className="question-help"><RichText text={question.helpText} /></span>
     ) : null
 
   // -------------------------------------------------------------------------
@@ -87,8 +97,8 @@ export function QuestionRenderer({
   if (question.type === 'heading') {
     return (
       <div className="question-block-heading">
-        <h3 className="block-heading-text">{question.label}</h3>
-        {question.helpText && <p className="block-heading-sub">{question.helpText}</p>}
+        <h3 className="block-heading-text"><RichText text={question.label} /></h3>
+        {question.helpText && <p className="block-heading-sub"><RichText text={question.helpText} /></p>}
       </div>
     )
   }
@@ -99,8 +109,8 @@ export function QuestionRenderer({
   if (question.type === 'info') {
     return (
       <div className="question-block info-callout" role="note">
-        {question.label && <strong className="info-callout-title">{question.label}</strong>}
-        {question.helpText && <p className="info-callout-text">{question.helpText}</p>}
+        {question.label && <strong className="info-callout-title"><RichText text={question.label} /></strong>}
+        {question.helpText && <p className="info-callout-text"><RichText text={question.helpText} /></p>}
       </div>
     )
   }
@@ -114,7 +124,7 @@ export function QuestionRenderer({
       <div className="question-block">
         <div className="question-header">
           <span className="question-label">
-            {question.label}
+            <RichText text={question.label} />
             {question.required && <span className="required-mark" aria-label="required"> *</span>}
           </span>
           {renderHelpText()}
@@ -138,12 +148,12 @@ export function QuestionRenderer({
       <div className="question-block">
         <fieldset className="question-fieldset">
           <legend className="question-label">
-            {question.label}
+            <RichText text={question.label} />
             {question.required && <span className="required-mark" aria-label="required"> *</span>}
           </legend>
           {renderHelpText()}
           <div className="radio-group">
-            {question.options?.map(opt => (
+            {visibleOptions.map(opt => (
               <label key={opt.value} className={`radio-label${disabled ? ' input-disabled' : ''}`}>
                 <input
                   type="radio"
@@ -153,7 +163,7 @@ export function QuestionRenderer({
                   onChange={() => onChange(opt.value)}
                   disabled={disabled}
                 />
-                <span>{opt.label}</span>
+                <span><RichText text={opt.label} /></span>
               </label>
             ))}
           </div>
@@ -191,12 +201,12 @@ export function QuestionRenderer({
       <div className="question-block">
         <fieldset className="question-fieldset">
           <legend className="question-label">
-            {question.label}
+            <RichText text={question.label} />
             {question.required && <span className="required-mark" aria-label="required"> *</span>}
           </legend>
           {renderHelpText()}
-          <div className={`checkbox-group${(question.options?.length ?? 0) > 7 ? ' checkbox-group-wide' : ''}`}>
-            {question.options?.map(opt => (
+          <div className={`checkbox-group${visibleOptions.length > 7 ? ' checkbox-group-wide' : ''}`}>
+            {visibleOptions.map(opt => (
               <label key={opt.value} className="checkbox-label">
                 <input
                   type="checkbox"
@@ -204,7 +214,7 @@ export function QuestionRenderer({
                   checked={arrVal.includes(opt.value)}
                   onChange={e => handleCheckChange(opt.value, e.target.checked)}
                 />
-                <span>{opt.label}</span>
+                <span><RichText text={opt.label} /></span>
               </label>
             ))}
           </div>
@@ -218,7 +228,7 @@ export function QuestionRenderer({
   // -------------------------------------------------------------------------
   if (question.type === 'select') {
     const strVal = typeof value === 'string' ? value : ''
-    const options = [...(question.configOptions === 'queues' ? queueOptions() : []), ...(question.options ?? [])]
+    const options = [...(question.configOptions === 'queues' ? queueOptions() : []), ...visibleOptions]
     return (
       <div className="question-block">
         {renderLabel()}
@@ -234,7 +244,7 @@ export function QuestionRenderer({
           <option value="">— Select —</option>
           {options.map(opt => (
             <option key={opt.value} value={opt.value}>
-              {opt.label}
+              {plainText(opt.label)}
             </option>
           ))}
         </select>
@@ -346,7 +356,7 @@ export function QuestionRenderer({
             onChange={e => onChange({ ...qVal, unit: e.target.value })}
             className={`question-select duration-unit${disabled || unknown ? ' input-disabled' : ''}`}
             disabled={disabled || unknown}
-            aria-label={`${question.label} — unit`}
+            aria-label={`${plainText(question.label)} — unit`}
           >
             {units.map(u => (
               <option key={u} value={u}>{u}</option>
