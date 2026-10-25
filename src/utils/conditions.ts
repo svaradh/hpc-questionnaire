@@ -128,22 +128,56 @@ export function sectionHasAnswers(section: Section, answers: Answers): boolean {
 }
 
 /**
- * Answers to submit. Drops everything belonging to sections that are not
- * shown (answers left over from an earlier trigger), and the question
- * answers of sections where the respondent ticked the "not aware"
- * declaration (the declaration itself is kept). The local draft is left
- * untouched, so re-showing a section or unticking restores the answers.
+ * Answers to submit: only what the respondent can see. Drops answers of
+ * hidden sections and hidden questions (left over from an earlier choice),
+ * and the question answers of sections or panels where the respondent ticked
+ * the "not aware" declaration (the declaration itself is kept). Each entry of
+ * a repeatable with panels gets `_panels`: the ids of the blocks it opened
+ * (inline or in a 'rowDetails' section), so the sheet writer can fill one
+ * follow-up row per entry and panel. The local draft is left untouched, so
+ * re-showing a question or unticking restores the answers.
  */
 export function answersForSubmission(
   sections: Section[],
   answers: Answers
 ): Answers {
   const out = { ...answers }
+  // Blocks continuing each repeatable from 'rowDetails' questions, by repeatable id.
+  const laterBlocks: Record<string, Question[]> = {}
+  for (const q of sections.flatMap(s => s.questions)) {
+    if (q.type === 'rowDetails' && q.rowsOf) (laterBlocks[q.rowsOf] ??= []).push(...(q.questions ?? []))
+  }
+  const keep = (from: Answers, to: Answers, q: Question, scope: Answers) => {
+    if (questionVisible(q, scope, answers) && from[q.id] !== undefined) to[q.id] = from[q.id]
+  }
+  const cleanRow = (q: Question, row: Answers): Answers => {
+    const r: Answers = {}
+    const subs = q.subQuestions ?? []
+    for (const sq of subs) if (sq.type !== 'block') keep(row, r, sq, row)
+    const blocks = [...subs.filter(sq => sq.type === 'block'), ...(laterBlocks[q.id] ?? [])]
+    if (blocks.length === 0) return r
+    const panels: string[] = []
+    for (const b of blocks) {
+      if (!questionVisible(b, row, answers)) continue
+      panels.push(b.id)
+      const na = b.notAwareOption?.questionId
+      if (na && row[na] === true) { r[na] = true; continue }
+      for (const bq of b.questions ?? []) keep(row, r, bq, row)
+    }
+    r._panels = panels
+    return r
+  }
   for (const section of sections) {
     const visible = isSectionVisible(section, answers)
     if (!visible && section.notAwareOption) delete out[section.notAwareOption.questionId]
     if (!visible || isSectionNotAware(section, answers)) {
       for (const q of section.questions) delete out[q.id]
+      continue
+    }
+    for (const q of section.questions) {
+      if (q.type === 'rowDetails') continue
+      if (!questionVisible(q, answers)) delete out[q.id]
+      else if (q.type === 'repeatable') out[q.id] = rowsOf(answers, q.id).map(row => cleanRow(q, row ?? {}))
     }
   }
   return out

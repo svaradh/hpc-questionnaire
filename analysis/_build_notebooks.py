@@ -174,8 +174,10 @@ print(ha.deficit_summary(scr, 'peak_sum_tb', 'capacity_tb', ' TB', 'sum of peaks
 print(ha.deficit_summary(scr, 'average_tb', 'capacity_tb', ' TB', 'time-averaged'))
 scr.round(2)"""),
         md("""Per workload, largest peak first. `over_trigger` = peak concurrent scratch above the follow-up trigger;
-`over_user_cap` uses the committee's largest-area-per-user (not set = False). The E5 details (I/O share, re-reads,
-local-disk option) tell whether a large need is write-heavy enough to justify scratch."""),
+`over_user_cap` uses the committee's largest-area-per-user (not set = False). Both use the peak *with inputs*
+(files read + written), the case where only scratch is on the fast parallel file system; the cluster table counts
+inputs only for clusters with `storage.scratchOnlyOnFastPFS` set. The Section D "Files and scratch" details (I/O share,
+re-reads, local-disk option) tell whether a large need is write-heavy enough to justify scratch."""),
         code("""display(scr_wl.assign(peak_tb=lambda d: d['scratch_peak_gb'] / 1024).round(2).head(15))
 dfs['Scratch']"""),
     ],
@@ -183,7 +185,7 @@ dfs['Scratch']"""),
     "04_long_jobs.ipynb": [
         intro("04 — Long jobs: checkpointing and scaling",
               """Workloads with a long-job requirement: their needed run time exceeds what any queue allows for that job shape,
-they were described as *one calculation longer than a job may run*, or they have a *Long jobs* (E1) entry.
+they were described as *one calculation longer than a job may run*, or they answered the *Long runs* panel (Section D).
 The remedies are considered in order: **checkpoint/restart → run wider → longer wall time**.""",
               "P3, P4"),
         code(SETUP),

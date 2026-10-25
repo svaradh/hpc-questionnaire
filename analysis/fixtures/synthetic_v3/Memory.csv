@@ -1,2 +1,2 @@
-submission_id,pi_name,entry_index,workload,peak_gb,fits_standard_node,distributable
-SYN-04,Dr. Synthetic PI 4,1,ED-custom,2150.4,fails_oom,no
+submission_id,pi_name,entry_index,code,not_aware,fits_standard_node,distributable
+SYN-04,Dr. Synthetic PI 4,1,ED-custom,,fails_oom,no

@@ -1,5 +1,6 @@
-submission_id,pi_name,entry_index,workload,device,longest_run_h,longest_cores,longest_gpus,checkpoint,restart_loss_h,doubling_effect,terminations_12m
-SYN-01,Dr. Synthetic PI 1,1,Quantum ESPRESSO,cpu,192,384,,yes,0.333333,le_0_6,25
-SYN-02,Dr. Synthetic PI 2,1,GROMACS,gpu,48,12,1,yes,,not_tested,40
-SYN-03,Dr. Synthetic PI 3,1,WRF,cpu,216,128,,no,,gt_0_8,6
-SYN-09,Dr. Synthetic PI 9,1,LAMMPS,cpu,288,512,,dont_know,,le_0_6,10
+submission_id,pi_name,entry_index,code,not_aware,checkpoint,restart_loss_h,longest_run_h,terminations_12m
+SYN-01,Dr. Synthetic PI 1,1,Quantum ESPRESSO,,yes,0.333333,,25
+SYN-02,Dr. Synthetic PI 2,1,GROMACS,,yes,0.083333,,40
+SYN-03,Dr. Synthetic PI 3,1,WRF,,no,,216,6
+SYN-08,Dr. Synthetic PI 8,1,Stata,true,,,,
+SYN-09,Dr. Synthetic PI 9,1,LAMMPS,,dont_know,,288,10

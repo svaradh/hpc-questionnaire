@@ -95,10 +95,10 @@ Storage is judged per group against a guide figure, not by adding up wishes.
 | Service characteristic | Suggested evidence test |
 |---|---|
 | Long wall time | Needed run time exceeds the applicable limit **and** checkpoint = No **and** doubling the cores gives > 0.8× the wall time (or does not apply) **and** evidence level ≤ 3. |
-| Capability window (large multi-node) | Doubling the cores gives ≤ 0.8× the wall time beyond the current per-job maximum, with measured pairs (E2) at evidence level ≤ 2–3. |
+| Capability window (large multi-node) | Doubling the cores gives ≤ 0.8× the wall time beyond the current per-job maximum, with measured pairs (Section D, Running on more cores) at evidence level ≤ 2–3. |
 | Throughput tuning (concurrency / fair-share) | At the current concurrency limit, a year of the workload takes more than ~6 months to finish, **or** the expansion factor is persistently > 3 for small jobs. |
-| High memory | Peak memory per node exceeds a standard node and cannot be distributed (E3). |
-| Scratch above the per-user cap | Peak concurrent scratch exceeds the cap, the I/O is write-heavy or re-read, and local disk is not an option (E5). |
+| High memory | Peak memory per node exceeds a standard node and cannot be distributed (Section D, Memory). |
+| Scratch above the per-user cap | Peak concurrent scratch exceeds the cap, the I/O is write-heavy or re-read, and local disk is not an option (Section D, Files and scratch). |
 | GPU expansion | Measured GPU node speed-up ≥ 5× and CPU-only not viable, with enough GPU-hours to keep extra GPUs busy at the target utilisation. |
 | Support / training rather than policy | Checkpoint "Not tested" or "Don't know" for a code known to support restart; "Not aware" declarations; scaling never tested. |
 

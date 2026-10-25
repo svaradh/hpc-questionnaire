@@ -48,7 +48,7 @@ function generateReportForSelected() {
 }
 
 // ---------------------------------------------------------------------------
-// Core report generator (schema 2.0.0)
+// Core report generator (schema 2.4.0)
 // ---------------------------------------------------------------------------
 
 /**
@@ -61,20 +61,21 @@ function generateReportForSelected() {
 var REPORT_SECTIONS = [
   { tab: 'Group',          title: 'A — About the group' },
   { tab: 'Experience',     title: 'B — HPC experience (any system)' },
-  { tab: 'Workloads',      title: 'C — Workloads', titleCol: 'code' },
-  { tab: 'StorageTesting', title: 'D — Home area, testing and interactive use' },
-  { tab: 'LongJobs',       title: 'E1 — Long jobs', titleCol: 'workload' },
-  { tab: 'Scaling',        title: 'E2 — Scaling and large runs', titleCol: 'workload' },
-  { tab: 'Memory',         title: 'E3 — Memory', titleCol: 'workload' },
-  { tab: 'Gpu',            title: 'E4 — GPU', titleCol: 'workload' },
-  { tab: 'Scratch',        title: 'E5 — Scratch', titleCol: 'workload' },
-  { tab: 'Queue',          title: 'E6 — Queue and turnaround', titleCol: 'queue' },
-  { tab: 'Closing',        title: 'F — Growth and closing' }
+  { tab: 'Workloads',      title: 'C — Workloads (with D: how the jobs are organised)', titleCol: 'code' },
+  { tab: 'LongJobs',       title: 'D — Long runs', titleCol: 'code' },
+  { tab: 'Scaling',        title: 'D — Running on more cores', titleCol: 'code' },
+  { tab: 'Memory',         title: 'D — Memory', titleCol: 'code' },
+  { tab: 'Gpu',            title: 'D — GPU details', titleCol: 'code' },
+  { tab: 'Scratch',        title: 'D — Files and scratch', titleCol: 'code' },
+  { tab: 'StorageTesting', title: 'E — Home area, testing and interactive use' },
+  { tab: 'Queue',          title: 'F — Queue and turnaround', titleCol: 'queue' },
+  { tab: 'Closing',        title: 'G — Growth and closing' }
 ];
 
 /** Columns computed by the sheet writer rather than answered (shown in italics). */
-var DERIVED_COLUMNS = ['core_hours_year', 'core_hours_year_unconstrained', 'gpu_hours_year', 'peak_concurrent_cores',
-                       'peak_concurrent_gpus', 'peak_concurrent_scratch_gb', 'evidence_level', 'not_aware_sections'];
+var DERIVED_COLUMNS = ['core_hours_year_max', 'core_hours_year_unconstrained_max', 'gpu_hours_year_max', 'peak_concurrent_cores',
+                       'peak_concurrent_gpus', 'peak_concurrent_scratch_gb', 'chain_queue_overhead_h', 'long_queue_overhead_h',
+                       'evidence_level', 'not_aware_sections', 'panels'];
 
 /** "walltime_h" -> "Walltime (h)", "mem_node_gb" -> "Mem node (GB)". */
 function readableLabel(col) {
@@ -91,6 +92,7 @@ function readableLabel(col) {
 function readableValue(v) {
   if (v === '' || v === null || v === undefined) return '';
   if (v === 'dont_know') return "Don't know";
+  if (v === true || v === 'true' || v === 'TRUE') return 'Yes';
   if (typeof v === 'number') return Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en-IN') : String(Math.round(v * 100) / 100);
   return String(v).replace(/_/g, ' ');
 }
@@ -137,6 +139,7 @@ function generateReport(submissionId) {
   body.appendParagraph(
     'This report lists the facts the group provided and values computed from them (marked "computed"). ' +
     'Quantities are in hours and GB. "Don\'t know" is a valid answer and is not a negative finding. ' +
+    'Yearly totals ("max") are upper bounds: each code\'s entry describes its heaviest job. ' +
     'Comparisons with cluster limits and suggested triage categories are in the analysis notebooks (04–06).'
   ).setItalic(true);
 

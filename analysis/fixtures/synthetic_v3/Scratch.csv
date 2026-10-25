@@ -1,2 +1,4 @@
-submission_id,pi_name,entry_index,workload,input_read_gb,input_read_only,rereads_own_output,io_time_share,files_per_job,local_disk_possible,residence_after_job
-SYN-11,Dr. Synthetic PI 11,1,Gaussian,5,yes,yes,gt_30,lt_1k,dont_know,lt_1d
+submission_id,pi_name,entry_index,code,not_aware,input_read_only,rereads_own_output,io_time_share,files_per_job,local_disk_possible,residence_after_job
+SYN-05,Dr. Synthetic PI 5,1,GATK,,yes,no,10_30,1k_100k,dont_know,none
+SYN-06,Dr. Synthetic PI 6,1,PyTorch,,yes,no,10_30,1k_100k,yes,lt_1d
+SYN-11,Dr. Synthetic PI 11,1,Gaussian,,yes,yes,gt_30,lt_1k,dont_know,lt_1d

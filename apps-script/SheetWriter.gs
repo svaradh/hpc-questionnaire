@@ -1,5 +1,5 @@
 /**
- * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.0.0).
+ * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.4.0).
  *
  * Every sheet has submission_id as column A and pi_name as column B
  * so any tab is self-identifying without needing to cross-reference
@@ -13,7 +13,11 @@
  *   q — quantity { value, unit } normalised to base units (hours / GB)
  *   d — derived: computed by DERIVED[key] from the row being written
  * A tab is either one row per submission (`source: 'top'`) or one row per
- * entry of a repeatable question (`source: { rows: '<questionId>' }`).
+ * entry of a repeatable question (`source: { rows: '<questionId>' }`). With
+ * `panel`, only entries that opened that follow-up panel are written: the
+ * form lists them in each entry's `_panels` (see answersForSubmission in
+ * src/utils/conditions.ts). entry_index is the entry's position in the
+ * repeatable, so follow-up rows join the Workloads row of the same code.
  *
  * "Don't know" answers are written as 'dont_know', never as 0 or blank.
  */
@@ -50,20 +54,27 @@ var SHEET_DEFINITIONS = [
     source: { rows: 'W_workloads' },
     columns: [
       ['code', 'W_code'], ['type', 'W_type'], ['type_other', 'W_type_other'], ['source', 'W_source'],
-      ['cluster', 'W_cluster'], ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
-      ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'], ['scratch_write_gb', 'W_scratch_write', 'q'],
+      ['cluster', 'W_cluster'], ['affected_by', 'W_affected'], ['organisation', 'W_org'],
+      ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
+      ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'],
+      ['input_read_gb', 'W_input_read', 'q'], ['scratch_write_gb', 'W_scratch_write', 'q'],
       ['jobs_year', 'W_jobs_year'], ['jobs_year_unconstrained', 'W_jobs_year_unconstrained'], ['concurrent', 'W_concurrent'],
-      ['organisation', 'W_org'], ['batch_size', 'W_batch_size'],
-      ['chain_steps', 'W_chain_steps'], ['chain_elapsed_h', 'W_chain_elapsed', 'q'],
-      ['long_total_h', 'W_long_total', 'q'],
-      ['campaign_cores', 'W_campaign_cores'], ['campaign_gpus', 'W_campaign_gpus'], ['campaign_duration_h', 'W_campaign_duration', 'q'], ['campaigns_year', 'W_campaigns_year'],
       ['gpu_version', 'W_gpu_version'], ['gpu_speedup', 'W_gpu_speedup'], ['cpu_viable', 'W_cpu_viable'],
-      ['core_hours_year', 'core_hours_year', 'd'],
-      ['core_hours_year_unconstrained', 'core_hours_year_unconstrained', 'd'],
-      ['gpu_hours_year', 'gpu_hours_year', 'd'],
+      ['panels', 'panels', 'd'],
+      // Section D panel "How these jobs are organised" (same entry, so kept on this tab)
+      ['organisation_not_aware', 'NA_org'], ['batch_size', 'W_batch_size'],
+      ['chain_steps', 'W_chain_steps'], ['chain_run_h', 'W_chain_run', 'q'], ['chain_elapsed_h', 'W_chain_elapsed', 'q'],
+      ['long_total_h', 'W_long_total', 'q'], ['long_calendar_h', 'W_long_calendar', 'q'],
+      ['campaign_cores', 'W_campaign_cores'], ['campaign_gpus', 'W_campaign_gpus'], ['campaign_duration_h', 'W_campaign_duration', 'q'], ['campaigns_year', 'W_campaigns_year'],
+      // Computed
+      ['core_hours_year_max', 'core_hours_year_max', 'd'],
+      ['core_hours_year_unconstrained_max', 'core_hours_year_unconstrained_max', 'd'],
+      ['gpu_hours_year_max', 'gpu_hours_year_max', 'd'],
       ['peak_concurrent_cores', 'peak_concurrent_cores', 'd'],
       ['peak_concurrent_gpus', 'peak_concurrent_gpus', 'd'],
       ['peak_concurrent_scratch_gb', 'peak_concurrent_scratch_gb', 'd'],
+      ['chain_queue_overhead_h', 'chain_queue_overhead_h', 'd'],
+      ['long_queue_overhead_h', 'long_queue_overhead_h', 'd'],
       ['evidence_level', 'evidence_level', 'd']
     ]
   },
@@ -78,50 +89,50 @@ var SHEET_DEFINITIONS = [
       ['other_codes', 'W_other_codes']
     ]
   },
+  // Section D panels: one row per code that opened the panel.
   {
     name: 'LongJobs',
-    source: { rows: 'L_records' },
+    source: { rows: 'W_workloads', panel: 'W_blk_long' },
     columns: [
-      ['workload', 'L_workload'], ['device', 'L_device'], ['longest_run_h', 'L_longest_run', 'q'],
-      ['longest_cores', 'L_longest_cores'], ['longest_gpus', 'L_longest_gpus'],
+      ['code', 'W_code'], ['not_aware', 'NA_long_jobs'],
       ['checkpoint', 'L_checkpoint'], ['restart_loss_h', 'L_restart_loss', 'q'],
-      ['doubling_effect', 'L_doubling'], ['terminations_12m', 'L_terminations_12m']
+      ['longest_run_h', 'L_longest_run', 'q'], ['terminations_12m', 'L_terminations_12m']
     ]
   },
   {
     name: 'Scaling',
-    source: { rows: 'P_records' },
+    source: { rows: 'W_workloads', panel: 'W_blk_scaling' },
     columns: [
-      ['workload', 'P_workload'], ['scale_over', 'P_scale_over'],
+      ['code', 'W_code'], ['not_aware', 'NA_scaling'], ['device', 'W_device'], ['doubling_effect', 'P_doubling'],
       ['cores_1', 'P_cores_1'], ['gpus_1', 'P_gpus_1'], ['walltime_1_h', 'P_wt_1', 'q'],
       ['cores_2', 'P_cores_2'], ['gpus_2', 'P_gpus_2'], ['walltime_2_h', 'P_wt_2', 'q'],
       ['cores_3', 'P_cores_3'], ['gpus_3', 'P_gpus_3'], ['walltime_3_h', 'P_wt_3', 'q'],
-      ['doubling_effect', 'P_doubling'],
       ['max_cores_tested', 'P_max_tested'], ['max_gpus_tested', 'P_max_tested_gpus'],
       ['max_cores_useful', 'P_max_useful'], ['max_gpus_useful', 'P_max_useful_gpus']
     ]
   },
   {
     name: 'Memory',
-    source: { rows: 'M_records' },
+    source: { rows: 'W_workloads', panel: 'W_blk_memory' },
     columns: [
-      ['workload', 'M_workload'], ['peak_gb', 'M_peak', 'q'],
+      ['code', 'W_code'], ['not_aware', 'NA_memory'],
       ['fits_standard_node', 'M_fits_standard'], ['distributable', 'M_distributable']
     ]
   },
   {
     name: 'Gpu',
-    source: { rows: 'G_records' },
+    source: { rows: 'W_workloads', panel: 'W_blk_gpu' },
     columns: [
-      ['workload', 'G_workload'], ['gpu_model', 'G_model'], ['mem_per_gpu_gb', 'G_mem_per_gpu', 'q'],
+      ['code', 'W_code'], ['not_aware', 'NA_gpu'],
+      ['gpu_model', 'G_model'], ['mem_per_gpu_gb', 'G_mem_per_gpu', 'q'],
       ['max_gpus_per_job', 'G_max_gpus'], ['nvlink_needed', 'G_nvlink'], ['multinode_gpu', 'G_multinode']
     ]
   },
   {
     name: 'Scratch',
-    source: { rows: 'SC_records' },
+    source: { rows: 'W_workloads', panel: 'W_blk_scratch' },
     columns: [
-      ['workload', 'SC_workload'], ['input_read_gb', 'SC_input_read', 'q'], ['input_read_only', 'SC_input_readonly'],
+      ['code', 'W_code'], ['not_aware', 'NA_scratch'], ['input_read_only', 'SC_input_readonly'],
       ['rereads_own_output', 'SC_reread'], ['io_time_share', 'SC_io_share'], ['files_per_job', 'SC_files'],
       ['local_disk_possible', 'SC_local_disk'], ['residence_after_job', 'SC_residence']
     ]
@@ -176,12 +187,32 @@ var EVIDENCE_LEVEL_BY_SOURCE = {
   estimate: 5
 };
 
+/**
+ * Yearly totals are upper bounds: the entry describes its heaviest job, and
+ * every job is counted as that heavy. For a chain with its running time and
+ * step count known, the chain's running time per step is used instead of the
+ * heaviest step's wall time (tighter, still an upper bound on cores).
+ */
+function hoursPerJob(r) {
+  var wt = base(r, 'W_walltime');
+  var run = base(r, 'W_chain_run'), steps = num(r, 'W_chain_steps');
+  var isChain = Array.isArray(r['W_org']) && r['W_org'].indexOf('chain') >= 0;
+  if (isChain && run !== null && steps) return wt === null ? run / steps : Math.min(wt, run / steps);
+  return wt;
+}
+
+/** a − b, rounded; '' if either is missing or unknown. */
+function difference(a, b) { return (a === null || b === null) ? '' : parseFloat((a - b).toFixed(4)); }
+
 var DERIVED = {
-  core_hours_year: function(r) { return product(num(r, 'W_cores'), base(r, 'W_walltime'), num(r, 'W_jobs_year')); },
-  core_hours_year_unconstrained: function(r) {
-    return product(num(r, 'W_cores'), base(r, 'W_walltime'), num(r, 'W_jobs_year_unconstrained'));
+  core_hours_year_max: function(r) { return product(num(r, 'W_cores'), hoursPerJob(r), num(r, 'W_jobs_year')); },
+  core_hours_year_unconstrained_max: function(r) {
+    return product(num(r, 'W_cores'), hoursPerJob(r), num(r, 'W_jobs_year_unconstrained'));
   },
-  gpu_hours_year: function(r) { return product(num(r, 'W_gpus'), base(r, 'W_walltime'), num(r, 'W_jobs_year')); },
+  gpu_hours_year_max: function(r) { return product(num(r, 'W_gpus'), hoursPerJob(r), num(r, 'W_jobs_year')); },
+  // Time spent waiting (queue and gaps) = calendar time − running time
+  chain_queue_overhead_h: function(r) { return difference(base(r, 'W_chain_elapsed'), base(r, 'W_chain_run')); },
+  long_queue_overhead_h: function(r) { return difference(base(r, 'W_long_calendar'), base(r, 'W_long_total')); },
   peak_concurrent_cores: function(r) { return product(num(r, 'W_cores'), num(r, 'W_concurrent')); },
   peak_concurrent_gpus: function(r) { return product(num(r, 'W_gpus'), num(r, 'W_concurrent')); },
   peak_concurrent_scratch_gb: function(r) { return product(base(r, 'W_scratch_write'), num(r, 'W_concurrent')); },
@@ -189,7 +220,11 @@ var DERIVED = {
     var s = r['W_source'];
     return EVIDENCE_LEVEL_BY_SOURCE.hasOwnProperty(s) ? EVIDENCE_LEVEL_BY_SOURCE[s] : '';
   },
-  not_aware_sections: function(r, answers) { return notAwareSections(answers); }
+  not_aware_sections: function(r, answers) { return notAwareSections(answers); },
+  // Section D panels this entry opened: "W_blk_long" -> "long"
+  panels: function(r) {
+    return (Array.isArray(r._panels) ? r._panels : []).map(function(p) { return p.replace(/^W_blk_/, ''); }).join('; ');
+  }
 };
 
 /** Plain number from an answer; null when blank, 'dont_know' or invalid. */
@@ -218,7 +253,8 @@ function product() {
 
 /**
  * Sections where the respondent ticked the top-level "not aware / don't know
- * how to characterise" declaration (NA_<topic> = true) → "long_jobs; memory".
+ * how to characterise" declaration (NA_<topic> = true) → "queue". Per-code
+ * panel declarations are in each follow-up tab's not_aware column.
  */
 function notAwareSections(answers) {
   return Object.keys(answers)
@@ -239,7 +275,9 @@ function initializeSheets() {
 
   all.forEach(function(def) {
     var sheet = ss.getSheetByName(def.name) || ss.insertSheet(def.name);
-    // Always (re)write row 1, so header changes in source reach an existing sheet.
+    // Always (re)write row 1, so header changes in source reach an existing sheet;
+    // clear it first so columns that were dropped do not linger.
+    sheet.getRange(1, 1, 1, sheet.getMaxColumns()).clearContent();
     var headerRange = sheet.getRange(1, 1, 1, def.headers.length);
     headerRange.setValues([def.headers]);
     headerRange.setFontWeight('bold');
@@ -327,6 +365,8 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
     }
     var rows = Array.isArray(answers[def.source.rows]) ? answers[def.source.rows] : [];
     rows.forEach(function(row, i) {
+      var panel = def.source.panel;
+      if (panel && !(row && Array.isArray(row._panels) && row._panels.indexOf(panel) >= 0)) return;
       appendRow(def.name, [submissionId, piName, i + 1].concat(def.columns.map(function(c) { return cell(c, row || {}, answers); })));
     });
   });

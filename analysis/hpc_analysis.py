@@ -1,7 +1,7 @@
 """
 hpc_analysis.py
 ---------------
-Computations behind the committee notebooks (schema 2.0.0 responses).
+Computations behind the committee notebooks (schema 2.4.0 responses).
 The principles they implement are in docs/analysis-framework.md.
 
 Everything here produces *evidence tables*. Nothing scores, ranks or assigns
@@ -16,6 +16,11 @@ Conventions
   Raman (the only GPUs).
 - "used" demand = jobs in the last 12 months; "desired" = jobs the group would
   run if limits did not bind (falls back to "used" when not given).
+- Each workload entry describes its heaviest job, so yearly totals are upper
+  bounds. For a chain with known running time and step count, hours per job =
+  min(heaviest wall time, chain running time / steps).
+- Follow-up tabs (LongJobs, Scaling, Memory, Gpu, Scratch) have one row per
+  code that opened the panel, joined to Workloads on (submission_id, entry_index).
 
 Typical use
     from sheets_client import load_data, load_config
@@ -79,6 +84,16 @@ def is_unknown(s: pd.Series) -> pd.Series:
 
 def _col(df: pd.DataFrame, name: str) -> pd.Series:
     return df[name] if name in df else pd.Series([""] * len(df), index=df.index, dtype=object)
+
+
+def follow_up(dfs: dict, tab: str) -> pd.DataFrame:
+    """A follow-up panel tab with entry_index parsed, rows marked 'not aware' kept (their answers are blank)."""
+    t = dfs[tab].copy()
+    if t.empty:
+        return t
+    t["entry_index"] = num(_col(t, "entry_index"))
+    t["not_aware"] = _col(t, "not_aware").astype(str).str.lower() == "true"
+    return t
 
 
 def norm_code(name: str) -> str:
@@ -242,9 +257,10 @@ def workloads(dfs: dict, cfg: dict, caps: dict | None = None) -> pd.DataFrame:
     w = dfs["Workloads"].copy()
     if w.empty:
         return w
-    for c in ["nodes", "cores", "gpus", "mem_node_gb", "walltime_h", "scratch_write_gb", "jobs_year",
-              "jobs_year_unconstrained", "concurrent", "long_total_h", "campaign_cores", "campaign_gpus",
-              "campaign_duration_h", "campaigns_year", "evidence_level"]:
+    for c in ["entry_index", "nodes", "cores", "gpus", "mem_node_gb", "walltime_h", "input_read_gb", "scratch_write_gb",
+              "jobs_year", "jobs_year_unconstrained", "concurrent", "chain_steps", "chain_run_h", "chain_elapsed_h",
+              "long_total_h", "long_calendar_h", "campaign_cores", "campaign_gpus", "campaign_duration_h",
+              "campaigns_year", "evidence_level"]:
         w[c] = num(_col(w, c))
     w["device"] = _col(w, "device").replace("", "unknown")
     w["cluster"] = _col(w, "cluster").replace("", "unknown")
@@ -260,19 +276,28 @@ def workloads(dfs: dict, cfg: dict, caps: dict | None = None) -> pd.DataFrame:
         return math.ceil(r["cores"] / cores_per_node(cfg, cid, "gpu" if r["device"] == "gpu" else "compute"))
     w["nodes_est"] = w.apply(_nodes, axis=1)
 
+    # Hours per job (upper bound): the heaviest job's wall time, or for a chain its mean step running time
+    is_chain = w["org"].apply(lambda o: "chain" in o)
+    per_step = w["chain_run_h"] / w["chain_steps"].where(w["chain_steps"] > 0)
+    w["hours_per_job"] = np.where(is_chain & per_step.notna(), np.fmin(w["walltime_h"], per_step), w["walltime_h"])
+    hpj = w["hours_per_job"]
+    # Waiting time between jobs (queue and gaps) = calendar time − running time
+    w["chain_queue_overhead_h"] = w["chain_elapsed_h"] - w["chain_run_h"]
+    w["long_queue_overhead_h"] = w["long_calendar_h"] - w["long_total_h"]
+
     jobs_des = w["jobs_year_unconstrained"].fillna(w["jobs_year"])
     cpu = w["device"] != "gpu"
-    w["cpu_h_used"] = np.where(cpu, w["cores"] * w["walltime_h"] * w["jobs_year"], 0.0)
-    w["cpu_h_desired"] = np.where(cpu, w["cores"] * w["walltime_h"] * jobs_des, 0.0)
-    w.loc[cpu & (w["cores"].isna() | w["walltime_h"].isna() | w["jobs_year"].isna()), "cpu_h_used"] = np.nan
-    w.loc[cpu & (w["cores"].isna() | w["walltime_h"].isna() | jobs_des.isna()), "cpu_h_desired"] = np.nan
+    w["cpu_h_used"] = np.where(cpu, w["cores"] * hpj * w["jobs_year"], 0.0)
+    w["cpu_h_desired"] = np.where(cpu, w["cores"] * hpj * jobs_des, 0.0)
+    w.loc[cpu & (w["cores"].isna() | hpj.isna() | w["jobs_year"].isna()), "cpu_h_used"] = np.nan
+    w.loc[cpu & (w["cores"].isna() | hpj.isna() | jobs_des.isna()), "cpu_h_desired"] = np.nan
     gpu = w["device"] == "gpu"
-    w["gpu_h_used"] = np.where(gpu, w["gpus"] * w["walltime_h"] * w["jobs_year"], 0.0)
-    w["gpu_h_desired"] = np.where(gpu, w["gpus"] * w["walltime_h"] * jobs_des, 0.0)
-    w.loc[gpu & (w["gpus"].isna() | w["walltime_h"].isna() | w["jobs_year"].isna()), "gpu_h_used"] = np.nan
-    w.loc[gpu & (w["gpus"].isna() | w["walltime_h"].isna() | jobs_des.isna()), "gpu_h_desired"] = np.nan
+    w["gpu_h_used"] = np.where(gpu, w["gpus"] * hpj * w["jobs_year"], 0.0)
+    w["gpu_h_desired"] = np.where(gpu, w["gpus"] * hpj * jobs_des, 0.0)
+    w.loc[gpu & (w["gpus"].isna() | hpj.isna() | w["jobs_year"].isna()), "gpu_h_used"] = np.nan
+    w.loc[gpu & (w["gpus"].isna() | hpj.isna() | jobs_des.isna()), "gpu_h_desired"] = np.nan
     # Little's law: time-averaged number of running jobs
-    w["avg_running"] = (jobs_des * w["walltime_h"] / HOURS_PER_YEAR)
+    w["avg_running"] = (jobs_des * hpj / HOURS_PER_YEAR)
 
     # Cluster attribution weights
     def _weights(r):
@@ -284,38 +309,31 @@ def workloads(dfs: dict, cfg: dict, caps: dict | None = None) -> pd.DataFrame:
                          .get(r["cluster"], {"w_gargi": 0.0, "w_raman": 0.0, "w_unattr": 1.0}))
     w = pd.concat([w, w.apply(_weights, axis=1)], axis=1)
 
-    # Join follow-ups on (submission, workload name)
-    key = ["submission_id", "code"]
-    lj = dfs["LongJobs"].rename(columns={"workload": "code"}) if not dfs["LongJobs"].empty else pd.DataFrame(columns=key)
+    # Join follow-up panels on (submission, entry)
+    key = ["submission_id", "entry_index"]
+    lj = follow_up(dfs, "LongJobs")
     if not lj.empty:
-        lj = lj.assign(longest_run_h=num(_col(lj, "longest_run_h")))
-        lj = lj.groupby(key, as_index=False).agg(longest_run_h=("longest_run_h", "max"),
-                                                 checkpoint=("checkpoint", "first"),
-                                                 l_doubling=("doubling_effect", "first"),
-                                                 terminations_12m=("terminations_12m", "first"))
-    sc = dfs["Scaling"].rename(columns={"workload": "code"}) if not dfs["Scaling"].empty else pd.DataFrame(columns=key)
+        lj = lj.assign(longest_run_h=num(_col(lj, "longest_run_h")))[key + ["longest_run_h", "checkpoint", "terminations_12m"]]
+    sc = follow_up(dfs, "Scaling")
     if not sc.empty:
-        over_gpu = _col(sc, "scale_over") == "gpu"
+        over_gpu = _col(sc, "device") == "gpu"
         for i in (1, 2, 3):
             sc[f"_c{i}"] = np.where(over_gpu, num(_col(sc, f"gpus_{i}")), num(_col(sc, f"cores_{i}")))
             sc[f"_t{i}"] = num(_col(sc, f"walltime_{i}_h"))
         sc["measured_ratio"] = sc.apply(_scaling_ratio, axis=1)
         sc["max_cores_useful"] = num(_col(sc, "max_cores_useful"))
-        sc = sc.groupby(key, as_index=False).agg(measured_ratio=("measured_ratio", "first"),
-                                                 p_doubling=("doubling_effect", "first"),
-                                                 max_cores_useful=("max_cores_useful", "max"))
-    w = w.merge(lj, on=key, how="left") if not lj.empty else w.assign(longest_run_h=np.nan, checkpoint="", l_doubling="", terminations_12m="")
+        sc = sc.rename(columns={"doubling_effect": "p_doubling"})[key + ["measured_ratio", "p_doubling", "max_cores_useful"]]
+    w = w.merge(lj, on=key, how="left") if not lj.empty else w.assign(longest_run_h=np.nan, checkpoint="", terminations_12m="")
     w = w.merge(sc, on=key, how="left") if not sc.empty else w.assign(measured_ratio=np.nan, p_doubling="", max_cores_useful=np.nan)
-    for c in ("checkpoint", "l_doubling", "p_doubling"):
+    for c in ("checkpoint", "p_doubling"):
         w[c] = w[c].fillna("")
 
     # Scaling: measured pairs first, then the reported doubling effect
     def _ratio(r):
         if pd.notna(r["measured_ratio"]):
             return r["measured_ratio"], "measured"
-        for c in ("p_doubling", "l_doubling"):
-            if r[c] in DOUBLING_RATIO:
-                return DOUBLING_RATIO[r[c]], "reported"
+        if r["p_doubling"] in DOUBLING_RATIO:
+            return DOUBLING_RATIO[r["p_doubling"]], "reported"
         return np.nan, "unknown"
     rs = w.apply(lambda r: pd.Series(_ratio(r), index=["doubling_ratio", "scaling_source"]), axis=1)
     w[["doubling_ratio", "scaling_source"]] = rs
@@ -342,7 +360,7 @@ def workloads(dfs: dict, cfg: dict, caps: dict | None = None) -> pd.DataFrame:
         return pd.Series({"queue": f"{q['cluster']}.{q['id']}" if q else "none fits",
                           "queue_max_concurrent": q["maxConcurrentJobs"] if q else np.nan})
     w = pd.concat([w, w.apply(_fit, axis=1)], axis=1)
-    w["years_to_finish"] = (jobs_des * w["walltime_h"]) / (w["queue_max_concurrent"] * HOURS_PER_YEAR)
+    w["years_to_finish"] = (jobs_des * w["hours_per_job"]) / (w["queue_max_concurrent"] * HOURS_PER_YEAR)
 
     # Policy comparison for CPU jobs: largest job allowed vs wanted
     def _cap(r):
@@ -507,42 +525,58 @@ def home_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, 
     return out, per.sort_values("home_now_gb", ascending=False)
 
 
+def scratch_on_fast_pfs_only(cfg: dict, cid: str) -> bool:
+    """True when only scratch is on the cluster's fast parallel file system, so jobs load their inputs from scratch."""
+    return bool(cluster(cfg, cid)["storage"].get("scratchOnlyOnFastPFS")) if cid in CLUSTERS else False
+
+
 def scratch_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Scratch demand per cluster in two forms:
-      peak    = files written per job x largest number of concurrent jobs (worst case, all groups at once)
-      average = files written per job x time-averaged running jobs, including residence after the job
+      peak    = scratch per job x largest number of concurrent jobs (worst case, all groups at once)
+      average = scratch per job x time-averaged running jobs, including residence after the job
+    Scratch per job = files written; plus input files read where only scratch is on the
+    fast parallel file system (storage.scratchOnlyOnFastPFS), since inputs are then loaded from scratch.
     Returns (per-cluster table, per-workload table with flags).
     """
     t = wl.copy()
-    sc = dfs["Scratch"].rename(columns={"workload": "code"})
+    sc = follow_up(dfs, "Scratch")
     if not sc.empty:
         sc = sc.assign(residence_h=sc["residence_after_job"].map(RESIDENCE_H))
-        t = t.merge(sc[["submission_id", "code", "residence_h", "io_time_share", "rereads_own_output", "local_disk_possible"]],
-                    on=["submission_id", "code"], how="left")
+        t = t.merge(sc[["submission_id", "entry_index", "residence_h", "io_time_share", "rereads_own_output", "local_disk_possible"]],
+                    on=["submission_id", "entry_index"], how="left")
     else:
         t["residence_h"] = np.nan
     jobs_des = t["jobs_year_unconstrained"].fillna(t["jobs_year"])
-    occupancy = jobs_des * (t["walltime_h"] + t["residence_h"].fillna(0)) / HOURS_PER_YEAR
-    t["scratch_peak_gb"] = t["scratch_write_gb"] * t["concurrent"]
-    t["scratch_avg_gb"] = t["scratch_write_gb"] * np.minimum(occupancy, t["concurrent"].fillna(np.inf))
+    occupancy = jobs_des * (t["hours_per_job"] + t["residence_h"].fillna(0)) / HOURS_PER_YEAR
+    conc = np.minimum(occupancy, t["concurrent"].fillna(np.inf))
+
+    def per_job(with_inputs: bool) -> pd.Series:
+        return t["scratch_write_gb"] + (t["input_read_gb"].fillna(0) if with_inputs else 0)
+
     rows = []
     for cid, wcol in (("gargi", "w_gargi"), ("raman", "w_raman"), (UNATTR, "w_unattr")):
         cap = cluster(cfg, cid)["storage"]["scratchTB"] if cid in CLUSTERS else np.nan
-        rows.append({"cluster": cid, "capacity_tb": cap,
-                     "peak_sum_tb": (t["scratch_peak_gb"] * t[wcol]).sum() / 1024,
-                     "average_tb": (t["scratch_avg_gb"] * t[wcol]).sum() / 1024})
+        pj = per_job(scratch_on_fast_pfs_only(cfg, cid))
+        rows.append({"cluster": cid, "capacity_tb": cap, "inputs_counted": scratch_on_fast_pfs_only(cfg, cid),
+                     "peak_sum_tb": (pj * t["concurrent"] * t[wcol]).sum() / 1024,
+                     "average_tb": (pj * conc * t[wcol]).sum() / 1024})
     out = pd.DataFrame(rows)
-    out.loc[len(out)] = {"cluster": "combined", "capacity_tb": out["capacity_tb"].sum(),
+    out.loc[len(out)] = {"cluster": "combined", "capacity_tb": out["capacity_tb"].sum(), "inputs_counted": out["inputs_counted"].any(),
                          "peak_sum_tb": out["peak_sum_tb"].sum(), "average_tb": out["average_tb"].sum()}
     out["deficit_peak_tb"] = out["peak_sum_tb"] - out["capacity_tb"]
     out["deficit_average_tb"] = out["average_tb"] - out["capacity_tb"]
 
+    # Per workload: written volume, and with inputs added (the two cases above)
+    t["scratch_peak_gb"] = t["scratch_write_gb"] * t["concurrent"]
+    t["scratch_peak_with_inputs_gb"] = per_job(True) * t["concurrent"]
+    t["scratch_avg_gb"] = t["scratch_write_gb"] * conc
     cap_user = cfg["committeeParameters"].get("maxScratchPerUserTB")
-    per = t[["submission_id", "pi_name", "code", "cluster", "scratch_write_gb", "concurrent", "scratch_peak_gb", "scratch_avg_gb"]].copy()
-    per["over_trigger"] = per["scratch_peak_gb"] > cfg["thresholds"]["scratchConcurrentTriggerGB"]
-    per["over_user_cap"] = (per["scratch_peak_gb"] / 1024 > cap_user) if cap_user else False
-    return out, per.sort_values("scratch_peak_gb", ascending=False)
+    per = t[["submission_id", "pi_name", "code", "cluster", "input_read_gb", "scratch_write_gb", "concurrent",
+             "scratch_peak_gb", "scratch_peak_with_inputs_gb", "scratch_avg_gb"]].copy()
+    per["over_trigger"] = per["scratch_peak_with_inputs_gb"] > cfg["thresholds"]["scratchConcurrentTriggerGB"]
+    per["over_user_cap"] = (per["scratch_peak_with_inputs_gb"] / 1024 > cap_user) if cap_user else False
+    return out, per.sort_values("scratch_peak_with_inputs_gb", ascending=False)
 
 
 # ---------------------------------------------------------------------------
@@ -623,7 +657,7 @@ def queue_waits(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         return q
     for c in ("req_nodes", "req_cores", "req_gpus", "req_walltime_h", "typical_wait_h", "longest_wait_h"):
         q[c] = num(_col(q, c))
-    typ = wl.set_index(["submission_id", "code"])[["nodes_est", "cores", "gpus", "walltime_h"]]
+    typ = wl.drop_duplicates(["submission_id", "code"]).set_index(["submission_id", "code"])[["nodes_est", "cores", "gpus", "walltime_h"]]
     def _fill(r):
         if r.get("same_as_typical_job") == "yes" and (r["submission_id"], r["workload"]) in typ.index:
             t = typ.loc[(r["submission_id"], r["workload"])]
@@ -654,14 +688,17 @@ def debug_demand(dfs: dict, cfg: dict) -> pd.DataFrame:
 # 6. Triage candidates (CLAUDE.md §8) — suggestions for the committee
 # ---------------------------------------------------------------------------
 
+# Problem -> (follow-up tab, topic). Panel tabs have one row per code that opened the panel
+# (also when the panel was answered "don't know these details"); Queue is a group-level section.
 FOLLOW_UP_FOR_PROBLEM = {
-    "wall_time_termination": ("LongJobs", "NA_long_jobs", "long_jobs"),
-    "insufficient_node_count": ("Scaling", "NA_scaling", "scaling"),
-    "insufficient_memory": ("Memory", "NA_memory", "memory"),
-    "insufficient_gpu_access": ("Gpu", "NA_gpu", "gpu"),
-    "scratch_insufficient": ("Scratch", "NA_scratch", "scratch"),
-    "excessive_queue_wait": ("Queue", "NA_queue", "queue"),
+    "wall_time_termination": ("LongJobs", "long runs"),
+    "insufficient_node_count": ("Scaling", "scaling"),
+    "insufficient_memory": ("Memory", "memory"),
+    "insufficient_gpu_access": ("Gpu", "GPU"),
+    "scratch_insufficient": ("Scratch", "scratch"),
+    "excessive_queue_wait": ("Queue", "queue"),
 }
+PANEL_TABS = ("LongJobs", "Scaling", "Memory", "Gpu", "Scratch")
 
 
 def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
@@ -682,21 +719,26 @@ def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             add(sid, 2, f"declared 'not aware' for {na.replace('_', ' ')}")
         for p in probs:
             if p in FOLLOW_UP_FOR_PROBLEM:
-                tab, _, topic = FOLLOW_UP_FOR_PROBLEM[p]
+                tab, topic = FOLLOW_UP_FOR_PROBLEM[p]
                 t = dfs[tab]
-                if topic not in not_aware and (t.empty or (t["submission_id"] == sid).sum() == 0):
-                    add(sid, 2, f"reported '{PROBLEM_LABELS[p]}' but gave no {topic.replace('_', ' ')} details")
+                if "queue" not in not_aware and (t.empty or (t["submission_id"] == sid).sum() == 0):
+                    add(sid, 2, f"reported '{PROBLEM_LABELS[p]}' but no code was linked to it ({topic} details not given)")
         if (wl.empty or (wl["submission_id"] == sid).sum() == 0) and "no_hpc_experience" not in probs:
             add(sid, 2, "no workloads described")
 
-    names = set(zip(wl["submission_id"], wl["code"])) if not wl.empty else set()
-    for tab in ("LongJobs", "Scaling", "Memory", "Gpu", "Scratch", "Queue"):
-        t = dfs[tab]
-        if t.empty or "workload" not in t:
+    for tab in PANEL_TABS:
+        t = follow_up(dfs, tab)
+        if t.empty:
             continue
-        for _, r in t.iterrows():
+        for _, r in t[t["not_aware"]].iterrows():
+            add(r["submission_id"], 2, f"{r['code']}: 'don't know these details' for {tab} (support / awareness)")
+
+    names = set(zip(wl["submission_id"], wl["code"])) if not wl.empty else set()
+    q = dfs["Queue"]
+    if not q.empty and "workload" in q:
+        for _, r in q.iterrows():
             if r["workload"] and (r["submission_id"], r["workload"]) not in names:
-                add(r["submission_id"], 2, f"{tab} entry refers to '{r['workload']}', not in the workload list")
+                add(r["submission_id"], 2, f"Queue entry refers to '{r['workload']}', not in the workload list")
 
     for _, r in wl.iterrows():
         sid, code = r["submission_id"], r["code"]

@@ -6,7 +6,7 @@ SYN-04,Dr. Synthetic PI 4,gargi,,insufficient_memory,,gargi,,
 SYN-05,Dr. Synthetic PI 5,gargi; cloud,70,excessive_queue_wait; insufficient_total_capacity,,gargi,40,
 SYN-06,Dr. Synthetic PI 6,workstation; cloud,0,insufficient_gpu_access,,elsewhere,,
 SYN-07,Dr. Synthetic PI 7,gargi,,no_problems_observed,,,,
-SYN-08,Dr. Synthetic PI 8,raman,,wall_time_termination,,raman,,long_jobs
+SYN-08,Dr. Synthetic PI 8,raman,,wall_time_termination,,raman,,
 SYN-09,Dr. Synthetic PI 9,gargi; national,50,insufficient_node_count; wall_time_termination,,gargi,,
 SYN-10,Dr. Synthetic PI 10,raman,,excessive_queue_wait,,raman,25,
 SYN-11,Dr. Synthetic PI 11,gargi,,scratch_insufficient,,gargi,,
