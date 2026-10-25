@@ -2,39 +2,29 @@
 
 ## Status (2026-10-26)
 
-- **Branches.** `progressive-disclosure-v2` (pushed, `7955d38`) is v3 schema 2.0.0, live at the preview
-  <https://svaradh.github.io/hpc-questionnaire/v3-preview/> against the v3 backend. `inline-followups` (local only,
-  off it) is schema 2.4.0: per-code follow-up panels, glossary pop-ups, running vs calendar time, heaviest-job rule.
-  2.2.0 made every question in an open panel (and the pattern follow-ups) required — Don't know counts, and a
-  panel's "don't know these details" box answers it — and asks the input volume one job loads (`W_input_read`,
-  moved from the scratch panel) beside the volume it writes. 2.3.0 moves the panels into a new Section D "Details
-  for Each Code" (`rowDetails` question; answers still stored in the `W_workloads` rows, so no data change) and
-  re-letters D–F to E–G. 2.4.0 moves the pattern follow-ups (batch, chain, long calculation, campaign) into a
-  first D panel "How these jobs are organised" (`W_blk_org`, `NA_org`); C is now the same for every group. Every problem reported in B now leads to required answers: `W_affected` required (with
-  Don't know) and each reported problem must be ticked for at least one code (`coverage`); `X_problems_other` /
-  `X_problems_where` required; Queue section (F) needs ≥ 1 entry with all fields; testing questions (E) required
-  when short test jobs wait too long (`requiredWhen`). Form only — its layout draft (submit disabled) is at
-  <https://svaradh.github.io/hpc-questionnaire/v3-draft/> (`npm run deploy:layout`). `main` / the root site still serve v1.
-- **v3 backend.** Separate Apps Script project (web app, access "Anyone"; URL in `.env.local`), new response sheet
+- **Branches.** `progressive-disclosure-v2` (pushed) carries v3 at schema 2.4.0, form and backend, published at the
+  preview <https://svaradh.github.io/hpc-questionnaire/v3-preview/> against the v3 backend. `inline-followups` is
+  merged into it. `main` / the root site still serve v1. The layout-only draft (`/v3-draft/`, `npm run deploy:layout`)
+  is no longer needed for review.
+- **Schema 2.4.0.** Section C is the same for every group; Section D "Details for Each Code" holds the per-code
+  panels (job organisation, long runs, scaling, memory, GPU, scratch), all required with Don't know allowed. Every
+  problem reported in B leads to required answers (problem linked to a code, queue entries, testing questions).
+  Input volume read per job is asked beside volume written.
+- **v3 backend.** Separate Apps Script project (web app, access "Anyone"; URL in `.env.local`), response sheet
   "HPC Questionnaire Responses v3", reports folder "HPC Committee Reports/v3". The v1 Apps Script project and the
   Google Cloud sign-in project are kept.
-- **Waiting on the user:** confirmation of the `inline-followups` layout (tablet check of the draft); a test submission
-  on `/v3-preview/` and the v3 sheet ID; the convener's answers to `docs/hardware-check/cluster-hardware-check.pdf`.
 
-## Next, once the inline layout is confirmed
+## Next
 
-- **Backend for schema 2.2.0.** `SheetWriter.gs`: fill the LongJobs / Scaling / Memory / Gpu / Scratch tabs from the
-  blocks inside each workload entry (one row per entry with that block), drop the removed fields (`L_device`,
-  `L_longest_cores/gpus`, `L_doubling`, `P_scale_over`, `M_peak`, `*_workload`), add `W_affected`, `W_chain_run`,
-  `W_long_calendar`, per-entry `NA_*` (incl. `NA_org`); `SC_input_read` → `W_input_read` on the Workloads tab; `G_model`, `Q_queue`,
-  `Q_other_system`, `T_purpose`, `W_affected` may be `dont_know`. Section letters in report text: D–F → E–G. Strip answers of hidden blocks on submit (`answersForSubmission`).
-- **Report and notebooks.** Scratch demand per job = written volume, plus read volume where
-  `storage.scratchOnlyOnFastPFS` is true. Doubling from `P_doubling` only; totals from the heaviest job reported as upper bounds
-  (chains: heaviest-step cores × chain running time); queue overhead = calendar − running time for chains and long
-  calculations. Regenerate the synthetic fixture; update `docs/form-v3-plan.md` and `docs/analysis-framework.md`.
-- **Redeploy.** Push the Apps Script files, Initialize Sheets again, delete old test rows and reports; merge
-  `inline-followups` into `progressive-disclosure-v2`; `npm run deploy:preview`. Then the dry run with a student and a
-  colleague.
+- **Update the v3 Apps Script (manual).** Paste `apps-script/SheetWriter.gs` and `apps-script/ReportGenerator.gs`
+  into the v3 project (`Code.gs` unchanged); Deploy → Manage deployments → Edit → New version (the URL stays the
+  same). Then delete the old test rows on every tab, run HPC Committee → Initialize Sheets, and delete old test
+  reports.
+- **Test submission on `/v3-preview/`**, with a code that opens a few Section D panels; check the Workloads and panel
+  tabs, the confirmation email, and Generate Report. If no email arrives, switch `GmailApp.sendEmail` to `MailApp`.
+- **Dry run** with a student and a colleague; then the convener's answers to
+  `docs/hardware-check/cluster-hardware-check.pdf` — add whether home is on the same fast parallel file system as
+  scratch (`storage.scratchOnlyOnFastPFS`).
 
 ## Later
 
