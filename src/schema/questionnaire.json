@@ -1,5 +1,5 @@
 {
-  "version": "2.1.0",
+  "version": "2.4.0",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -366,7 +366,7 @@
           "id": "X_problems_other",
           "type": "text",
           "label": "If other, describe the problem briefly",
-          "required": false,
+          "required": true,
           "conditionalOn": {
             "questionId": "X_problems",
             "values": [
@@ -378,7 +378,7 @@
           "id": "X_problems_where",
           "type": "checkbox",
           "label": "On which systems did these problems occur?",
-          "required": false,
+          "required": true,
           "helpText": "This tells the committee whether a problem concerns the present clusters.",
           "options": [
             {
@@ -425,14 +425,14 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe up to five main codes your group runs, one entry each (or two entries for a code that runs quite different kinds of jobs). Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, a few extra questions about it appear inside its entry.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
+      "description": "Describe up to five main codes your group runs, one entry each (or two entries for a code that runs quite different kinds of jobs). Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, Section D asks a few more questions about it.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
       "questions": [
         {
           "id": "W_problem_notice",
           "type": "info",
           "required": false,
           "label": "Please include the codes affected by the problems you reported",
-          "helpText": "You reported operational problems in Section B. Make sure every code involved has an entry here, and tick which problems affect it. If more than five codes are affected, list the five most affected and name the others under \"Other codes\" below.",
+          "helpText": "You reported operational problems in Section B. Make sure every code involved has an entry here, and tick which problems affect it; each problem you reported should be ticked for at least one code (or answered Don't know). If more than five codes are affected, list the five most affected and name the others under \"Other codes\" below.",
           "conditionalOn": {
             "questionId": "X_problems",
             "values": [
@@ -556,9 +556,9 @@
             {
               "id": "W_affected",
               "type": "checkbox",
-              "required": false,
+              "required": true,
               "label": "Which of the problems you reported in Section B affect this code?",
-              "helpText": "Tick any that apply. Some add a few questions further down this entry.",
+              "helpText": "Tick any that apply. Some add a few questions about this code in Section D.",
               "conditionalOn": {
                 "form": {
                   "questionId": "X_problems",
@@ -660,11 +660,22 @@
                   "value": "none",
                   "label": "None of these",
                   "exclusive": true
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know / not aware",
+                  "exclusive": true
                 }
               ],
               "committeeUse": [
                 "problem_attribution"
-              ]
+              ],
+              "coverage": {
+                "questionId": "X_problems",
+                "unlessValues": [
+                  "dont_know"
+                ]
+              }
             },
             {
               "id": "W_h_org",
@@ -813,6 +824,19 @@
               "helpText": "Running time only, not time waiting in the queue."
             },
             {
+              "id": "W_input_read",
+              "type": "quantity",
+              "label": "Largest volume of input files one job loads (reads) while it runs",
+              "required": false,
+              "dimension": "size",
+              "defaultUnit": "GB",
+              "allowUnknown": true,
+              "helpText": "Files the job reads: e.g. trajectories, databases, reference genomes, or wavefunctions from an earlier step. 0 if negligible.",
+              "committeeUse": [
+                "scratch_test"
+              ]
+            },
+            {
               "id": "W_scratch_write",
               "type": "quantity",
               "label": "Largest volume of files one job writes while it runs",
@@ -820,7 +844,7 @@
               "dimension": "size",
               "defaultUnit": "GB",
               "allowUnknown": true,
-              "helpText": "Intermediate or temporary files created during the run (usually on {scratch}). Large input files that are only read do not count here. 0 if negligible.",
+              "helpText": "Output, intermediate or temporary files created during the run (usually on {scratch}). Input files the job only reads are asked above. 0 if negligible.",
               "committeeUse": [
                 "scratch_test"
               ]
@@ -868,223 +892,6 @@
               "committeeUse": [
                 "peak_concurrency",
                 "scratch_test"
-              ]
-            },
-            {
-              "id": "W_h_pattern",
-              "type": "heading",
-              "required": false,
-              "label": "More about how these jobs are organised",
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "independent",
-                  "chain",
-                  "long_calc",
-                  "campaign"
-                ]
-              }
-            },
-            {
-              "id": "W_batch_size",
-              "type": "number",
-              "label": "Jobs submitted together in one batch",
-              "required": false,
-              "integer": true,
-              "allowUnknown": true,
-              "min": 0,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "independent"
-                ]
-              },
-              "committeeUse": [
-                "throughput"
-              ]
-            },
-            {
-              "id": "W_chain_steps",
-              "type": "number",
-              "label": "Steps (jobs) in one chain",
-              "required": false,
-              "integer": true,
-              "allowUnknown": true,
-              "min": 1,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "chain"
-                ]
-              },
-              "committeeUse": [
-                "pipeline"
-              ]
-            },
-            {
-              "id": "W_chain_run",
-              "type": "quantity",
-              "required": false,
-              "label": "Running time of one full chain: the {wall times|wall time} of all its jobs added up",
-              "helpText": "Running time only. Do not include time spent waiting in the queue.",
-              "dimension": "time",
-              "defaultUnit": "hours",
-              "allowUnknown": true,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "chain"
-                ]
-              },
-              "committeeUse": [
-                "pipeline",
-                "core_hours",
-                "queue_overhead"
-              ]
-            },
-            {
-              "id": "W_chain_elapsed",
-              "type": "quantity",
-              "label": "{Calendar time} for one full chain: from submitting its first job to its last job finishing",
-              "required": false,
-              "dimension": "time",
-              "defaultUnit": "days",
-              "allowUnknown": true,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "chain"
-                ]
-              },
-              "committeeUse": [
-                "pipeline",
-                "turnaround",
-                "queue_overhead"
-              ],
-              "helpText": "This includes {queue waits|queue wait}. Example: 4 jobs of 10 h each = 40 h running time. First job submitted Monday 9 am, last job finished Thursday 9 am = 3 days calendar time."
-            },
-            {
-              "id": "W_long_total",
-              "type": "quantity",
-              "label": "Running time of the full calculation: the wall times of all its jobs (restarts) added up",
-              "required": false,
-              "dimension": "time",
-              "defaultUnit": "days",
-              "allowUnknown": true,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "long_calc"
-                ]
-              },
-              "committeeUse": [
-                "long_walltime_test"
-              ],
-              "helpText": "Running time only. Do not include time spent waiting in the queue."
-            },
-            {
-              "id": "W_long_calendar",
-              "type": "quantity",
-              "required": false,
-              "label": "{Calendar time} for the full calculation: from submitting its first job to its last job finishing",
-              "helpText": "This includes queue waits and any gaps before the next restart was submitted.",
-              "dimension": "time",
-              "defaultUnit": "days",
-              "allowUnknown": true,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "long_calc"
-                ]
-              },
-              "committeeUse": [
-                "turnaround",
-                "queue_overhead"
-              ]
-            },
-            {
-              "id": "W_campaign_cores",
-              "type": "number",
-              "label": "Total CPU cores needed at the same time for the campaign",
-              "required": false,
-              "helpText": "Add up the cores of all jobs that must run together.",
-              "integer": true,
-              "allowUnknown": true,
-              "min": 1,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "campaign"
-                ]
-              },
-              "committeeUse": [
-                "large_run_test"
-              ]
-            },
-            {
-              "id": "W_campaign_gpus",
-              "type": "number",
-              "label": "Total GPUs needed at the same time for the campaign",
-              "required": false,
-              "integer": true,
-              "allowUnknown": true,
-              "min": 1,
-              "helpText": "Add up the GPUs of all jobs that must run together.",
-              "conditionalOn": {
-                "all": [
-                  {
-                    "questionId": "W_org",
-                    "values": [
-                      "campaign"
-                    ]
-                  },
-                  {
-                    "questionId": "W_device",
-                    "values": [
-                      "gpu"
-                    ]
-                  }
-                ]
-              },
-              "committeeUse": [
-                "large_run_test",
-                "gpu_spec"
-              ]
-            },
-            {
-              "id": "W_campaign_duration",
-              "type": "quantity",
-              "label": "How long the campaign runs",
-              "required": false,
-              "dimension": "time",
-              "defaultUnit": "days",
-              "allowUnknown": true,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "campaign"
-                ]
-              },
-              "committeeUse": [
-                "large_run_test"
-              ]
-            },
-            {
-              "id": "W_campaigns_year",
-              "type": "number",
-              "label": "Campaigns per year",
-              "required": false,
-              "integer": true,
-              "allowUnknown": true,
-              "min": 0,
-              "conditionalOn": {
-                "questionId": "W_org",
-                "values": [
-                  "campaign"
-                ]
-              },
-              "committeeUse": [
-                "large_run_test"
               ]
             },
             {
@@ -1214,6 +1021,325 @@
               ]
             },
             {
+              "id": "W_type",
+              "type": "checkbox",
+              "label": "Type of computation",
+              "required": false,
+              "options": [
+                {
+                  "value": "electronic_structure",
+                  "label": "Electronic structure (DFT, TDDFT, quantum chemistry)"
+                },
+                {
+                  "value": "molecular_dynamics",
+                  "label": "Molecular dynamics (classical or ab initio)"
+                },
+                {
+                  "value": "atomistic_simulation",
+                  "label": "Atomistic or coarse-grained simulation"
+                },
+                {
+                  "value": "climate_environmental",
+                  "label": "Climate, atmospheric, or environmental modelling"
+                },
+                {
+                  "value": "cfd",
+                  "label": "Computational fluid dynamics (CFD)"
+                },
+                {
+                  "value": "bioinformatics_genomics",
+                  "label": "Bioinformatics / genomics"
+                },
+                {
+                  "value": "machine_learning",
+                  "label": "Machine learning / AI"
+                },
+                {
+                  "value": "numerical_modelling",
+                  "label": "Numerical modelling / simulation (other)"
+                },
+                {
+                  "value": "many_body_exact_diagonalisation",
+                  "label": "Many-body physics / exact diagonalisation"
+                },
+                {
+                  "value": "data_analysis",
+                  "label": "Data analysis / post-processing"
+                },
+                {
+                  "value": "other",
+                  "label": "Other"
+                }
+              ],
+              "committeeUse": [
+                "workload_mix"
+              ],
+              "advanced": true
+            },
+            {
+              "id": "W_type_other",
+              "type": "text",
+              "label": "Other type (describe)",
+              "required": false,
+              "conditionalOn": {
+                "questionId": "W_type",
+                "values": [
+                  "other"
+                ]
+              },
+              "advanced": true
+            }
+          ]
+        },
+        {
+          "id": "W_other_codes",
+          "type": "text",
+          "label": "Other codes your group uses (names only, optional)",
+          "required": false,
+          "placeholder": "e.g. VASP, ORCA, CP2K"
+        }
+      ]
+    },
+    {
+      "id": "D",
+      "title": "D. Details for Each Code",
+      "description": "A few more questions about the codes whose answers in Section C call for them: how the jobs are organised, long runs, running on more cores, memory, GPUs, or files and scratch. Each panel says why it is shown. All questions here are required, and \"Don't know\" always counts as an answer; if you do not know a panel's details, tick the box at its top.\n\nAnswers in Section C decide which panels appear, so changing a code there may add or remove panels here.",
+      "questions": [
+        {
+          "id": "W_details",
+          "type": "rowDetails",
+          "label": "Details for each code",
+          "required": false,
+          "rowsOf": "W_workloads",
+          "questions": [
+            {
+              "id": "W_blk_org",
+              "type": "block",
+              "required": false,
+              "label": "How these jobs are organised",
+              "helpText": "Shown because you ticked independent jobs, a sequential chain, a calculation split over several jobs, or a campaign for this code in Section C. These figures let the committee work out totals and the time spent waiting between jobs.",
+              "notAwareOption": {
+                "questionId": "NA_org",
+                "label": "I don't know these details for this code"
+              },
+              "conditionalOn": {
+                "where": {
+                  "field": "W_org",
+                  "op": "in",
+                  "values": [
+                    "independent",
+                    "chain",
+                    "long_calc",
+                    "campaign"
+                  ]
+                }
+              },
+              "questions": [
+                {
+                  "id": "W_batch_size",
+                  "type": "number",
+                  "label": "Jobs submitted together in one batch",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 0,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "independent"
+                    ]
+                  },
+                  "committeeUse": [
+                    "throughput"
+                  ]
+                },
+                {
+                  "id": "W_chain_steps",
+                  "type": "number",
+                  "label": "Steps (jobs) in one chain",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "chain"
+                    ]
+                  },
+                  "committeeUse": [
+                    "pipeline"
+                  ]
+                },
+                {
+                  "id": "W_chain_run",
+                  "type": "quantity",
+                  "required": true,
+                  "label": "Running time of one full chain: the {wall times|wall time} of all its jobs added up",
+                  "helpText": "Running time only. Do not include time spent waiting in the queue.",
+                  "dimension": "time",
+                  "defaultUnit": "hours",
+                  "allowUnknown": true,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "chain"
+                    ]
+                  },
+                  "committeeUse": [
+                    "pipeline",
+                    "core_hours",
+                    "queue_overhead"
+                  ]
+                },
+                {
+                  "id": "W_chain_elapsed",
+                  "type": "quantity",
+                  "label": "{Calendar time} for one full chain: from submitting its first job to its last job finishing",
+                  "required": true,
+                  "dimension": "time",
+                  "defaultUnit": "days",
+                  "allowUnknown": true,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "chain"
+                    ]
+                  },
+                  "committeeUse": [
+                    "pipeline",
+                    "turnaround",
+                    "queue_overhead"
+                  ],
+                  "helpText": "This includes {queue waits|queue wait}. Example: 4 jobs of 10 h each = 40 h running time. First job submitted Monday 9 am, last job finished Thursday 9 am = 3 days calendar time."
+                },
+                {
+                  "id": "W_long_total",
+                  "type": "quantity",
+                  "label": "Running time of the full calculation: the wall times of all its jobs (restarts) added up",
+                  "required": true,
+                  "dimension": "time",
+                  "defaultUnit": "days",
+                  "allowUnknown": true,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "long_calc"
+                    ]
+                  },
+                  "committeeUse": [
+                    "long_walltime_test"
+                  ],
+                  "helpText": "Running time only. Do not include time spent waiting in the queue."
+                },
+                {
+                  "id": "W_long_calendar",
+                  "type": "quantity",
+                  "required": true,
+                  "label": "{Calendar time} for the full calculation: from submitting its first job to its last job finishing",
+                  "helpText": "This includes queue waits and any gaps before the next restart was submitted.",
+                  "dimension": "time",
+                  "defaultUnit": "days",
+                  "allowUnknown": true,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "long_calc"
+                    ]
+                  },
+                  "committeeUse": [
+                    "turnaround",
+                    "queue_overhead"
+                  ]
+                },
+                {
+                  "id": "W_campaign_cores",
+                  "type": "number",
+                  "label": "Total CPU cores needed at the same time for the campaign",
+                  "required": true,
+                  "helpText": "Add up the cores of all jobs that must run together.",
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "campaign"
+                    ]
+                  },
+                  "committeeUse": [
+                    "large_run_test"
+                  ]
+                },
+                {
+                  "id": "W_campaign_gpus",
+                  "type": "number",
+                  "label": "Total GPUs needed at the same time for the campaign",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "helpText": "Add up the GPUs of all jobs that must run together.",
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "questionId": "W_org",
+                        "values": [
+                          "campaign"
+                        ]
+                      },
+                      {
+                        "questionId": "W_device",
+                        "values": [
+                          "gpu"
+                        ]
+                      }
+                    ]
+                  },
+                  "committeeUse": [
+                    "large_run_test",
+                    "gpu_spec"
+                  ]
+                },
+                {
+                  "id": "W_campaign_duration",
+                  "type": "quantity",
+                  "label": "How long the campaign runs",
+                  "required": true,
+                  "dimension": "time",
+                  "defaultUnit": "days",
+                  "allowUnknown": true,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "campaign"
+                    ]
+                  },
+                  "committeeUse": [
+                    "large_run_test"
+                  ]
+                },
+                {
+                  "id": "W_campaigns_year",
+                  "type": "number",
+                  "label": "Campaigns per year",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 0,
+                  "conditionalOn": {
+                    "questionId": "W_org",
+                    "values": [
+                      "campaign"
+                    ]
+                  },
+                  "committeeUse": [
+                    "large_run_test"
+                  ]
+                }
+              ]
+            },
+            {
               "id": "W_blk_long",
               "type": "block",
               "required": false,
@@ -1298,7 +1424,7 @@
                   "id": "L_checkpoint",
                   "type": "radio",
                   "label": "Can the job stop and resume later without losing completed work ({checkpoint/restart})?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -1325,7 +1451,7 @@
                   "id": "L_restart_loss",
                   "type": "quantity",
                   "label": "Time lost per restart (re-reading data, repeating work since the last checkpoint)",
-                  "required": false,
+                  "required": true,
                   "dimension": "time",
                   "defaultUnit": "minutes",
                   "allowUnknown": true,
@@ -1343,14 +1469,14 @@
                   "id": "L_longest_run",
                   "type": "quantity",
                   "label": "Longest time one job of this code must run without interruption",
-                  "required": false,
+                  "required": true,
                   "dimension": "time",
                   "defaultUnit": "hours",
                   "allowUnknown": true,
                   "committeeUse": [
                     "long_walltime_test"
                   ],
-                  "helpText": "The {wall time} of the longest single job needed, on the cores or GPUs given above.",
+                  "helpText": "The {wall time} of the longest single job needed, on the cores or GPUs given for this code in Section C.",
                   "conditionalOn": {
                     "questionId": "L_checkpoint",
                     "values": [
@@ -1364,7 +1490,7 @@
                   "id": "L_terminations_12m",
                   "type": "number",
                   "label": "Jobs of this code stopped by the {wall-time limit} in the last 12 months",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 0,
@@ -1500,7 +1626,7 @@
                   "id": "P_doubling",
                   "type": "radio",
                   "label": "When the CPU cores (or GPUs, for a GPU job) were doubled, the wall time…",
-                  "required": false,
+                  "required": true,
                   "helpText": "Compare the same calculation on N and on 2N cores (a {doubling test}). Example: 10 h on 64 cores and 6 h on 128 cores is 0.6×.",
                   "options": [
                     {
@@ -1535,9 +1661,9 @@
                 {
                   "id": "P_h_pairs",
                   "type": "heading",
-                  "label": "Measured runs of the same calculation (optional)",
+                  "label": "Measured runs of the same calculation",
                   "required": false,
-                  "helpText": "Fill in as many as you have, up to 3.",
+                  "helpText": "Runs 1 and 2 are the pair you compared; add a third run if you have one. Tick Don't know for any figure you do not have.",
                   "conditionalOn": {
                     "questionId": "P_doubling",
                     "values": [
@@ -1552,7 +1678,7 @@
                   "id": "P_cores_1",
                   "type": "number",
                   "label": "Run 1 — CPU cores",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1585,7 +1711,7 @@
                   "id": "P_gpus_1",
                   "type": "number",
                   "label": "Run 1 — GPUs",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1616,7 +1742,7 @@
                   "id": "P_wt_1",
                   "type": "quantity",
                   "label": "Run 1 — wall time",
-                  "required": false,
+                  "required": true,
                   "dimension": "time",
                   "defaultUnit": "hours",
                   "allowUnknown": true,
@@ -1637,7 +1763,7 @@
                   "id": "P_cores_2",
                   "type": "number",
                   "label": "Run 2 — CPU cores",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1670,7 +1796,7 @@
                   "id": "P_gpus_2",
                   "type": "number",
                   "label": "Run 2 — GPUs",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1701,7 +1827,7 @@
                   "id": "P_wt_2",
                   "type": "quantity",
                   "label": "Run 2 — wall time",
-                  "required": false,
+                  "required": true,
                   "dimension": "time",
                   "defaultUnit": "hours",
                   "allowUnknown": true,
@@ -1721,7 +1847,7 @@
                 {
                   "id": "P_cores_3",
                   "type": "number",
-                  "label": "Run 3 — CPU cores",
+                  "label": "Run 3 — CPU cores (optional)",
                   "required": false,
                   "integer": true,
                   "allowUnknown": true,
@@ -1754,7 +1880,7 @@
                 {
                   "id": "P_gpus_3",
                   "type": "number",
-                  "label": "Run 3 — GPUs",
+                  "label": "Run 3 — GPUs (optional)",
                   "required": false,
                   "integer": true,
                   "allowUnknown": true,
@@ -1785,7 +1911,7 @@
                 {
                   "id": "P_wt_3",
                   "type": "quantity",
-                  "label": "Run 3 — wall time",
+                  "label": "Run 3 — wall time (optional)",
                   "required": false,
                   "dimension": "time",
                   "defaultUnit": "hours",
@@ -1807,7 +1933,7 @@
                   "id": "P_max_tested",
                   "type": "number",
                   "label": "Largest number of CPU cores tested",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1840,7 +1966,7 @@
                   "id": "P_max_tested_gpus",
                   "type": "number",
                   "label": "Largest number of GPUs tested",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1871,7 +1997,7 @@
                   "id": "P_max_useful",
                   "type": "number",
                   "label": "Largest number of CPU cores at which doubling still gave wall time ≤ 0.8×",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1905,7 +2031,7 @@
                   "id": "P_max_useful_gpus",
                   "type": "number",
                   "label": "Largest number of GPUs at which doubling still gave wall time ≤ 0.8×",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 1,
@@ -1978,7 +2104,7 @@
                   "id": "M_fits_standard",
                   "type": "radio",
                   "label": "Does the job run on a {standard node} of Gargi or Raman?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -2005,7 +2131,7 @@
                   "id": "M_distributable",
                   "type": "radio",
                   "label": "Can the memory be spread over more nodes (less memory per node)?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -2075,14 +2201,15 @@
                   "id": "G_model",
                   "type": "text",
                   "label": "GPU model(s) used or targeted",
-                  "required": false,
-                  "placeholder": "e.g. NVIDIA A100 80 GB"
+                  "required": true,
+                  "placeholder": "e.g. NVIDIA A100 80 GB",
+                  "allowUnknown": true
                 },
                 {
                   "id": "G_mem_per_gpu",
                   "type": "quantity",
                   "label": "GPU memory needed per GPU",
-                  "required": false,
+                  "required": true,
                   "dimension": "size",
                   "defaultUnit": "GB",
                   "allowUnknown": true,
@@ -2094,7 +2221,7 @@
                   "id": "G_max_gpus",
                   "type": "number",
                   "label": "Largest number of GPUs one job uses",
-                  "required": false,
+                  "required": true,
                   "integer": true,
                   "allowUnknown": true,
                   "min": 0,
@@ -2106,7 +2233,7 @@
                   "id": "G_nvlink",
                   "type": "radio",
                   "label": "Does the job need fast GPU-to-GPU links within a node (e.g. NVLink)?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -2121,7 +2248,6 @@
                       "label": "Don't know / not aware"
                     }
                   ],
-                  "advanced": true,
                   "committeeUse": [
                     "gpu_spec"
                   ]
@@ -2130,7 +2256,7 @@
                   "id": "G_multinode",
                   "type": "radio",
                   "label": "Does the job use GPUs across several nodes?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes_now",
@@ -2149,7 +2275,6 @@
                       "label": "Don't know / not aware"
                     }
                   ],
-                  "advanced": true,
                   "committeeUse": [
                     "gpu_spec"
                   ]
@@ -2161,7 +2286,7 @@
               "type": "block",
               "required": false,
               "label": "Files and scratch",
-              "helpText": "Shown because jobs of this code write large files while running, or are affected by scratch space. Read-only inputs can usually stay in the home area; scratch matters most for files written, or written and re-read, during a run.",
+              "helpText": "Shown because jobs of this code read or write large files while running, or are affected by scratch space. Where {scratch} is the area on the fast parallel file system, input files are best loaded from scratch as well, so both reading and writing count here.",
               "notAwareOption": {
                 "questionId": "NA_scratch",
                 "label": "I don't know these details for this code"
@@ -2179,6 +2304,23 @@
                     "where": {
                       "field": [
                         "W_scratch_write",
+                        "W_concurrent"
+                      ],
+                      "op": "gt",
+                      "configRef": "thresholds.scratchConcurrentTriggerGB"
+                    }
+                  },
+                  {
+                    "where": {
+                      "field": "W_input_read",
+                      "op": "gt",
+                      "configRef": "thresholds.scratchPerJobTriggerGB"
+                    }
+                  },
+                  {
+                    "where": {
+                      "field": [
+                        "W_input_read",
                         "W_concurrent"
                       ],
                       "op": "gt",
@@ -2207,23 +2349,10 @@
               },
               "questions": [
                 {
-                  "id": "SC_input_read",
-                  "type": "quantity",
-                  "label": "Volume of input data one job reads during the run",
-                  "required": false,
-                  "dimension": "size",
-                  "defaultUnit": "GB",
-                  "allowUnknown": true,
-                  "helpText": "0 if negligible.",
-                  "committeeUse": [
-                    "scratch_test"
-                  ]
-                },
-                {
                   "id": "SC_input_readonly",
                   "type": "radio",
-                  "label": "Is that input data only read (not modified) by the job?",
-                  "required": false,
+                  "label": "Is the input data (given for this code in Section C) only read, not modified, by the job?",
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -2246,7 +2375,7 @@
                   "id": "SC_reread",
                   "type": "radio",
                   "label": "Does the job read back files it wrote earlier in the same run?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -2269,7 +2398,7 @@
                   "id": "SC_io_share",
                   "type": "radio",
                   "label": "Roughly what share of a job's running time is spent reading and writing files?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "lt_10",
@@ -2296,7 +2425,7 @@
                   "id": "SC_files",
                   "type": "radio",
                   "label": "Number of files one job writes",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "lt_1k",
@@ -2323,7 +2452,7 @@
                   "id": "SC_local_disk",
                   "type": "radio",
                   "label": "Could the job use a compute node's {local disk} instead of shared scratch?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "yes",
@@ -2346,7 +2475,7 @@
                   "id": "SC_residence",
                   "type": "radio",
                   "label": "After a job ends, how long must its scratch files stay before they can be moved or deleted?",
-                  "required": false,
+                  "required": true,
                   "options": [
                     {
                       "value": "none",
@@ -2374,90 +2503,14 @@
                   ]
                 }
               ]
-            },
-            {
-              "id": "W_type",
-              "type": "checkbox",
-              "label": "Type of computation",
-              "required": false,
-              "options": [
-                {
-                  "value": "electronic_structure",
-                  "label": "Electronic structure (DFT, TDDFT, quantum chemistry)"
-                },
-                {
-                  "value": "molecular_dynamics",
-                  "label": "Molecular dynamics (classical or ab initio)"
-                },
-                {
-                  "value": "atomistic_simulation",
-                  "label": "Atomistic or coarse-grained simulation"
-                },
-                {
-                  "value": "climate_environmental",
-                  "label": "Climate, atmospheric, or environmental modelling"
-                },
-                {
-                  "value": "cfd",
-                  "label": "Computational fluid dynamics (CFD)"
-                },
-                {
-                  "value": "bioinformatics_genomics",
-                  "label": "Bioinformatics / genomics"
-                },
-                {
-                  "value": "machine_learning",
-                  "label": "Machine learning / AI"
-                },
-                {
-                  "value": "numerical_modelling",
-                  "label": "Numerical modelling / simulation (other)"
-                },
-                {
-                  "value": "many_body_exact_diagonalisation",
-                  "label": "Many-body physics / exact diagonalisation"
-                },
-                {
-                  "value": "data_analysis",
-                  "label": "Data analysis / post-processing"
-                },
-                {
-                  "value": "other",
-                  "label": "Other"
-                }
-              ],
-              "committeeUse": [
-                "workload_mix"
-              ],
-              "advanced": true
-            },
-            {
-              "id": "W_type_other",
-              "type": "text",
-              "label": "Other type (describe)",
-              "required": false,
-              "conditionalOn": {
-                "questionId": "W_type",
-                "values": [
-                  "other"
-                ]
-              },
-              "advanced": true
             }
           ]
-        },
-        {
-          "id": "W_other_codes",
-          "type": "text",
-          "label": "Other codes your group uses (names only, optional)",
-          "required": false,
-          "placeholder": "e.g. VASP, ORCA, CP2K"
         }
       ]
     },
     {
-      "id": "D",
-      "title": "D. Storage, Testing and Interactive Use",
+      "id": "E",
+      "title": "E. Storage, Testing and Interactive Use",
       "description": "A few group-level questions about the home area, and about short test or interactive sessions.",
       "questions": [
         {
@@ -2551,7 +2604,13 @@
           ],
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         },
         {
           "id": "T_sessions_week",
@@ -2569,7 +2628,13 @@
           },
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         },
         {
           "id": "T_session_device",
@@ -2598,7 +2663,13 @@
           },
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         },
         {
           "id": "T_session_cores",
@@ -2616,7 +2687,13 @@
           },
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         },
         {
           "id": "T_session_gpus",
@@ -2634,7 +2711,13 @@
           },
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         },
         {
           "id": "T_session_length",
@@ -2652,7 +2735,13 @@
           },
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         },
         {
           "id": "T_purpose",
@@ -2683,6 +2772,11 @@
             {
               "value": "other",
               "label": "Other"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware",
+              "exclusive": true
             }
           ],
           "conditionalOn": {
@@ -2693,13 +2787,19 @@
           },
           "committeeUse": [
             "debug_service"
-          ]
+          ],
+          "requiredWhen": {
+            "questionId": "X_problems",
+            "values": [
+              "debug_wait"
+            ]
+          }
         }
       ]
     },
     {
-      "id": "E",
-      "title": "E. Queue and Turnaround",
+      "id": "F",
+      "title": "F. Queue and Turnaround",
       "description": "Shown because queue-wait or capacity problems were reported. Waiting times depend on the queue and on the resources requested, so each entry first records what was requested. Add an entry for each queue or kind of job where waiting is an issue (up to 5).",
       "conditionalOn": [
         {
@@ -2719,7 +2819,7 @@
         {
           "id": "Q_records",
           "type": "repeatable",
-          "required": false,
+          "required": true,
           "label": "Queue experience",
           "entryLabel": "queue",
           "maxEntries": 5,
@@ -2727,13 +2827,17 @@
             {
               "id": "Q_queue",
               "type": "select",
-              "required": false,
+              "required": true,
               "label": "Queue",
               "configOptions": "queues",
               "options": [
                 {
                   "value": "other",
                   "label": "Another system"
+                },
+                {
+                  "value": "dont_know",
+                  "label": "Don't know which queue"
                 }
               ],
               "committeeUse": [
@@ -2743,7 +2847,7 @@
             {
               "id": "Q_other_system",
               "type": "text",
-              "required": false,
+              "required": true,
               "label": "Which system?",
               "placeholder": "e.g. PARAM Shakti, a collaborator's cluster",
               "conditionalOn": {
@@ -2751,7 +2855,8 @@
                 "values": [
                   "other"
                 ]
-              }
+              },
+              "allowUnknown": true
             },
             {
               "id": "Q_workload",
@@ -2768,7 +2873,7 @@
               "id": "Q_same_as_typical",
               "type": "radio",
               "label": "Was the request the job you described for this code in Section C?",
-              "required": false,
+              "required": true,
               "options": [
                 {
                   "value": "yes",
@@ -2800,7 +2905,7 @@
               "id": "Q_req_nodes",
               "type": "number",
               "label": "Nodes requested",
-              "required": false,
+              "required": true,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
@@ -2829,7 +2934,7 @@
               "id": "Q_req_cores",
               "type": "number",
               "label": "CPU cores requested (total)",
-              "required": false,
+              "required": true,
               "integer": true,
               "allowUnknown": true,
               "min": 1,
@@ -2858,7 +2963,7 @@
               "id": "Q_req_gpus",
               "type": "number",
               "label": "GPUs requested",
-              "required": false,
+              "required": true,
               "integer": true,
               "allowUnknown": true,
               "min": 0,
@@ -2899,7 +3004,7 @@
               "id": "Q_req_walltime",
               "type": "quantity",
               "label": "{Wall time} requested",
-              "required": false,
+              "required": true,
               "dimension": "time",
               "defaultUnit": "hours",
               "allowUnknown": true,
@@ -2928,7 +3033,7 @@
               "id": "Q_typical_wait",
               "type": "quantity",
               "label": "Typical {queue wait} before such a job starts",
-              "required": false,
+              "required": true,
               "dimension": "time",
               "defaultUnit": "hours",
               "allowUnknown": true,
@@ -2940,7 +3045,7 @@
               "id": "Q_longest_wait",
               "type": "quantity",
               "label": "Longest wait in the last 3 months",
-              "required": false,
+              "required": true,
               "dimension": "time",
               "defaultUnit": "days",
               "allowUnknown": true,
@@ -2954,7 +3059,7 @@
           "id": "Q_share_not_run",
           "type": "number",
           "label": "Share of planned calculations in the last 12 months not run because of queue wait or capacity",
-          "required": false,
+          "required": true,
           "integer": true,
           "allowUnknown": true,
           "min": 0,
@@ -2967,8 +3072,8 @@
       ]
     },
     {
-      "id": "F",
-      "title": "F. Growth and Closing",
+      "id": "G",
+      "title": "G. Growth and Closing",
       "questions": [
         {
           "id": "Z_growth_3y",
@@ -3228,7 +3333,7 @@
         "scratch space",
         "scratch area"
       ],
-      "definition": "Shared disk space for files that jobs write while they run. It is working space, not a place to keep results; old files may be removed."
+      "definition": "Shared disk space for files that jobs read and write while they run. It is working space, not a place to keep results; old files may be removed."
     },
     {
       "id": "home",

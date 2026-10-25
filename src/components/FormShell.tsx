@@ -17,7 +17,8 @@ import { SectionRenderer } from './SectionRenderer'
 import { GlossaryContext, GlossaryList } from './RichText'
 import { indexGlossary } from '../utils/glossary'
 import { SUBMIT_DISABLED } from '../config/env'
-import { isSectionVisible, isSectionNotAware, answersForSubmission, isAnswered, missingRequired } from '../utils/conditions'
+import { isSectionVisible, isSectionNotAware, answersForSubmission, isAnswered, missingRequired, questionRequired } from '../utils/conditions'
+import { SectionsContext } from './SectionsContext'
 import type { MissingAnswer } from '../utils/conditions'
 import { GoogleSignIn } from './GoogleSignIn'
 import { SubmissionConfirmation } from './SubmissionConfirmation'
@@ -40,7 +41,7 @@ function sectionProgress(
   section: QuestionnaireSchema['sections'][number],
   answers: Record<string, unknown>
 ): { answered: number; total: number } {
-  const required = section.questions.filter(q => q.required && q.type !== 'info')
+  const required = section.questions.filter(q => questionRequired(q, answers) && q.type !== 'info')
   // A "not aware" declaration answers the whole section.
   if (isSectionNotAware(section, answers)) return { answered: required.length, total: required.length }
   const answered = required.filter(q => isAnswered(answers[q.id]))
@@ -345,7 +346,9 @@ export function FormShell({
                 <span className="section-counter">Section {safeIndex + 1} of {visibleSections.length}</span>
               </div>
 
-              <SectionRenderer key={currentSection.id} section={currentSection} answers={answers} onAnswer={onAnswer} />
+              <SectionsContext.Provider value={schema.sections}>
+                <SectionRenderer key={currentSection.id} section={currentSection} answers={answers} onAnswer={onAnswer} />
+              </SectionsContext.Provider>
 
               <div className="section-nav-buttons">
                 <button type="button" className="btn-nav btn-prev" onClick={() => safeIndex > 0 && handleNav(safeIndex - 1)} disabled={safeIndex === 0}>

@@ -8,7 +8,8 @@
  * A sub-question of type 'block' renders as a titled panel of further
  * questions (e.g. "Long runs") that appears when its condition holds for
  * the row. Conditions see the row's answers, and the whole form's answers
- * through `{ form: … }`.
+ * through `{ form: … }`. Blocks may instead live in a later 'rowDetails'
+ * section; each entry then names the panels it opens there.
  *
  * NOTE: Google Forms does not support repeatable groups natively.
  * This component implements the "add another entry" pattern for the
@@ -16,11 +17,13 @@
  * must be implemented as a separate linked Google Form or as fixed rows.
  */
 
-import type { ReactNode } from 'react'
+import { useContext, type ReactNode } from 'react'
 import type { Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
-import { RichText } from './RichText'
-import { matchesCondition } from '../utils/conditions'
+import { BlockPanel } from './BlockPanel'
+import { SectionsContext } from './SectionsContext'
+import { matchesCondition, questionVisible } from '../utils/conditions'
+import { plainText } from '../utils/glossary'
 
 interface RepeatableGroupProps {
   question: Question
@@ -31,6 +34,11 @@ interface RepeatableGroupProps {
 }
 
 export function RepeatableGroup({ question, rows, onChange, allAnswers }: RepeatableGroupProps) {
+  const sections = useContext(SectionsContext)
+  // Sections whose 'rowDetails' questions continue these entries, with their blocks.
+  const detailSections = sections.flatMap(s =>
+    s.questions.filter(q => q.type === 'rowDetails' && q.rowsOf === question.id)
+      .map(q => ({ sectionId: s.id, blocks: q.questions ?? [] })))
   const atCap = question.maxEntries !== undefined && rows.length >= question.maxEntries
   const subQuestions = question.subQuestions ?? []
   const coreSubQuestions = subQuestions.filter(q => !q.advanced)
@@ -103,38 +111,28 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
     )
   }
 
-  const renderBlock = (rowIndex: number, block: Question) => {
-    const children = block.questions ?? []
-    const na = block.notAwareOption
-    const notAware = !!na && rows[rowIndex]?.[na.questionId] === true
-    const core = children.filter(q => !q.advanced)
-    const advanced = children.filter(q => q.advanced && isSubQuestionVisible(rowIndex, q))
-    return (
-      <section key={block.id} id={blockDomId(rowIndex, block)} className="row-block" aria-label={block.label}>
-        <h4 className="row-block-title"><RichText text={block.label} /></h4>
-        {block.helpText && <p className="row-block-why"><RichText text={block.helpText} /></p>}
-        {na && (
-          <label className="checkbox-label row-block-not-aware">
-            <input
-              type="checkbox"
-              checked={notAware}
-              onChange={e => handleRowChange(rowIndex, na.questionId, e.target.checked)}
-            />
-            <span>{na.label}</span>
-          </label>
-        )}
-        {!notAware && core.map(q => renderSubQuestion(rowIndex, q))}
-        {!notAware && advanced.length > 0 && (
-          <details className="repeatable-row-advanced">
-            <summary>+ Show {advanced.length} more optional field{advanced.length > 1 ? 's' : ''}</summary>
-            <div className="repeatable-row-advanced-body">
-              {advanced.map(q => renderSubQuestion(rowIndex, q))}
-            </div>
-          </details>
-        )}
-      </section>
-    )
-  }
+  // Panels this row opens in a later section, named at the end of the entry.
+  const renderLaterBlocksNote = (rowIndex: number) =>
+    detailSections.map(({ sectionId, blocks }) => {
+      const open = blocks.filter(b => questionVisible(b, rows[rowIndex] ?? {}, allAnswers ?? {}))
+      if (open.length === 0) return null
+      return (
+        <p key={sectionId} className="row-blocks-note" role="status">
+          Section {sectionId} will ask a few more questions about this code: {open.map(b => plainText(b.label)).join(', ')}.
+        </p>
+      )
+    })
+
+  const renderBlock = (rowIndex: number, block: Question) => (
+    <BlockPanel
+      key={block.id}
+      block={block}
+      row={rows[rowIndex] ?? {}}
+      onRowChange={(subId, value) => handleRowChange(rowIndex, subId, value)}
+      domId={blockDomId(rowIndex, block)}
+      allAnswers={allAnswers ?? {}}
+    />
+  )
 
   // Build a display label for each row card header
   const getRowLabel = (rowIndex: number): string => {
@@ -186,6 +184,7 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
                   </div>
                 </details>
               )}
+              {renderLaterBlocksNote(rowIndex)}
             </div>
           </div>
         )

@@ -59,7 +59,7 @@ A test that helps: at the current concurrency limit, how long would one year of 
 
 **P8. Storage is working space.**
 - **Home** holds what production runs need right now: inputs, checkpoints, parameters, own codes, and outputs awaiting transfer. Keeping research data long-term is the group's responsibility.
-- **Scratch** is shared and dynamic, with a purge policy and a largest-area-per-user cap. It earns its place for write-heavy or re-read I/O. Read-only inputs can sit in home on the same parallel file system.
+- **Scratch** is shared and dynamic, with a purge policy and a largest-area-per-user cap. It earns its place for write-heavy or re-read I/O. Read-only inputs can sit in home when home is on the same parallel file system; where only scratch is on the fast PFS (`storage.scratchOnlyOnFastPFS`), inputs are loaded from scratch and their volume (`W_input_read`) counts toward scratch too.
 
 Storage is judged per group against a guide figure, not by adding up wishes.
 

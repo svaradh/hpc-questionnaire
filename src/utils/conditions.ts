@@ -72,8 +72,41 @@ export function matchesAny(
   return (Array.isArray(conds) ? conds : [conds]).some(c => matchesCondition(c, answers))
 }
 
+/** Rows of a top-level repeatable, as stored. */
+export function rowsOf(answers: Answers, questionId: string): Answers[] {
+  const v = answers[questionId]
+  return Array.isArray(v) ? (v as Answers[]) : []
+}
+
+/** Whether a question inside a repeatable row is shown (row-local conditions, plus { form: … }). */
+export const questionVisible = (q: Question, scope: Answers, form: Answers = scope) =>
+  !q.conditionalOn || matchesCondition(q.conditionalOn, scope, form)
+
+/** Whether a question must be answered: `required`, or `requiredWhen` holds. */
+export const questionRequired = (q: Question, scope: Answers, form: Answers = scope) =>
+  q.required || (!!q.requiredWhen && matchesCondition(q.requiredWhen, scope, form))
+
+/** For a 'rowDetails' question: the entries that open at least one block, with those blocks. */
+export function openRowDetails(q: Question, answers: Answers): { rowIndex: number; blocks: Question[] }[] {
+  if (!q.rowsOf) return []
+  return rowsOf(answers, q.rowsOf)
+    .map((row, rowIndex) => ({
+      rowIndex,
+      blocks: (q.questions ?? []).filter(b => questionVisible(b, row ?? {}, answers)),
+    }))
+    .filter(r => r.blocks.length > 0)
+}
+
+const isLayoutOnly = (q: Question) => q.type === 'info' || q.type === 'heading'
+
 export function isSectionVisible(section: Section, answers: Answers): boolean {
-  return matchesAny(section.conditionalOn, answers, true)
+  if (!matchesAny(section.conditionalOn, answers, true)) return false
+  // A section that only continues repeatable entries is hidden while no entry opens a block.
+  const details = section.questions.filter(q => q.type === 'rowDetails')
+  if (details.length > 0 && section.questions.every(q => q.type === 'rowDetails' || isLayoutOnly(q))) {
+    return details.some(q => openRowDetails(q, answers).length > 0)
+  }
+  return true
 }
 
 export function isSectionOptional(section: Section, answers: Answers): boolean {
@@ -133,42 +166,90 @@ export interface MissingAnswer {
   label: string
 }
 
-const questionVisible = (q: Question, scope: Answers, form: Answers = scope) =>
-  !q.conditionalOn || matchesCondition(q.conditionalOn, scope, form)
-
 /**
  * Required questions left unanswered, in form order. Skips hidden sections,
  * sections declared "not aware", and hidden questions. A required
  * repeatable needs at least one entry; required sub-questions are checked
- * in every entry (with row-local conditions).
+ * in every entry (with row-local conditions), as are the questions of every
+ * block an entry opens (inline or in a 'rowDetails' section), unless the
+ * block's "don't know these details" box is ticked. Sub-questions with
+ * `coverage` add a check across entries.
  */
 export function missingRequired(sections: Section[], answers: Answers): MissingAnswer[] {
   const out: MissingAnswer[] = []
+  // "Code 2 (VASP)": entry label of a repeatable, named by its first text answer.
+  const entryName = (q: Question, row: Answers, i: number) => {
+    const entry = q.entryLabel ? q.entryLabel[0].toUpperCase() + q.entryLabel.slice(1) : 'Entry'
+    const name = (q.subQuestions ?? [])
+      .filter(s => s.type === 'text' || s.type === 'workloadRef')
+      .map(s => row?.[s.id]).find(v => typeof v === 'string' && v.trim() && v !== 'dont_know')
+    return `${entry} ${i + 1}${name ? ` (${name})` : ''}`
+  }
+  // Required questions of one shown block in a row; none when its "don't know these details" box is ticked.
+  const checkBlock = (sectionId: string, block: Question, row: Answers, where: string) => {
+    if (block.notAwareOption && row[block.notAwareOption.questionId] === true) return
+    for (const bq of block.questions ?? []) {
+      if (questionVisible(bq, row, answers) && questionRequired(bq, row, answers) && !isAnswered(row[bq.id])) {
+        out.push({ sectionId, label: `${where}, ${plainText(block.label)}: ${plainText(bq.label)}` })
+      }
+    }
+  }
   for (const section of sections) {
     if (!isSectionVisible(section, answers) || isSectionNotAware(section, answers)) continue
     for (const q of section.questions) {
-      if (q.type === 'info' || q.type === 'heading' || !questionVisible(q, answers)) continue
-      if (q.type === 'repeatable') {
-        const rows = Array.isArray(answers[q.id]) ? (answers[q.id] as Answers[]) : []
-        if (q.required && rows.length === 0) {
+      if (isLayoutOnly(q) || !questionVisible(q, answers)) continue
+      if (q.type === 'rowDetails') {
+        const source = sections.flatMap(s => s.questions).find(s => s.id === q.rowsOf)
+        if (!source) continue
+        const rows = rowsOf(answers, source.id)
+        for (const { rowIndex, blocks } of openRowDetails(q, answers)) {
+          const row = rows[rowIndex] ?? {}
+          for (const b of blocks) checkBlock(section.id, b, row, entryName(source, row, rowIndex))
+        }
+      } else if (q.type === 'repeatable') {
+        const rows = rowsOf(answers, q.id)
+        if (questionRequired(q, answers) && rows.length === 0) {
           out.push({ sectionId: section.id, label: `${plainText(q.label)}: add at least one ${q.entryLabel ?? 'entry'}` })
         }
-        const entry = q.entryLabel ? q.entryLabel[0].toUpperCase() + q.entryLabel.slice(1) : 'Entry'
-        rows.forEach((row, i) => {
-          const name = (q.subQuestions ?? [])
-            .filter(s => s.type === 'text' || s.type === 'workloadRef')
-            .map(s => row?.[s.id]).find(v => typeof v === 'string' && v.trim())
-          const where = `${entry} ${i + 1}${name ? ` (${name})` : ''}`
+        rows.forEach((r, i) => {
+          const row = r ?? {}
+          const where = entryName(q, row, i)
           for (const sq of q.subQuestions ?? []) {
-            if (sq.required && questionVisible(sq, row ?? {}, answers) && !isAnswered(row?.[sq.id])) {
+            if (!questionVisible(sq, row, answers)) continue
+            if (sq.type === 'block') checkBlock(section.id, sq, row, where)
+            else if (questionRequired(sq, row, answers) && !isAnswered(row[sq.id])) {
               out.push({ sectionId: section.id, label: `${where}: ${plainText(sq.label)}` })
             }
           }
         })
-      } else if (q.required && !isAnswered(answers[q.id])) {
+        for (const sq of q.subQuestions ?? []) {
+          for (const opt of uncovered(sq, rows, answers)) {
+            out.push({
+              sectionId: section.id,
+              label: `"${plainText(opt.label)}" (reported in Section B) is not ticked for any ${q.entryLabel ?? 'entry'}: tick it where it applies under "${plainText(sq.label)}", or tick Don't know`,
+            })
+          }
+        }
+      } else if (questionRequired(q, answers) && !isAnswered(answers[q.id])) {
         out.push({ sectionId: section.id, label: plainText(q.label) })
       }
     }
   }
   return out
+}
+
+/**
+ * For a sub-question with `coverage`: its options selected in the form-level
+ * question but in no entry where the sub-question is shown. Empty when an
+ * entry selected one of `unlessValues`, or when no entry shows the question.
+ */
+function uncovered(sq: Question, rows: Answers[], form: Answers) {
+  const cov = sq.coverage
+  if (!cov) return []
+  const shown = rows.filter(r => questionVisible(sq, r ?? {}, form))
+  if (shown.length === 0) return []
+  const picked = shown.flatMap(r => (Array.isArray(r?.[sq.id]) ? (r[sq.id] as string[]) : []))
+  if (cov.unlessValues?.some(v => picked.includes(v))) return []
+  return (sq.options ?? []).filter(o =>
+    !o.exclusive && includesAny(form[cov.questionId], [o.value]) && !picked.includes(o.value))
 }

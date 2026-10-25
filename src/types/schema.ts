@@ -38,6 +38,7 @@ export type QuestionType =
   | 'workloadRef'
   | 'heading'
   | 'block'
+  | 'rowDetails'
 
 /** Physical dimension of a 'quantity' question; selects its unit list and base unit. */
 export type QuantityDimension = 'time' | 'size'
@@ -76,6 +77,12 @@ export interface Question {
   /** Whether the question must be answered before submission. */
   required: boolean
   /**
+   * Required only while this condition holds (e.g. a related problem was
+   * reported in Section B). Evaluated like conditionalOn; `required: true`
+   * makes it required regardless.
+   */
+  requiredWhen?: Condition
+  /**
    * Short help text shown beneath the question label.
    * Must use plain language; may include a concrete example.
    * Should NOT explain HPC theory — it should help the respondent
@@ -103,9 +110,9 @@ export interface Question {
   /** For 'number': only whole numbers are valid. */
   integer?: boolean
   /**
-   * For 'number' / 'quantity' / 'duration': show a "Don't know" tick-box
-   * beside the input. When ticked the stored value is "dont_know" — never
-   * 0 or blank, so it is not mistaken for a measurement.
+   * For 'number' / 'quantity' / 'duration' / 'text': show a "Don't know"
+   * tick-box beside the input. When ticked the stored value is "dont_know" —
+   * never 0 or blank, so it is not mistaken for a measurement.
    */
   allowUnknown?: boolean
   /** For 'repeatable': maximum number of entries (the Add button hides at the cap). */
@@ -199,6 +206,23 @@ export interface Question {
    * sub-question, and their conditions see the same row.
    */
   questions?: Question[]
+  /**
+   * For 'rowDetails': the top-level repeatable whose entries this question
+   * continues (e.g. "W_workloads"). Its `questions` are blocks, shown for
+   * each entry whose answers open them, under that entry's name; answers are
+   * stored in the entry itself, so moving panels between sections does not
+   * change the data. A section holding only rowDetails (and info/heading)
+   * questions is hidden while no entry opens a block.
+   */
+  rowsOf?: string
+  /**
+   * For a checkbox sub-question of a repeatable: every value selected in the
+   * form-level question `questionId` that is also one of this question's
+   * (non-exclusive) options must be selected in at least one entry — e.g.
+   * each problem reported in Section B is linked to some code. Skipped when
+   * any entry selected one of `unlessValues` (e.g. "dont_know").
+   */
+  coverage?: { questionId: string; unlessValues?: string[] }
   /**
    * For 'block': a "don't know these details" tick-box shown at the top of
    * the block (stored as `true` under questionId in the row). When ticked the

@@ -123,7 +123,9 @@ export interface WorkloadRecord {
   gpus?: NumOrUnknown
   memNodeGb?: NumOrUnknown
   walltimeH?: NumOrUnknown
-  /** Largest volume of files one job writes while it runs (the scratch requirement). */
+  /** Largest volume of input files one job loads while it runs (counts toward scratch where only scratch is on the fast PFS). */
+  inputReadGb?: NumOrUnknown
+  /** Largest volume of files one job writes while it runs. */
   scratchWriteGb?: NumOrUnknown
   // Volume
   jobsYear?: NumOrUnknown
@@ -221,8 +223,7 @@ export interface GpuRecord {
 /** E5 — tab "Scratch". */
 export interface ScratchRecord {
   workload: string
-  inputReadGb?: NumOrUnknown
-  /** Read-only inputs can stay in the home area (same parallel file system). */
+  /** Whether inputs are only read: read-only inputs can be shared between jobs, from home or scratch. */
   inputReadOnly?: 'yes' | 'no' | Unknown
   rereadsOwnOutput?: 'yes' | 'no' | Unknown
   ioTimeShare?: 'lt_10' | '10_30' | 'gt_30' | Unknown

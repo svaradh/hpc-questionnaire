@@ -3,7 +3,8 @@
   "_notes": [
     "Raman cores per node: the site lists 'Xeon Gold 6126, 12 cores' (a 12-core CPU); 24 per node assumes 2 sockets, consistent with pilot data ('2 x 12-cores Intel Xeon Gold 6126, 96 GB RAM'). TO CONFIRM.",
     "Raman GPU node: model not listed; recalled as a Volta-generation card. Not needed by the form for now.",
-    "Storage split: each cluster's usable storage is divided into home and scratch by storage.scratchFraction (committee parameter; usually home:scratch 60:40, set to 50:50 for now). homeTB and scratchTB are computed from it in clusterConfig.ts."
+    "Storage split: each cluster's usable storage is divided into home and scratch by storage.scratchFraction (committee parameter; usually home:scratch 60:40, set to 50:50 for now). homeTB and scratchTB are computed from it in clusterConfig.ts.",
+    "storage.scratchOnlyOnFastPFS: true when only scratch is on the fast parallel file system (home elsewhere). Jobs should then load their input files from scratch, so the analysis counts read volume (W_input_read) toward scratch as well as written volume. null = to confirm with the convener."
   ],
   "clusters": [
     {
@@ -15,7 +16,7 @@
         { "id": "highmem", "count": 3, "cpu": "2x AMD EPYC 9554", "coresPerNode": 128, "memoryGB": 2304 }
       ],
       "gpuNodes": [],
-      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchFraction": 0.5 },
+      "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchFraction": 0.5, "scratchOnlyOnFastPFS": null },
       "interconnect": "200 Gbps Mellanox InfiniBand HDR",
       "queues": [
         { "id": "debug",  "minNodes": 1, "maxNodes": 2, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 5 },
@@ -36,7 +37,7 @@
       "gpuNodes": [
         { "count": 1, "cpu": "2x Xeon Gold 6126", "coresPerNode": 24, "memoryGB": 96, "gpuModel": "Volta generation (unconfirmed)", "gpusPerNode": null }
       ],
-      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchFraction": 0.5 },
+      "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchFraction": 0.5, "scratchOnlyOnFastPFS": null },
       "interconnect": "100 Gbps Intel Omni-Path + 1 Gbps Ethernet",
       "queues": [
         { "id": "debug",  "minNodes": 1, "maxNodes": 4, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 4 },

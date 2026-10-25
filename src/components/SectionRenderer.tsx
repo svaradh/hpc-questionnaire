@@ -9,16 +9,21 @@
  *   the section's questions are hidden.
  * - Collapses sections whose optionalWhen condition holds behind a
  *   "this section is optional" notice until the respondent expands them.
+ * - Marks questions whose requiredWhen holds as required.
+ * - Renders 'rowDetails' questions (RowDetails), which write into the rows
+ *   of the repeatable they continue.
  * - Handles the PI-is-respondent auto-fill for Section A:
  *   when A_pi_is_respondent = 'yes', mirrors PI details into the
  *   "completed by" fields and disables them.
  */
 
-import { useState } from 'react'
+import { useContext, useState } from 'react'
 import type { Section, Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
+import { RowDetails } from './RowDetails'
 import { RichText } from './RichText'
-import { matchesCondition, isSectionOptional, isSectionNotAware, sectionHasAnswers } from '../utils/conditions'
+import { SectionsContext } from './SectionsContext'
+import { matchesCondition, isSectionOptional, isSectionNotAware, sectionHasAnswers, questionRequired } from '../utils/conditions'
 
 interface SectionRendererProps {
   section: Section
@@ -44,6 +49,7 @@ function piFullName(answers: Record<string, unknown>, overrides?: Record<string,
 
 export function SectionRenderer({ section, answers, onAnswer }: SectionRendererProps) {
   const piIsRespondent = answers['A_pi_is_respondent'] === 'yes'
+  const allSections = useContext(SectionsContext)
   // Expansion of an optional (collapsed) section. Parent keys this component by
   // section id, so the state resets per section. Already-entered answers keep it open.
   const [expanded, setExpanded] = useState(false)
@@ -123,12 +129,27 @@ export function SectionRenderer({ section, answers, onAnswer }: SectionRendererP
         {section.questions.map(question => {
           if (!isQuestionVisible(question, answers)) return null
 
+          if (question.type === 'rowDetails') {
+            const source = allSections.flatMap(s => s.questions).find(q => q.id === question.rowsOf)
+            if (!source) return null
+            return (
+              <RowDetails
+                key={question.id}
+                question={question}
+                source={source}
+                answers={answers}
+                onRowsChange={rows => onAnswer(source.id, rows)}
+              />
+            )
+          }
+
           const isMirrored = question.mirrorFromPI && piIsRespondent
+          const shown = question.requiredWhen ? { ...question, required: questionRequired(question, answers) } : question
 
           return (
             <QuestionRenderer
               key={question.id}
-              question={question}
+              question={shown}
               value={answers[question.id]}
               onChange={val => handleAnswer(question.id, val)}
               disabled={isMirrored}

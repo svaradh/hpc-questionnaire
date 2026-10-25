@@ -13,8 +13,8 @@
  *   quantity / duration → number + unit dropdown, stored as { value, unit }
  *   workloadRef → dropdown of names from another repeatable (optionsFrom)
  *
- * number / quantity / duration validate inline (integer, min, max) and,
- * with allowUnknown, offer a "Don't know" tick-box stored as "dont_know".
+ * number / quantity / duration validate inline (integer, min, max). These and
+ * text, with allowUnknown, offer a "Don't know" tick-box stored as "dont_know".
  *
  * Text may carry glossary markup ({term}); see RichText. Options with a
  * conditionalOn are shown only when it holds for the whole form.
@@ -409,21 +409,30 @@ export function QuestionRenderer({
   // -------------------------------------------------------------------------
   // text (default)
   // -------------------------------------------------------------------------
-  const strVal = typeof value === 'string' ? value : ''
+  const textUnknown = value === UNKNOWN
+  const strVal = typeof value === 'string' && !textUnknown ? value : ''
+  const textInput = (
+    <input
+      id={fieldId}
+      type="text"
+      value={strVal}
+      onChange={e => onChange(e.target.value)}
+      placeholder={question.placeholder}
+      className={`question-input${disabled || textUnknown ? ' input-disabled' : ''}`}
+      required={question.required}
+      disabled={disabled || textUnknown}
+    />
+  )
   return (
     <div className="question-block">
       {renderLabel()}
       {renderHelpText()}
-      <input
-        id={fieldId}
-        type="text"
-        value={strVal}
-        onChange={e => onChange(e.target.value)}
-        placeholder={question.placeholder}
-        className={`question-input${disabled ? ' input-disabled' : ''}`}
-        required={question.required}
-        disabled={disabled}
-      />
+      {question.allowUnknown ? (
+        <div className="input-with-unit">
+          {textInput}
+          <UnknownToggle checked={textUnknown} onToggle={c => onChange(c ? UNKNOWN : undefined)} disabled={disabled} />
+        </div>
+      ) : textInput}
     </div>
   )
 }
