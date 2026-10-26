@@ -1,2 +1,2 @@
-submission_id,pi_name,entry_index,code,not_aware,fits_standard_node,distributable
-SYN-04,Dr. Synthetic PI 4,1,ED-custom,,fails_oom,no
+submission_id,pi_name,entry_index,code,job_kind,opened_by,same_as_entry,not_aware,fits_standard_node,distributable
+SYN-04,Dr. Synthetic PI 4,1,ED-custom,exact diagonalisation,memory_over_standard; problem_memory,,,fails_oom,no

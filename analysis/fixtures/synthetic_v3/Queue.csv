@@ -1,4 +1,4 @@
 submission_id,pi_name,entry_index,queue,other_system,workload,same_as_typical_job,req_nodes,req_cores,req_gpus,req_walltime_h,typical_wait_h,longest_wait_h
-SYN-02,Dr. Synthetic PI 2,1,raman.gpu,,GROMACS,yes,,,,,72,216
-SYN-05,Dr. Synthetic PI 5,1,gargi.short,,GATK,yes,,,,,10,72
-SYN-10,Dr. Synthetic PI 10,1,raman.medium,,OpenFOAM,no,4,96,,72,48,144
+SYN-02,Dr. Synthetic PI 2,1,raman.gpu,,GROMACS — protein MD,yes,,,,,72,216
+SYN-05,Dr. Synthetic PI 5,1,gargi.short,,GATK — variant calling,yes,,,,,10,72
+SYN-10,Dr. Synthetic PI 10,1,raman.medium,,OpenFOAM — turbulent flow chain,no,4,96,,72,48,144

@@ -104,6 +104,25 @@ export function QuestionRenderer({
   }
 
   // -------------------------------------------------------------------------
+  // addButton — reveals optional extra questions (value "added"); a link undoes it
+  // -------------------------------------------------------------------------
+  if (question.type === 'addButton') {
+    return value === 'added' ? (
+      <div className="question-block">
+        <button type="button" className="link-button" onClick={() => onChange(undefined)} disabled={disabled}>
+          {question.removeLabel ?? 'Remove'}
+        </button>
+      </div>
+    ) : (
+      <div className="question-block">
+        <button type="button" className="btn-add-row" onClick={() => onChange('added')} disabled={disabled}>
+          + {question.label}
+        </button>
+      </div>
+    )
+  }
+
+  // -------------------------------------------------------------------------
   // info — styled callout box
   // -------------------------------------------------------------------------
   if (question.type === 'info') {
@@ -379,8 +398,10 @@ export function QuestionRenderer({
     const rows = src && Array.isArray(allAnswers?.[src.questionId])
       ? (allAnswers![src.questionId] as Record<string, unknown>[])
       : []
+    const fields = src ? (Array.isArray(src.labelField) ? src.labelField : [src.labelField]) : []
     const names = rows
-      .map(r => (typeof r[src!.labelField] === 'string' ? (r[src!.labelField] as string).trim() : ''))
+      .map(r => fields.map(f => r[f]).filter((v): v is string => typeof v === 'string' && v.trim() !== '' && v !== 'dont_know')
+        .map(v => v.trim()).join(' — '))
       .filter(Boolean)
     const strVal = typeof value === 'string' ? value : ''
     const stale = strVal !== '' && !names.includes(strVal)

@@ -224,6 +224,7 @@ export function FormShell({
       {/* Core notice */}
       <div className="core-notice" role="note">
         <strong>Core principle: </strong>{schema.coreNotice}
+        {schema.fillOrderNotice && <p className="glossary-hint"><strong>{schema.fillOrderNotice}</strong></p>}
         {(schema.glossary?.length ?? 0) > 0 && (
           <p className="glossary-hint">
             Underlined terms show a short definition when you point at or tap them.{' '}

@@ -76,9 +76,12 @@ wl[wl['walltime_h'] > 72]            # standard pandas from here
 
 Sheet tabs: `Submissions, Group, Experience, Workloads, StorageTesting, LongJobs, Scaling, Memory, Gpu, Scratch,
 Queue, Closing, CommitteeAssessment`. Quantities are already in hours and GB. LongJobs, Scaling, Memory, Gpu and
-Scratch (the Section D panels) have one row per code that opened the panel; join them to Workloads on
-`(submission_id, entry_index)`. Their `not_aware` column is true where the respondent ticked "don't know these
-details". Yearly totals (`core_hours_year_max` …) are upper bounds, since each entry describes its heaviest job.
+Scratch (the Section D panels) have one row per entry (a code and kind of job, `code` + `job_kind`) that opened the
+panel; join them to Workloads on `(submission_id, entry_index)`. `opened_by` lists the triggers that opened the panel
+(a panel opened for several reasons is asked once); `same_as_entry` is set where the respondent ticked "Same answers
+as" an earlier entry of the same code (`ha.follow_up` copies that entry's answers); `not_aware` is true where they
+ticked "don't know these details". Chains and split calculations share one set of columns (`seq_jobs`, `seq_run_h`,
+`seq_calendar_h`). Yearly totals (`core_hours_year_max` …) are upper bounds, since each entry describes its heaviest job.
 
 ## Testing without real data
 

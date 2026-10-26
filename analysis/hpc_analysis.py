@@ -1,7 +1,7 @@
 """
 hpc_analysis.py
 ---------------
-Computations behind the committee notebooks (schema 2.4.0 responses).
+Computations behind the committee notebooks (schema 2.5.0 responses).
 The principles they implement are in docs/analysis-framework.md.
 
 Everything here produces *evidence tables*. Nothing scores, ranks or assigns
@@ -27,11 +27,15 @@ Conventions
   Raman (the only GPUs).
 - "used" demand = jobs in the last 12 months; "desired" = jobs the group would
   run if limits did not bind (falls back to "used" when not given).
-- Each workload entry describes its heaviest job, so yearly totals are upper
-  bounds. For a chain with known running time and step count, hours per job =
-  min(heaviest wall time, chain running time / steps).
+- Each workload entry is one code and kind of job, and describes its heaviest
+  job, so yearly totals are upper bounds. For a sequence (chain and/or split
+  calculation) with known running time and job count, hours per job =
+  min(heaviest wall time, sequence running time / jobs).
 - Follow-up tabs (LongJobs, Scaling, Memory, Gpu, Scratch) have one row per
-  code that opened the panel, joined to Workloads on (submission_id, entry_index).
+  entry that opened the panel, joined to Workloads on (submission_id,
+  entry_index). `opened_by` lists the triggers that opened it; a row answered
+  "same answers as" another entry of the same code (`same_as_entry`) gets that
+  entry's answers in follow_up().
 
 Typical use
     from sheets_client import load_data, load_config
@@ -92,7 +96,7 @@ NEUTRAL_DEFAULTS = {
     "input_read_gb": "0 GB added to scratch",
     "residence_after_job": "scratch freed when the job ends",
     "concurrent": "time-averaged load only; left out of sums of peaks",
-    "chain_run_h / chain_steps": "hours per job = the heaviest job's wall time",
+    "seq_run_h / seq_jobs": "hours per job = the heaviest job's wall time",
     "measured scaling pairs (optional 3rd pair)": "the pairs given; fewer than two -> the reported doubling effect",
     "checkpoint / scaling / evidence level": "class 'unknown'; tests that need them give <NA>, not False",
     "committee parameters not set": "flags that need them give <NA>",
@@ -116,14 +120,47 @@ def _col(df: pd.DataFrame, name: str) -> pd.Series:
     return df[name] if name in df else pd.Series([""] * len(df), index=df.index, dtype=object)
 
 
+# Columns of a follow-up row that describe the entry itself, not its panel answers
+_ENTRY_COLS = {"submission_id", "pi_name", "entry_index", "code", "job_kind", "opened_by", "same_as_entry", "device"}
+
+
 def follow_up(dfs: dict, tab: str) -> pd.DataFrame:
-    """A follow-up panel tab with entry_index parsed, rows marked 'not aware' kept (their answers are blank)."""
+    """
+    A follow-up panel tab with entry_index parsed, rows marked 'not aware' kept
+    (their answers are blank). A row answered "same answers as" an earlier entry
+    of the same code takes that entry's answers; `same_as_entry` keeps the link.
+    """
     t = dfs[tab].copy()
     if t.empty:
         return t
     t["entry_index"] = num(_col(t, "entry_index"))
+    t["same_as_entry"] = num(_col(t, "same_as_entry"))
+    answer_cols = [c for c in t.columns if c not in _ENTRY_COLS]
+    src = t.drop_duplicates(["submission_id", "entry_index"]).set_index(["submission_id", "entry_index"])
+    for i in t.index[t["same_as_entry"].notna()]:
+        k = (t.at[i, "submission_id"], t.at[i, "same_as_entry"])
+        if k in src.index:
+            t.loc[i, answer_cols] = src.loc[k, answer_cols].values
     t["not_aware"] = _col(t, "not_aware").astype(str).str.lower() == "true"
     return t
+
+
+def entry_name(code, job_kind) -> str:
+    """'Quantum ESPRESSO — AIMD': the entry title, as in the form and in Queue's workload column."""
+    parts = [str(x).strip() for x in (code, job_kind) if isinstance(x, str) and x.strip() and x != "dont_know"]
+    return " — ".join(parts)
+
+
+def panel_reasons(dfs: dict) -> pd.DataFrame:
+    """How often each trigger opened each Section D panel (a panel opened by several triggers counts for each)."""
+    rows = []
+    sources = [(tab, dfs[tab], "opened_by") for tab in PANEL_TABS] + [("Organisation", dfs["Workloads"], "organisation_opened_by")]
+    for tab, t, col in sources:
+        if t.empty or col not in t:
+            continue
+        for trig, n in explode_semicolons(t, col).value_counts().items():
+            rows.append({"panel": tab, "trigger": trig, "entries": int(n)})
+    return pd.DataFrame(rows, columns=["panel", "trigger", "entries"])
 
 
 def known(flag, *inputs) -> pd.Series:
@@ -166,7 +203,7 @@ def restart_cross_check(wl: pd.DataFrame, caps: dict | None = None) -> pd.DataFr
     t = wl.assign(_ref=wl["code"].map(_match))
     t = t[t["_ref"].notna()]
     return pd.DataFrame({
-        "submission_id": t["submission_id"], "pi_name": t["pi_name"], "code": t["code"],
+        "submission_id": t["submission_id"], "pi_name": t["pi_name"], "code": t["code"], "entry": t["entry"],
         "reported_checkpoint": t["checkpoint"].replace("", "not asked"), "long_job": t["long_job"],
         "reference_code": t["_ref"].map(lambda k: ref[k]["name"]),
         "mechanism": t["_ref"].map(lambda k: ref[k]["mechanism"]),
@@ -323,13 +360,13 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
     if w.empty:
         return w
     for c in ["entry_index", "nodes", "cores", "gpus", "mem_node_gb", "walltime_h", "input_read_gb", "scratch_write_gb",
-              "jobs_year", "jobs_year_unconstrained", "concurrent", "chain_steps", "chain_run_h", "chain_elapsed_h",
-              "long_total_h", "long_calendar_h", "campaign_cores", "campaign_gpus", "campaign_duration_h",
-              "campaigns_year", "evidence_level"]:
+              "jobs_year", "jobs_year_unconstrained", "concurrent", "seq_jobs", "seq_run_h", "seq_calendar_h",
+              "campaign_cores", "campaign_gpus", "campaign_duration_h", "campaigns_year", "evidence_level"]:
         w[c] = num(_col(w, c))
     w["device"] = _col(w, "device").replace("", "unknown")
     w["cluster"] = _col(w, "cluster").replace("", "unknown")
     w["org"] = split_semicolons(_col(w, "organisation"))
+    w["entry"] = [entry_name(c, k) for c, k in zip(_col(w, "code"), _col(w, "job_kind"))]
 
     # Nodes: given, else estimated from cores and the cluster's node size
     def _nodes(r):
@@ -341,14 +378,13 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
         return math.ceil(r["cores"] / cores_per_node(cfg, cid, "gpu" if r["device"] == "gpu" else "compute"))
     w["nodes_est"] = w.apply(_nodes, axis=1)
 
-    # Hours per job (upper bound): the heaviest job's wall time, or for a chain its mean step running time
-    is_chain = w["org"].apply(lambda o: "chain" in o)
-    per_step = w["chain_run_h"] / w["chain_steps"].where(w["chain_steps"] > 0)
-    w["hours_per_job"] = np.where(is_chain & per_step.notna(), np.fmin(w["walltime_h"], per_step), w["walltime_h"])
+    # Hours per job (upper bound): the heaviest job's wall time, or for a sequence its mean running time per job
+    is_seq = w["org"].apply(lambda o: "chain" in o or "long_calc" in o)
+    per_job = w["seq_run_h"] / w["seq_jobs"].where(w["seq_jobs"] > 0)
+    w["hours_per_job"] = np.where(is_seq & per_job.notna(), np.fmin(w["walltime_h"], per_job), w["walltime_h"])
     hpj = w["hours_per_job"]
-    # Waiting time between jobs (queue and gaps) = calendar time − running time
-    w["chain_queue_overhead_h"] = w["chain_elapsed_h"] - w["chain_run_h"]
-    w["long_queue_overhead_h"] = w["long_calendar_h"] - w["long_total_h"]
+    # Waiting time between the jobs of a sequence (queue and gaps) = calendar time − running time
+    w["seq_queue_overhead_h"] = w["seq_calendar_h"] - w["seq_run_h"]
 
     jobs_des = w["jobs_year_unconstrained"].fillna(w["jobs_year"])
     cpu = w["device"] != "gpu"
@@ -405,6 +441,8 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
     w["scaling_class"] = np.select([w["doubling_ratio"] <= 0.8, w["doubling_ratio"] > 0.8], ["high", "low"], default="unknown")
 
     # Long-job requirement
+    # A split calculation would need its whole running time in one job; a chain's steps can still run separately
+    w["long_total_h"] = w["seq_run_h"].where(w["org"].apply(lambda o: "long_calc" in o))
     w["time_needed_h"] = w[["walltime_h", "long_total_h", "longest_run_h"]].max(axis=1)
     w["walltime_limit_h"] = w.apply(lambda r: walltime_limit(cfg, r["cluster"], r["device"], r["nodes_est"], r["mem_node_gb"]), axis=1)
     over = w["time_needed_h"] > w["walltime_limit_h"].astype(float)
@@ -536,7 +574,7 @@ def gpu_latent_demand(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     hi = cand["gpu_speedup"].map(lambda b: SPEEDUP_RANGE[b][1])
     cand["gpu_node_h_low"] = cpu_node_h / hi
     cand["gpu_node_h_high"] = cpu_node_h / lo
-    return cand[["submission_id", "code", "gpu_version", "gpu_speedup", "cpu_h_desired", "gpu_node_h_low", "gpu_node_h_high"]]
+    return cand[["submission_id", "entry", "gpu_version", "gpu_speedup", "cpu_h_desired", "gpu_node_h_low", "gpu_node_h_high"]]
 
 
 def cpu_viability(wl: pd.DataFrame) -> pd.Series:
@@ -639,7 +677,7 @@ def scratch_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFram
     t["scratch_peak_with_inputs_gb"] = per_job(True) * t["concurrent"]
     t["scratch_avg_gb"] = t["scratch_write_gb"] * conc
     cap_user = cfg["committeeParameters"].get("maxScratchPerUserTB")
-    per = t[["submission_id", "pi_name", "code", "cluster", "input_read_gb", "scratch_write_gb", "concurrent",
+    per = t[["submission_id", "pi_name", "entry", "cluster", "input_read_gb", "scratch_write_gb", "concurrent",
              "scratch_peak_gb", "scratch_peak_with_inputs_gb", "scratch_avg_gb"]].copy()
     pk = per["scratch_peak_with_inputs_gb"]
     per["over_trigger"] = known(pk > cfg["thresholds"]["scratchConcurrentTriggerGB"], pk)
@@ -670,7 +708,7 @@ def long_jobs(wl: pd.DataFrame) -> pd.DataFrame:
     not_high = known(lj["scaling_class"] != "high", lj["scaling_class"].replace("unknown", ""))
     evidence = known(lj["evidence_level"] <= 3, lj["evidence_level"])
     lj["long_walltime_test"] = over & no_ckpt & not_high & evidence
-    return lj[["submission_id", "pi_name", "code", "device", "cluster", "nodes_est", "cores", "walltime_h", "time_needed_h",
+    return lj[["submission_id", "pi_name", "entry", "device", "cluster", "nodes_est", "cores", "walltime_h", "time_needed_h",
                "walltime_limit_h", "checkpoint_class", "scaling_class", "doubling_ratio", "scaling_source",
                "scaling_split", "evidence_level", "long_walltime_test"]]
 
@@ -700,7 +738,7 @@ def high_scalers(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     h["user_concurrent_core_ceiling"] = h["cluster"].map(
         lambda c: max(max_concurrent_cores(cfg, cid) for cid in candidate_clusters(c, "cpu")))
     h["campaign_over_ceiling"] = known(h["campaign_cores"] > h["user_concurrent_core_ceiling"], h["campaign_cores"])
-    return h[["submission_id", "pi_name", "code", "cluster", "cores", "walltime_h", "doubling_ratio", "scaling_source",
+    return h[["submission_id", "pi_name", "entry", "cluster", "cores", "walltime_h", "doubling_ratio", "scaling_source",
               "wanted_cores", "policy_max_cores", "walltime_at_policy_max_h", "walltime_at_wanted_h", "multi_node_limit_h",
               "held_back_by_job_size", "campaign_cores", "user_concurrent_core_ceiling", "campaign_over_ceiling"]]
 
@@ -716,7 +754,7 @@ def throughput(wl: pd.DataFrame) -> pd.DataFrame:
         return t
     t["concurrency_gap"] = t["concurrent"] - t["queue_max_concurrent"]
     t["throttled"] = known(t["years_to_finish"] > 0.5, t["years_to_finish"]) | known(t["concurrency_gap"] > 0, t["concurrency_gap"])
-    return t[["submission_id", "pi_name", "code", "device", "cluster", "nodes_est", "cores", "gpus", "walltime_h",
+    return t[["submission_id", "pi_name", "entry", "device", "cluster", "nodes_est", "cores", "gpus", "walltime_h",
               "jobs_year", "jobs_year_unconstrained", "concurrent", "queue", "queue_max_concurrent",
               "concurrency_gap", "years_to_finish", "throttled"]]
 
@@ -728,7 +766,7 @@ def queue_waits(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         return q
     for c in ("req_nodes", "req_cores", "req_gpus", "req_walltime_h", "typical_wait_h", "longest_wait_h"):
         q[c] = num(_col(q, c))
-    typ = wl.drop_duplicates(["submission_id", "code"]).set_index(["submission_id", "code"])[["nodes_est", "cores", "gpus", "walltime_h"]]
+    typ = wl.drop_duplicates(["submission_id", "entry"]).set_index(["submission_id", "entry"])[["nodes_est", "cores", "gpus", "walltime_h"]]
     def _fill(r):
         if r.get("same_as_typical_job") == "yes" and (r["submission_id"], r["workload"]) in typ.index:
             t = typ.loc[(r["submission_id"], r["workload"])]
@@ -800,7 +838,7 @@ def consistency_checks(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         affected = split_semicolons(_col(t, "affected_by"))
         jobs_des = t["jobs_year_unconstrained"]
         for i, r in t.iterrows():
-            sid, code = r["submission_id"], r["code"]
+            sid, code = r["submission_id"], r["entry"]
             # Job shape
             if r["device"] != "gpu" and r["cluster"] in CLUSTERS and pd.notna(r["nodes"]) and pd.notna(r["cores"]):
                 cpn = cores_per_node(cfg, r["cluster"])
@@ -819,14 +857,12 @@ def consistency_checks(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             if pd.notna(r["campaign_cores"]) and pd.notna(r["cores"]) and r["campaign_cores"] < r["cores"]:
                 add(sid, code, "campaign size", f"campaign needs {fmt(r['campaign_cores'])} cores at once, fewer than one job ({fmt(r['cores'])})")
             # Times
-            if pd.notna(r["chain_run_h"]) and pd.notna(r["chain_elapsed_h"]) and r["chain_run_h"] > r["chain_elapsed_h"]:
-                add(sid, code, "chain times", f"chain running time {fmt(r['chain_run_h'])} h exceeds its calendar time {fmt(r['chain_elapsed_h'])} h")
-            if pd.notna(r["long_total_h"]) and pd.notna(r["long_calendar_h"]) and r["long_total_h"] > r["long_calendar_h"]:
-                add(sid, code, "long calculation times", f"running time {fmt(r['long_total_h'])} h exceeds calendar time {fmt(r['long_calendar_h'])} h")
-            if (pd.notna(r["chain_run_h"]) and pd.notna(r["chain_steps"]) and r["chain_steps"] > 0 and pd.notna(r["walltime_h"])
-                    and r["chain_run_h"] / r["chain_steps"] > r["walltime_h"]):
-                add(sid, code, "chain step vs heaviest job",
-                    f"mean step {fmt(r['chain_run_h'] / r['chain_steps'], digits=1)} h is longer than the heaviest job ({fmt(r['walltime_h'], digits=1)} h)")
+            if pd.notna(r["seq_run_h"]) and pd.notna(r["seq_calendar_h"]) and r["seq_run_h"] > r["seq_calendar_h"]:
+                add(sid, code, "sequence times", f"running time of one sequence {fmt(r['seq_run_h'])} h exceeds its calendar time {fmt(r['seq_calendar_h'])} h")
+            if (pd.notna(r["seq_run_h"]) and pd.notna(r["seq_jobs"]) and r["seq_jobs"] > 0 and pd.notna(r["walltime_h"])
+                    and r["seq_run_h"] / r["seq_jobs"] > r["walltime_h"]):
+                add(sid, code, "sequence job vs heaviest job",
+                    f"mean job in the sequence {fmt(r['seq_run_h'] / r['seq_jobs'], digits=1)} h is longer than the heaviest job ({fmt(r['walltime_h'], digits=1)} h)")
             # Memory
             fits = r.get("_fits_standard_node")
             if r["cluster"] in CLUSTERS and pd.notna(r["mem_node_gb"]) and isinstance(fits, str):
@@ -905,9 +941,9 @@ def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         if t.empty:
             continue
         for _, r in t[t["not_aware"]].iterrows():
-            add(r["submission_id"], 2, f"{r['code']}: 'don't know these details' for {tab} (support / awareness)")
+            add(r["submission_id"], 2, f"{entry_name(r['code'], r.get('job_kind', ''))}: 'don't know these details' for {tab} (support / awareness)")
 
-    names = set(zip(wl["submission_id"], wl["code"])) if not wl.empty else set()
+    names = set(zip(wl["submission_id"], wl["entry"])) if not wl.empty else set()
     q = dfs["Queue"]
     if not q.empty and "workload" in q:
         for _, r in q.iterrows():
@@ -915,7 +951,7 @@ def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                 add(r["submission_id"], 2, f"Queue entry refers to '{r['workload']}', not in the workload list")
 
     for _, r in wl.iterrows():
-        sid, code = r["submission_id"], r["code"]
+        sid, code = r["submission_id"], r["entry"]
         missing = [c for c in ("cores", "walltime_h", "jobs_year") + (("gpus",) if r["device"] == "gpu" else ()) if pd.isna(r[c])]
         if missing:
             add(sid, 2, f"{code}: unknown {', '.join(m.replace('_h', '') for m in missing)}")

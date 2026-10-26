@@ -22,7 +22,7 @@ import type { Question } from '../types/schema'
 import { QuestionRenderer } from './QuestionRenderer'
 import { BlockPanel } from './BlockPanel'
 import { SectionsContext } from './SectionsContext'
-import { matchesCondition, questionVisible } from '../utils/conditions'
+import { entryTitle, entryHeading, matchesCondition, questionVisible, sameAsSource } from '../utils/conditions'
 import { plainText } from '../utils/glossary'
 
 interface RepeatableGroupProps {
@@ -131,19 +131,23 @@ export function RepeatableGroup({ question, rows, onChange, allAnswers }: Repeat
       onRowChange={(subId, value) => handleRowChange(rowIndex, subId, value)}
       domId={blockDomId(rowIndex, block)}
       allAnswers={allAnswers ?? {}}
+      sameAsHeading={(() => {
+        const j = sameAsSource(block, question, rows, rowIndex, allAnswers ?? {})
+        return j === null ? null : entryHeading(question, rows[j] ?? {}, j)
+      })()}
     />
   )
 
   // Build a display label for each row card header
   const getRowLabel = (rowIndex: number): string => {
-    // Use the first text or workload-picker answer as the card title
-    const firstSub = subQuestions.find(q => q.type === 'text' || q.type === 'workloadRef')
-    if (firstSub) {
-      const val = rows[rowIndex]?.[firstSub.id]
-      if (typeof val === 'string' && val.trim()) {
-        return val.trim().slice(0, 60) + (val.length > 60 ? '…' : '')
-      }
+    // The entry title (entryTitle fields, else the first text answer), else the workload picked
+    let val = entryTitle(question, rows[rowIndex] ?? {})
+    if (!val) {
+      const ref = subQuestions.find(q => q.type === 'workloadRef')
+      const v = ref ? rows[rowIndex]?.[ref.id] : undefined
+      val = typeof v === 'string' ? v.trim() : ''
     }
+    if (val) return val.slice(0, 80) + (val.length > 80 ? '…' : '')
     return `Entry ${rowIndex + 1}`
   }
 

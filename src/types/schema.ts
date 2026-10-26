@@ -23,6 +23,7 @@
  *                Use a separate linked Google Form or a fixed-row
  *                table approach when exporting to GForms.
  *   info      → Descriptive text / section header in GForms
+ *   addButton → a button that reveals optional extra questions (stored as "added")
  */
 export type QuestionType =
   | 'text'
@@ -39,6 +40,7 @@ export type QuestionType =
   | 'heading'
   | 'block'
   | 'rowDetails'
+  | 'addButton'
 
 /** Physical dimension of a 'quantity' question; selects its unit list and base unit. */
 export type QuantityDimension = 'time' | 'size'
@@ -121,9 +123,10 @@ export interface Question {
    * For 'workloadRef': options are taken from the rows of another
    * (top-level) repeatable question — e.g. the code names entered in the
    * workload table — so follow-up sections refer to a workload instead of
-   * re-entering it. The stored value is the selected row's label.
+   * re-entering it. The stored value is the selected row's label (several
+   * fields are joined with " — ", like the entry titles).
    */
-  optionsFrom?: { questionId: string; labelField: string }
+  optionsFrom?: { questionId: string; labelField: string | string[] }
   /**
    * For 'select': options generated from the cluster config, placed before
    * any static `options`. 'queues' lists every cluster queue with its limits
@@ -229,6 +232,36 @@ export interface Question {
    * block's questions are hidden. A valid answer, never a negative finding.
    */
   notAwareOption?: { questionId: string; label: string }
+  /**
+   * For 'block': named reasons for showing it. The block is shown when any
+   * trigger's condition holds (and its conditionalOn, if any); its text
+   * names every trigger that holds, and the submission records them, so a
+   * panel opened for several reasons is asked once.
+   */
+  triggers?: BlockTrigger[]
+  /**
+   * For 'block' in a repeatable: when an earlier entry with the same code
+   * (the repeatable's first entryTitle field) opened this block, a
+   * "Same answers as …" tick-box (stored as `true` under questionId) hides
+   * the questions; the submission stores the earlier entry's number instead.
+   */
+  sameAsOption?: { questionId: string }
+  /**
+   * For 'repeatable': the sub-question ids whose answers make up each
+   * entry's title, joined with " — " (e.g. code and kind of job). The first
+   * also identifies the code for sameAsOption. Defaults to the first text field.
+   */
+  entryTitle?: string[]
+  /** For 'addButton': text of the link that undoes it (e.g. "Remove run 3"). */
+  removeLabel?: string
+}
+
+/** One named reason for showing a block (see Question.triggers). */
+export interface BlockTrigger {
+  id: string
+  /** Completes "Shown because …", e.g. "it runs on GPUs". */
+  label: string
+  condition: Condition
 }
 
 /**
@@ -354,6 +387,8 @@ export interface QuestionnaireSchema {
    * This text must remain visible to the respondent throughout.
    */
   coreNotice: string
+  /** Shown under the core notice: why the sections should be filled in order. */
+  fillOrderNotice?: string
   /** Definitions for terms marked with `{…}` in question text. */
   glossary?: GlossaryEntry[]
   sections: Section[]

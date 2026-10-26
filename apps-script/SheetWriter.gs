@@ -1,5 +1,5 @@
 /**
- * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.4.0).
+ * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.5.0).
  *
  * Every sheet has submission_id as column A and pi_name as column B
  * so any tab is self-identifying without needing to cross-reference
@@ -11,7 +11,7 @@
  * it reads and how the value is written:
  *   v — as-is (arrays joined with '; ')
  *   q — quantity { value, unit } normalised to base units (hours / GB)
- *   d — derived: computed by DERIVED[key] from the row being written
+ *   d — derived: computed by DERIVED[key](row, answers, tab definition)
  * A tab is either one row per submission (`source: 'top'`) or one row per
  * entry of a repeatable question (`source: { rows: '<questionId>' }`). With
  * `panel`, only entries that opened that follow-up panel are written: the
@@ -53,7 +53,7 @@ var SHEET_DEFINITIONS = [
     name: 'Workloads',
     source: { rows: 'W_workloads' },
     columns: [
-      ['code', 'W_code'], ['type', 'W_type'], ['type_other', 'W_type_other'], ['source', 'W_source'],
+      ['code', 'W_code'], ['job_kind', 'W_job_kind'], ['type', 'W_type'], ['type_other', 'W_type_other'], ['source', 'W_source'],
       ['cluster', 'W_cluster'], ['affected_by', 'W_affected'], ['organisation', 'W_org'],
       ['device', 'W_device'], ['nodes', 'W_nodes'], ['cores', 'W_cores'], ['gpus', 'W_gpus'],
       ['mem_node_gb', 'W_mem_node', 'q'], ['walltime_h', 'W_walltime', 'q'],
@@ -62,9 +62,10 @@ var SHEET_DEFINITIONS = [
       ['gpu_version', 'W_gpu_version'], ['gpu_speedup', 'W_gpu_speedup'], ['cpu_viable', 'W_cpu_viable'],
       ['panels', 'panels', 'd'],
       // Section D panel "How these jobs are organised" (same entry, so kept on this tab)
+      ['organisation_opened_by', 'organisation_opened_by', 'd'],
       ['organisation_not_aware', 'NA_org'], ['batch_size', 'W_batch_size'],
-      ['chain_steps', 'W_chain_steps'], ['chain_run_h', 'W_chain_run', 'q'], ['chain_elapsed_h', 'W_chain_elapsed', 'q'],
-      ['long_total_h', 'W_long_total', 'q'], ['long_calendar_h', 'W_long_calendar', 'q'],
+      // One sequence: chain steps and/or restarts of a split calculation
+      ['seq_jobs', 'W_seq_jobs'], ['seq_run_h', 'W_seq_run', 'q'], ['seq_calendar_h', 'W_seq_calendar', 'q'],
       ['campaign_cores', 'W_campaign_cores'], ['campaign_gpus', 'W_campaign_gpus'], ['campaign_duration_h', 'W_campaign_duration', 'q'], ['campaigns_year', 'W_campaigns_year'],
       // Computed
       ['core_hours_year_max', 'core_hours_year_max', 'd'],
@@ -73,8 +74,7 @@ var SHEET_DEFINITIONS = [
       ['peak_concurrent_cores', 'peak_concurrent_cores', 'd'],
       ['peak_concurrent_gpus', 'peak_concurrent_gpus', 'd'],
       ['peak_concurrent_scratch_gb', 'peak_concurrent_scratch_gb', 'd'],
-      ['chain_queue_overhead_h', 'chain_queue_overhead_h', 'd'],
-      ['long_queue_overhead_h', 'long_queue_overhead_h', 'd'],
+      ['seq_queue_overhead_h', 'seq_queue_overhead_h', 'd'],
       ['evidence_level', 'evidence_level', 'd']
     ]
   },
@@ -94,7 +94,8 @@ var SHEET_DEFINITIONS = [
     name: 'LongJobs',
     source: { rows: 'W_workloads', panel: 'W_blk_long' },
     columns: [
-      ['code', 'W_code'], ['not_aware', 'NA_long_jobs'],
+      ['code', 'W_code'], ['job_kind', 'W_job_kind'], ['opened_by', 'opened_by', 'd'],
+      ['same_as_entry', 'SAME_long'], ['not_aware', 'NA_long_jobs'],
       ['checkpoint', 'L_checkpoint'], ['restart_loss_h', 'L_restart_loss', 'q'],
       ['longest_run_h', 'L_longest_run', 'q'], ['terminations_12m', 'L_terminations_12m']
     ]
@@ -103,10 +104,12 @@ var SHEET_DEFINITIONS = [
     name: 'Scaling',
     source: { rows: 'W_workloads', panel: 'W_blk_scaling' },
     columns: [
-      ['code', 'W_code'], ['not_aware', 'NA_scaling'], ['device', 'W_device'], ['doubling_effect', 'P_doubling'],
+      ['code', 'W_code'], ['job_kind', 'W_job_kind'], ['opened_by', 'opened_by', 'd'],
+      ['same_as_entry', 'SAME_scaling'], ['not_aware', 'NA_scaling'], ['device', 'W_device'], ['doubling_effect', 'P_doubling'],
       ['cores_1', 'P_cores_1'], ['gpus_1', 'P_gpus_1'], ['walltime_1_h', 'P_wt_1', 'q'],
       ['cores_2', 'P_cores_2'], ['gpus_2', 'P_gpus_2'], ['walltime_2_h', 'P_wt_2', 'q'],
       ['cores_3', 'P_cores_3'], ['gpus_3', 'P_gpus_3'], ['walltime_3_h', 'P_wt_3', 'q'],
+      ['runs_not_known', 'P_runs_unknown'],
       ['max_cores_tested', 'P_max_tested'], ['max_gpus_tested', 'P_max_tested_gpus'],
       ['max_cores_useful', 'P_max_useful'], ['max_gpus_useful', 'P_max_useful_gpus']
     ]
@@ -115,7 +118,8 @@ var SHEET_DEFINITIONS = [
     name: 'Memory',
     source: { rows: 'W_workloads', panel: 'W_blk_memory' },
     columns: [
-      ['code', 'W_code'], ['not_aware', 'NA_memory'],
+      ['code', 'W_code'], ['job_kind', 'W_job_kind'], ['opened_by', 'opened_by', 'd'],
+      ['same_as_entry', 'SAME_memory'], ['not_aware', 'NA_memory'],
       ['fits_standard_node', 'M_fits_standard'], ['distributable', 'M_distributable']
     ]
   },
@@ -123,7 +127,8 @@ var SHEET_DEFINITIONS = [
     name: 'Gpu',
     source: { rows: 'W_workloads', panel: 'W_blk_gpu' },
     columns: [
-      ['code', 'W_code'], ['not_aware', 'NA_gpu'],
+      ['code', 'W_code'], ['job_kind', 'W_job_kind'], ['opened_by', 'opened_by', 'd'],
+      ['same_as_entry', 'SAME_gpu'], ['not_aware', 'NA_gpu'],
       ['gpu_model', 'G_model'], ['mem_per_gpu_gb', 'G_mem_per_gpu', 'q'],
       ['max_gpus_per_job', 'G_max_gpus'], ['nvlink_needed', 'G_nvlink'], ['multinode_gpu', 'G_multinode']
     ]
@@ -132,7 +137,8 @@ var SHEET_DEFINITIONS = [
     name: 'Scratch',
     source: { rows: 'W_workloads', panel: 'W_blk_scratch' },
     columns: [
-      ['code', 'W_code'], ['not_aware', 'NA_scratch'], ['input_read_only', 'SC_input_readonly'],
+      ['code', 'W_code'], ['job_kind', 'W_job_kind'], ['opened_by', 'opened_by', 'd'],
+      ['same_as_entry', 'SAME_scratch'], ['not_aware', 'NA_scratch'], ['input_read_only', 'SC_input_readonly'],
       ['rereads_own_output', 'SC_reread'], ['io_time_share', 'SC_io_share'], ['files_per_job', 'SC_files'],
       ['local_disk_possible', 'SC_local_disk'], ['residence_after_job', 'SC_residence']
     ]
@@ -189,16 +195,24 @@ var EVIDENCE_LEVEL_BY_SOURCE = {
 
 /**
  * Yearly totals are upper bounds: the entry describes its heaviest job, and
- * every job is counted as that heavy. For a chain with its running time and
- * step count known, the chain's running time per step is used instead of the
- * heaviest step's wall time (tighter, still an upper bound on cores).
+ * every job is counted as that heavy. For a sequence (chain or split
+ * calculation) with its running time and job count known, the mean running
+ * time per job is used instead of the heaviest job's wall time (tighter,
+ * still an upper bound on cores).
  */
 function hoursPerJob(r) {
   var wt = base(r, 'W_walltime');
-  var run = base(r, 'W_chain_run'), steps = num(r, 'W_chain_steps');
-  var isChain = Array.isArray(r['W_org']) && r['W_org'].indexOf('chain') >= 0;
-  if (isChain && run !== null && steps) return wt === null ? run / steps : Math.min(wt, run / steps);
+  var run = base(r, 'W_seq_run'), jobs = num(r, 'W_seq_jobs');
+  var org = Array.isArray(r['W_org']) ? r['W_org'] : [];
+  var isSeq = org.indexOf('chain') >= 0 || org.indexOf('long_calc') >= 0;
+  if (isSeq && run !== null && jobs) return wt === null ? run / jobs : Math.min(wt, run / jobs);
   return wt;
+}
+
+/** Ids of the triggers that opened a panel for this entry, '; '-joined. */
+function triggersOf(r, panel) {
+  var t = r && r._triggers && r._triggers[panel];
+  return Array.isArray(t) ? t.join('; ') : '';
 }
 
 /** a − b, rounded; '' if either is missing or unknown. */
@@ -211,8 +225,10 @@ var DERIVED = {
   },
   gpu_hours_year_max: function(r) { return product(num(r, 'W_gpus'), hoursPerJob(r), num(r, 'W_jobs_year')); },
   // Time spent waiting (queue and gaps) = calendar time − running time
-  chain_queue_overhead_h: function(r) { return difference(base(r, 'W_chain_elapsed'), base(r, 'W_chain_run')); },
-  long_queue_overhead_h: function(r) { return difference(base(r, 'W_long_calendar'), base(r, 'W_long_total')); },
+  seq_queue_overhead_h: function(r) { return difference(base(r, 'W_seq_calendar'), base(r, 'W_seq_run')); },
+  // Why a panel was shown for this entry (trigger ids from the form)
+  opened_by: function(r, answers, def) { return triggersOf(r, def.source.panel); },
+  organisation_opened_by: function(r) { return triggersOf(r, 'W_blk_org'); },
   peak_concurrent_cores: function(r) { return product(num(r, 'W_cores'), num(r, 'W_concurrent')); },
   peak_concurrent_gpus: function(r) { return product(num(r, 'W_gpus'), num(r, 'W_concurrent')); },
   peak_concurrent_scratch_gb: function(r) { return product(base(r, 'W_scratch_write'), num(r, 'W_concurrent')); },
@@ -337,10 +353,10 @@ function quantityToBase(answers, key) {
   return parseFloat((n * factor).toFixed(6));
 }
 
-function cell(col, obj, answers) {
+function cell(col, obj, answers, def) {
   var kind = col[2] || 'v';
   if (kind === 'q') return quantityToBase(obj, col[1]);
-  if (kind === 'd') return DERIVED[col[1]](obj, answers);
+  if (kind === 'd') return DERIVED[col[1]](obj, answers, def);
   return val(obj, col[1]);
 }
 
@@ -360,14 +376,14 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
 
   SHEET_DEFINITIONS.forEach(function(def) {
     if (def.source === 'top') {
-      appendRow(def.name, [submissionId, piName].concat(def.columns.map(function(c) { return cell(c, answers, answers); })));
+      appendRow(def.name, [submissionId, piName].concat(def.columns.map(function(c) { return cell(c, answers, answers, def); })));
       return;
     }
     var rows = Array.isArray(answers[def.source.rows]) ? answers[def.source.rows] : [];
     rows.forEach(function(row, i) {
       var panel = def.source.panel;
       if (panel && !(row && Array.isArray(row._panels) && row._panels.indexOf(panel) >= 0)) return;
-      appendRow(def.name, [submissionId, piName, i + 1].concat(def.columns.map(function(c) { return cell(c, row || {}, answers); })));
+      appendRow(def.name, [submissionId, piName, i + 1].concat(def.columns.map(function(c) { return cell(c, row || {}, answers, def); })));
     });
   });
 

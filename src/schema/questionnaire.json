@@ -1,8 +1,9 @@
 {
-  "version": "2.4.0",
+  "version": "2.5.0",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
+  "fillOrderNotice": "Please fill in the sections in order: your answers in one section decide which questions appear in later ones.",
   "sections": [
     {
       "id": "A",
@@ -425,7 +426,7 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe up to five main codes your group runs, one entry each (or two entries for a code that runs quite different kinds of jobs). Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, Section D asks a few more questions about it.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
+      "description": "Describe the main codes your group runs: one entry per code and kind of job, up to 8 entries. The same code can have several entries when it runs quite different kinds of jobs — for example Quantum ESPRESSO ground-state relaxation and band structures in one entry, and Quantum ESPRESSO ab initio molecular dynamics in another — since their size, length and problems can differ. Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, Section D asks a few more questions about it.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
       "questions": [
         {
           "id": "W_problem_notice",
@@ -451,10 +452,10 @@
         {
           "id": "W_workloads",
           "type": "repeatable",
-          "label": "Main codes (up to 5)",
+          "label": "Codes and kinds of job (up to 8 entries)",
           "required": true,
           "entryLabel": "code",
-          "maxEntries": 5,
+          "maxEntries": 8,
           "subQuestions": [
             {
               "id": "W_h_code",
@@ -467,7 +468,18 @@
               "type": "text",
               "label": "Code / application name",
               "required": true,
-              "placeholder": "e.g. Quantum ESPRESSO, or \"QE – phonon workflow\""
+              "placeholder": "e.g. Quantum ESPRESSO"
+            },
+            {
+              "id": "W_job_kind",
+              "type": "text",
+              "label": "Kind of job this entry describes",
+              "required": true,
+              "placeholder": "e.g. ground-state relaxation + band structure, or ab initio MD",
+              "helpText": "A few words to tell this entry apart from other entries of the same code.",
+              "committeeUse": [
+                "workload_mix"
+              ]
             },
             {
               "id": "W_source",
@@ -718,7 +730,7 @@
               "committeeUse": [
                 "workflow_pattern"
               ],
-              "helpText": "Tick all that describe these jobs, e.g. a chain whose longest step needs restarts. If different patterns apply to different jobs with different set-ups (say, many small screening jobs and a few large production runs), give each its own entry; the same code can have two entries."
+              "helpText": "Tick all that describe these jobs, e.g. a chain whose longest step needs restarts. If the same code runs kinds of job with different set-ups (say, many small screening jobs and a few large production runs), give each its own entry."
             },
             {
               "id": "W_h_job",
@@ -866,7 +878,7 @@
               "committeeUse": [
                 "core_hours"
               ],
-              "helpText": "Count each submission to the scheduler; for a chain, count every step. 0 if you have not run these jobs yet."
+              "helpText": "Count each submission to the scheduler; for a chain or a split calculation, count every job. 0 if you have not run these jobs yet."
             },
             {
               "id": "W_jobs_year_unconstrained",
@@ -1089,6 +1101,10 @@
               },
               "advanced": true
             }
+          ],
+          "entryTitle": [
+            "W_code",
+            "W_job_kind"
           ]
         },
         {
@@ -1103,7 +1119,7 @@
     {
       "id": "D",
       "title": "D. Details for Each Code",
-      "description": "A few more questions about the codes whose answers in Section C call for them: how the jobs are organised, long runs, running on more cores, memory, GPUs, or files and scratch. Each panel says why it is shown. All questions here are required, and \"Don't know\" always counts as an answer; if you do not know a panel's details, tick the box at its top.\n\nAnswers in Section C decide which panels appear, so changing a code there may add or remove panels here.",
+      "description": "A few more questions about the codes whose answers in Section C call for them: how the jobs are organised, long runs, running on more cores, memory, GPUs, or files and scratch. Each panel says why it is shown; a panel opened for several reasons is asked once. If another entry of the same code has the same answers, tick \"Same answers as …\" at the top of the panel. All questions here are required, and \"Don't know\" always counts as an answer; if you do not know a panel's details, tick the box at its top.\n\nAnswers in Section C decide which panels appear, so changing a code there may add or remove panels here.",
       "questions": [
         {
           "id": "W_details",
@@ -1117,22 +1133,10 @@
               "type": "block",
               "required": false,
               "label": "How these jobs are organised",
-              "helpText": "Shown because you ticked independent jobs, a sequential chain, a calculation split over several jobs, or a campaign for this code in Section C. These figures let the committee work out totals and the time spent waiting between jobs.",
+              "helpText": "These figures let the committee work out totals and the time spent waiting between jobs.",
               "notAwareOption": {
                 "questionId": "NA_org",
                 "label": "I don't know these details for this code"
-              },
-              "conditionalOn": {
-                "where": {
-                  "field": "W_org",
-                  "op": "in",
-                  "values": [
-                    "independent",
-                    "chain",
-                    "long_calc",
-                    "campaign"
-                  ]
-                }
               },
               "questions": [
                 {
@@ -1154,9 +1158,9 @@
                   ]
                 },
                 {
-                  "id": "W_chain_steps",
+                  "id": "W_seq_jobs",
                   "type": "number",
-                  "label": "Steps (jobs) in one chain",
+                  "label": "Jobs in one sequence: the steps of the chain and/or the restarts of the calculation",
                   "required": true,
                   "integer": true,
                   "allowUnknown": true,
@@ -1164,38 +1168,42 @@
                   "conditionalOn": {
                     "questionId": "W_org",
                     "values": [
-                      "chain"
+                      "chain",
+                      "long_calc"
                     ]
                   },
                   "committeeUse": [
-                    "pipeline"
+                    "pipeline",
+                    "core_hours"
                   ]
                 },
                 {
-                  "id": "W_chain_run",
+                  "id": "W_seq_run",
                   "type": "quantity",
+                  "label": "Running time of one whole sequence: the {wall times|wall time} of all its jobs added up",
                   "required": true,
-                  "label": "Running time of one full chain: the {wall times|wall time} of all its jobs added up",
-                  "helpText": "Running time only. Do not include time spent waiting in the queue.",
                   "dimension": "time",
                   "defaultUnit": "hours",
                   "allowUnknown": true,
                   "conditionalOn": {
                     "questionId": "W_org",
                     "values": [
-                      "chain"
+                      "chain",
+                      "long_calc"
                     ]
                   },
+                  "helpText": "Running time only. Do not include time spent waiting in the queue.",
                   "committeeUse": [
                     "pipeline",
                     "core_hours",
+                    "long_walltime_test",
                     "queue_overhead"
                   ]
                 },
                 {
-                  "id": "W_chain_elapsed",
+                  "id": "W_seq_calendar",
                   "type": "quantity",
-                  "label": "{Calendar time} for one full chain: from submitting its first job to its last job finishing",
+                  "label": "{Calendar time} for one whole sequence: from submitting its first job to its last job finishing",
                   "required": true,
                   "dimension": "time",
                   "defaultUnit": "days",
@@ -1203,51 +1211,13 @@
                   "conditionalOn": {
                     "questionId": "W_org",
                     "values": [
-                      "chain"
+                      "chain",
+                      "long_calc"
                     ]
                   },
+                  "helpText": "This includes {queue waits|queue wait} and any gaps before the next job was submitted. Example: 4 jobs of 10 h each = 40 h running time. First job submitted Monday 9 am, last job finished Thursday 9 am = 3 days calendar time.",
                   "committeeUse": [
                     "pipeline",
-                    "turnaround",
-                    "queue_overhead"
-                  ],
-                  "helpText": "This includes {queue waits|queue wait}. Example: 4 jobs of 10 h each = 40 h running time. First job submitted Monday 9 am, last job finished Thursday 9 am = 3 days calendar time."
-                },
-                {
-                  "id": "W_long_total",
-                  "type": "quantity",
-                  "label": "Running time of the full calculation: the wall times of all its jobs (restarts) added up",
-                  "required": true,
-                  "dimension": "time",
-                  "defaultUnit": "days",
-                  "allowUnknown": true,
-                  "conditionalOn": {
-                    "questionId": "W_org",
-                    "values": [
-                      "long_calc"
-                    ]
-                  },
-                  "committeeUse": [
-                    "long_walltime_test"
-                  ],
-                  "helpText": "Running time only. Do not include time spent waiting in the queue."
-                },
-                {
-                  "id": "W_long_calendar",
-                  "type": "quantity",
-                  "required": true,
-                  "label": "{Calendar time} for the full calculation: from submitting its first job to its last job finishing",
-                  "helpText": "This includes queue waits and any gaps before the next restart was submitted.",
-                  "dimension": "time",
-                  "defaultUnit": "days",
-                  "allowUnknown": true,
-                  "conditionalOn": {
-                    "questionId": "W_org",
-                    "values": [
-                      "long_calc"
-                    ]
-                  },
-                  "committeeUse": [
                     "turnaround",
                     "queue_overhead"
                   ]
@@ -1337,6 +1307,60 @@
                     "large_run_test"
                   ]
                 }
+              ],
+              "triggers": [
+                {
+                  "id": "independent",
+                  "label": "you ticked many independent jobs",
+                  "condition": {
+                    "where": {
+                      "field": "W_org",
+                      "op": "in",
+                      "values": [
+                        "independent"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "chain",
+                  "label": "you ticked a sequential chain",
+                  "condition": {
+                    "where": {
+                      "field": "W_org",
+                      "op": "in",
+                      "values": [
+                        "chain"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "long_calc",
+                  "label": "you ticked one calculation split over several jobs",
+                  "condition": {
+                    "where": {
+                      "field": "W_org",
+                      "op": "in",
+                      "values": [
+                        "long_calc"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "campaign",
+                  "label": "you ticked a coordinated campaign",
+                  "condition": {
+                    "where": {
+                      "field": "W_org",
+                      "op": "in",
+                      "values": [
+                        "campaign"
+                      ]
+                    }
+                  }
+                }
               ]
             },
             {
@@ -1344,80 +1368,9 @@
               "type": "block",
               "required": false,
               "label": "Long runs",
-              "helpText": "Shown because jobs of this code run longer than the present limits (multi-node CPU jobs: 72 h; single-node: 168 h; GPU jobs: 24 h), run as one calculation split over several jobs, or are affected by the wall-time limit.",
               "notAwareOption": {
                 "questionId": "NA_long_jobs",
                 "label": "I don't know these details for this code"
-              },
-              "conditionalOn": {
-                "any": [
-                  {
-                    "where": {
-                      "any": [
-                        {
-                          "all": [
-                            {
-                              "field": "W_nodes",
-                              "op": "gt",
-                              "value": 1
-                            },
-                            {
-                              "field": "W_walltime",
-                              "op": "gt",
-                              "configRef": "thresholds.maxMultiNodeWalltimeHours"
-                            }
-                          ]
-                        },
-                        {
-                          "field": "W_walltime",
-                          "op": "gt",
-                          "configRef": "thresholds.maxSingleNodeWalltimeHours"
-                        },
-                        {
-                          "all": [
-                            {
-                              "field": "W_device",
-                              "op": "in",
-                              "values": [
-                                "gpu"
-                              ]
-                            },
-                            {
-                              "field": "W_walltime",
-                              "op": "gt",
-                              "configRef": "thresholds.maxGpuWalltimeHours"
-                            }
-                          ]
-                        },
-                        {
-                          "field": "W_org",
-                          "op": "in",
-                          "values": [
-                            "long_calc"
-                          ]
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "all": [
-                      {
-                        "questionId": "W_affected",
-                        "values": [
-                          "wall_time_termination"
-                        ]
-                      },
-                      {
-                        "form": {
-                          "questionId": "X_problems",
-                          "values": [
-                            "wall_time_termination"
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                ]
               },
               "questions": [
                 {
@@ -1498,21 +1451,12 @@
                     "long_walltime_test"
                   ]
                 }
-              ]
-            },
-            {
-              "id": "W_blk_scaling",
-              "type": "block",
-              "required": false,
-              "label": "Running on more cores",
-              "helpText": "Shown because jobs of this code are long or large (more than 384 cores, or a campaign). Whether more cores (or GPUs) make a job faster tells the committee whether running wider could replace running longer.",
-              "notAwareOption": {
-                "questionId": "NA_scaling",
-                "label": "I don't know how this code behaves on more cores"
-              },
-              "conditionalOn": {
-                "any": [
-                  {
+              ],
+              "triggers": [
+                {
+                  "id": "walltime_over_limit",
+                  "label": "its wall time is longer than the present limits (multi-node CPU jobs: 72 h; single-node: 168 h; GPU jobs: 24 h)",
+                  "condition": {
                     "where": {
                       "any": [
                         {
@@ -1549,59 +1493,28 @@
                               "configRef": "thresholds.maxGpuWalltimeHours"
                             }
                           ]
-                        },
-                        {
-                          "field": "W_org",
-                          "op": "in",
-                          "values": [
-                            "long_calc"
-                          ]
                         }
                       ]
                     }
-                  },
-                  {
-                    "where": {
-                      "field": "W_cores",
-                      "op": "gt",
-                      "configRef": "thresholds.maxCoresPerJob"
-                    }
-                  },
-                  {
+                  }
+                },
+                {
+                  "id": "long_calc",
+                  "label": "you ticked one calculation split over several jobs",
+                  "condition": {
                     "where": {
                       "field": "W_org",
                       "op": "in",
                       "values": [
-                        "campaign"
+                        "long_calc"
                       ]
                     }
-                  },
-                  {
-                    "where": {
-                      "field": "W_campaign_cores",
-                      "op": "gte",
-                      "configRef": "thresholds.largeRunCores"
-                    }
-                  },
-                  {
-                    "all": [
-                      {
-                        "questionId": "W_affected",
-                        "values": [
-                          "insufficient_node_count"
-                        ]
-                      },
-                      {
-                        "form": {
-                          "questionId": "X_problems",
-                          "values": [
-                            "insufficient_node_count"
-                          ]
-                        }
-                      }
-                    ]
-                  },
-                  {
+                  }
+                },
+                {
+                  "id": "problem_walltime",
+                  "label": "you linked it to jobs stopped by the wall-time limit",
+                  "condition": {
                     "all": [
                       {
                         "questionId": "W_affected",
@@ -1619,7 +1532,21 @@
                       }
                     ]
                   }
-                ]
+                }
+              ],
+              "sameAsOption": {
+                "questionId": "SAME_long"
+              }
+            },
+            {
+              "id": "W_blk_scaling",
+              "type": "block",
+              "required": false,
+              "label": "Running on more cores",
+              "helpText": "Whether more cores (or GPUs) make a job faster tells the committee whether running wider could replace running longer.",
+              "notAwareOption": {
+                "questionId": "NA_scaling",
+                "label": "I don't know how this code behaves on more cores"
               },
               "questions": [
                 {
@@ -1657,277 +1584,6 @@
                   "committeeUse": [
                     "scaling"
                   ]
-                },
-                {
-                  "id": "P_h_pairs",
-                  "type": "heading",
-                  "label": "Measured runs of the same calculation",
-                  "required": false,
-                  "helpText": "Runs 1 and 2 are the pair you compared; add a third run if you have one. Tick Don't know for any figure you do not have.",
-                  "conditionalOn": {
-                    "questionId": "P_doubling",
-                    "values": [
-                      "le_0_6",
-                      "0_6_0_8",
-                      "gt_0_8",
-                      "longer"
-                    ]
-                  }
-                },
-                {
-                  "id": "P_cores_1",
-                  "type": "number",
-                  "label": "Run 1 — CPU cores",
-                  "required": true,
-                  "integer": true,
-                  "allowUnknown": true,
-                  "min": 1,
-                  "committeeUse": [
-                    "scaling"
-                  ],
-                  "conditionalOn": {
-                    "all": [
-                      {
-                        "questionId": "P_doubling",
-                        "values": [
-                          "le_0_6",
-                          "0_6_0_8",
-                          "gt_0_8",
-                          "longer"
-                        ]
-                      },
-                      {
-                        "not": {
-                          "questionId": "W_device",
-                          "values": [
-                            "gpu"
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "P_gpus_1",
-                  "type": "number",
-                  "label": "Run 1 — GPUs",
-                  "required": true,
-                  "integer": true,
-                  "allowUnknown": true,
-                  "min": 1,
-                  "conditionalOn": {
-                    "all": [
-                      {
-                        "questionId": "P_doubling",
-                        "values": [
-                          "le_0_6",
-                          "0_6_0_8",
-                          "gt_0_8",
-                          "longer"
-                        ]
-                      },
-                      {
-                        "questionId": "W_device",
-                        "values": [
-                          "gpu"
-                        ]
-                      }
-                    ]
-                  },
-                  "committeeUse": [
-                    "scaling"
-                  ]
-                },
-                {
-                  "id": "P_wt_1",
-                  "type": "quantity",
-                  "label": "Run 1 — wall time",
-                  "required": true,
-                  "dimension": "time",
-                  "defaultUnit": "hours",
-                  "allowUnknown": true,
-                  "committeeUse": [
-                    "scaling"
-                  ],
-                  "conditionalOn": {
-                    "questionId": "P_doubling",
-                    "values": [
-                      "le_0_6",
-                      "0_6_0_8",
-                      "gt_0_8",
-                      "longer"
-                    ]
-                  }
-                },
-                {
-                  "id": "P_cores_2",
-                  "type": "number",
-                  "label": "Run 2 — CPU cores",
-                  "required": true,
-                  "integer": true,
-                  "allowUnknown": true,
-                  "min": 1,
-                  "committeeUse": [
-                    "scaling"
-                  ],
-                  "conditionalOn": {
-                    "all": [
-                      {
-                        "questionId": "P_doubling",
-                        "values": [
-                          "le_0_6",
-                          "0_6_0_8",
-                          "gt_0_8",
-                          "longer"
-                        ]
-                      },
-                      {
-                        "not": {
-                          "questionId": "W_device",
-                          "values": [
-                            "gpu"
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "P_gpus_2",
-                  "type": "number",
-                  "label": "Run 2 — GPUs",
-                  "required": true,
-                  "integer": true,
-                  "allowUnknown": true,
-                  "min": 1,
-                  "conditionalOn": {
-                    "all": [
-                      {
-                        "questionId": "P_doubling",
-                        "values": [
-                          "le_0_6",
-                          "0_6_0_8",
-                          "gt_0_8",
-                          "longer"
-                        ]
-                      },
-                      {
-                        "questionId": "W_device",
-                        "values": [
-                          "gpu"
-                        ]
-                      }
-                    ]
-                  },
-                  "committeeUse": [
-                    "scaling"
-                  ]
-                },
-                {
-                  "id": "P_wt_2",
-                  "type": "quantity",
-                  "label": "Run 2 — wall time",
-                  "required": true,
-                  "dimension": "time",
-                  "defaultUnit": "hours",
-                  "allowUnknown": true,
-                  "committeeUse": [
-                    "scaling"
-                  ],
-                  "conditionalOn": {
-                    "questionId": "P_doubling",
-                    "values": [
-                      "le_0_6",
-                      "0_6_0_8",
-                      "gt_0_8",
-                      "longer"
-                    ]
-                  }
-                },
-                {
-                  "id": "P_cores_3",
-                  "type": "number",
-                  "label": "Run 3 — CPU cores (optional)",
-                  "required": false,
-                  "integer": true,
-                  "allowUnknown": true,
-                  "min": 1,
-                  "committeeUse": [
-                    "scaling"
-                  ],
-                  "conditionalOn": {
-                    "all": [
-                      {
-                        "questionId": "P_doubling",
-                        "values": [
-                          "le_0_6",
-                          "0_6_0_8",
-                          "gt_0_8",
-                          "longer"
-                        ]
-                      },
-                      {
-                        "not": {
-                          "questionId": "W_device",
-                          "values": [
-                            "gpu"
-                          ]
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "id": "P_gpus_3",
-                  "type": "number",
-                  "label": "Run 3 — GPUs (optional)",
-                  "required": false,
-                  "integer": true,
-                  "allowUnknown": true,
-                  "min": 1,
-                  "conditionalOn": {
-                    "all": [
-                      {
-                        "questionId": "P_doubling",
-                        "values": [
-                          "le_0_6",
-                          "0_6_0_8",
-                          "gt_0_8",
-                          "longer"
-                        ]
-                      },
-                      {
-                        "questionId": "W_device",
-                        "values": [
-                          "gpu"
-                        ]
-                      }
-                    ]
-                  },
-                  "committeeUse": [
-                    "scaling"
-                  ]
-                },
-                {
-                  "id": "P_wt_3",
-                  "type": "quantity",
-                  "label": "Run 3 — wall time (optional)",
-                  "required": false,
-                  "dimension": "time",
-                  "defaultUnit": "hours",
-                  "allowUnknown": true,
-                  "committeeUse": [
-                    "scaling"
-                  ],
-                  "conditionalOn": {
-                    "questionId": "P_doubling",
-                    "values": [
-                      "le_0_6",
-                      "0_6_0_8",
-                      "gt_0_8",
-                      "longer"
-                    ]
-                  }
                 },
                 {
                   "id": "P_max_tested",
@@ -2057,47 +1713,620 @@
                   "committeeUse": [
                     "scaling"
                   ]
-                }
-              ]
-            },
-            {
-              "id": "W_blk_memory",
-              "type": "block",
-              "required": false,
-              "label": "Memory",
-              "helpText": "Shown because jobs of this code use more memory per node than a standard node has (Gargi: 768 GB; Raman: 96 GB), or ran out of memory.",
-              "notAwareOption": {
-                "questionId": "NA_memory",
-                "label": "I don't know these details for this code"
-              },
-              "conditionalOn": {
-                "any": [
-                  {
-                    "where": {
-                      "field": "W_mem_node",
-                      "op": "gt",
-                      "configRef": "thresholds.largestStandardNodeMemoryGB"
+                },
+                {
+                  "id": "P_h_pairs",
+                  "type": "heading",
+                  "label": "Measured runs behind this answer",
+                  "required": false,
+                  "helpText": "Listing the runs your answer above is based on helps the committee understand how the scaling was assessed. Give two runs of the same calculation on different numbers of cores (or GPUs); add a third if you have one. If you do not have these figures, tick Don't know below.",
+                  "conditionalOn": {
+                    "questionId": "P_doubling",
+                    "values": [
+                      "le_0_6",
+                      "0_6_0_8",
+                      "gt_0_8",
+                      "longer"
+                    ]
+                  }
+                },
+                {
+                  "id": "P_runs_unknown",
+                  "type": "checkbox",
+                  "label": "Figures for these runs",
+                  "required": false,
+                  "options": [
+                    {
+                      "value": "dont_know",
+                      "label": "Don't know — I don't have them (skips the runs)"
                     }
+                  ],
+                  "conditionalOn": {
+                    "questionId": "P_doubling",
+                    "values": [
+                      "le_0_6",
+                      "0_6_0_8",
+                      "gt_0_8",
+                      "longer"
+                    ]
                   },
-                  {
+                  "committeeUse": [
+                    "scaling"
+                  ]
+                },
+                {
+                  "id": "P_cores_1",
+                  "type": "number",
+                  "label": "Run 1 — CPU cores",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "committeeUse": [
+                    "scaling"
+                  ],
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "not": {
+                          "questionId": "W_device",
+                          "values": [
+                            "gpu"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "P_gpus_1",
+                  "type": "number",
+                  "label": "Run 1 — GPUs",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": "W_device",
+                        "values": [
+                          "gpu"
+                        ]
+                      }
+                    ]
+                  },
+                  "committeeUse": [
+                    "scaling"
+                  ]
+                },
+                {
+                  "id": "P_wt_1",
+                  "type": "quantity",
+                  "label": "Run 1 — wall time",
+                  "required": true,
+                  "dimension": "time",
+                  "defaultUnit": "hours",
+                  "allowUnknown": true,
+                  "committeeUse": [
+                    "scaling"
+                  ],
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "P_cores_2",
+                  "type": "number",
+                  "label": "Run 2 — CPU cores",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "committeeUse": [
+                    "scaling"
+                  ],
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "not": {
+                          "questionId": "W_device",
+                          "values": [
+                            "gpu"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "P_gpus_2",
+                  "type": "number",
+                  "label": "Run 2 — GPUs",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": "W_device",
+                        "values": [
+                          "gpu"
+                        ]
+                      }
+                    ]
+                  },
+                  "committeeUse": [
+                    "scaling"
+                  ]
+                },
+                {
+                  "id": "P_wt_2",
+                  "type": "quantity",
+                  "label": "Run 2 — wall time",
+                  "required": true,
+                  "dimension": "time",
+                  "defaultUnit": "hours",
+                  "allowUnknown": true,
+                  "committeeUse": [
+                    "scaling"
+                  ],
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "P_run3",
+                  "type": "addButton",
+                  "label": "Add 1 more run",
+                  "removeLabel": "Remove run 3",
+                  "required": false,
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "questionId": "P_doubling",
+                        "values": [
+                          "le_0_6",
+                          "0_6_0_8",
+                          "gt_0_8",
+                          "longer"
+                        ]
+                      },
+                      {
+                        "not": {
+                          "questionId": "P_runs_unknown",
+                          "values": [
+                            "dont_know"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "P_cores_3",
+                  "type": "number",
+                  "label": "Run 3 — CPU cores",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "committeeUse": [
+                    "scaling"
+                  ],
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "not": {
+                          "questionId": "W_device",
+                          "values": [
+                            "gpu"
+                          ]
+                        }
+                      },
+                      {
+                        "questionId": "P_run3",
+                        "values": [
+                          "added"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "P_gpus_3",
+                  "type": "number",
+                  "label": "Run 3 — GPUs",
+                  "required": true,
+                  "integer": true,
+                  "allowUnknown": true,
+                  "min": 1,
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": "W_device",
+                        "values": [
+                          "gpu"
+                        ]
+                      },
+                      {
+                        "questionId": "P_run3",
+                        "values": [
+                          "added"
+                        ]
+                      }
+                    ]
+                  },
+                  "committeeUse": [
+                    "scaling"
+                  ]
+                },
+                {
+                  "id": "P_wt_3",
+                  "type": "quantity",
+                  "label": "Run 3 — wall time",
+                  "required": true,
+                  "dimension": "time",
+                  "defaultUnit": "hours",
+                  "allowUnknown": true,
+                  "committeeUse": [
+                    "scaling"
+                  ],
+                  "conditionalOn": {
+                    "all": [
+                      {
+                        "all": [
+                          {
+                            "questionId": "P_doubling",
+                            "values": [
+                              "le_0_6",
+                              "0_6_0_8",
+                              "gt_0_8",
+                              "longer"
+                            ]
+                          },
+                          {
+                            "not": {
+                              "questionId": "P_runs_unknown",
+                              "values": [
+                                "dont_know"
+                              ]
+                            }
+                          }
+                        ]
+                      },
+                      {
+                        "questionId": "P_run3",
+                        "values": [
+                          "added"
+                        ]
+                      }
+                    ]
+                  }
+                }
+              ],
+              "triggers": [
+                {
+                  "id": "walltime_over_limit",
+                  "label": "its wall time is longer than the present limits (multi-node CPU jobs: 72 h; single-node: 168 h; GPU jobs: 24 h)",
+                  "condition": {
+                    "where": {
+                      "any": [
+                        {
+                          "all": [
+                            {
+                              "field": "W_nodes",
+                              "op": "gt",
+                              "value": 1
+                            },
+                            {
+                              "field": "W_walltime",
+                              "op": "gt",
+                              "configRef": "thresholds.maxMultiNodeWalltimeHours"
+                            }
+                          ]
+                        },
+                        {
+                          "field": "W_walltime",
+                          "op": "gt",
+                          "configRef": "thresholds.maxSingleNodeWalltimeHours"
+                        },
+                        {
+                          "all": [
+                            {
+                              "field": "W_device",
+                              "op": "in",
+                              "values": [
+                                "gpu"
+                              ]
+                            },
+                            {
+                              "field": "W_walltime",
+                              "op": "gt",
+                              "configRef": "thresholds.maxGpuWalltimeHours"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "long_calc",
+                  "label": "you ticked one calculation split over several jobs",
+                  "condition": {
+                    "where": {
+                      "field": "W_org",
+                      "op": "in",
+                      "values": [
+                        "long_calc"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "cores_over_limit",
+                  "label": "it uses more than 384 cores per job",
+                  "condition": {
+                    "where": {
+                      "field": "W_cores",
+                      "op": "gt",
+                      "configRef": "thresholds.maxCoresPerJob"
+                    }
+                  }
+                },
+                {
+                  "id": "campaign",
+                  "label": "you ticked a coordinated campaign",
+                  "condition": {
+                    "where": {
+                      "field": "W_org",
+                      "op": "in",
+                      "values": [
+                        "campaign"
+                      ]
+                    }
+                  }
+                },
+                {
+                  "id": "campaign_large",
+                  "label": "its campaign needs many cores at once",
+                  "condition": {
+                    "where": {
+                      "field": "W_campaign_cores",
+                      "op": "gte",
+                      "configRef": "thresholds.largeRunCores"
+                    }
+                  }
+                },
+                {
+                  "id": "problem_node_count",
+                  "label": "you linked it to needing more nodes or cores than allowed",
+                  "condition": {
                     "all": [
                       {
                         "questionId": "W_affected",
                         "values": [
-                          "insufficient_memory"
+                          "insufficient_node_count"
                         ]
                       },
                       {
                         "form": {
                           "questionId": "X_problems",
                           "values": [
-                            "insufficient_memory"
+                            "insufficient_node_count"
                           ]
                         }
                       }
                     ]
                   }
-                ]
+                },
+                {
+                  "id": "problem_walltime",
+                  "label": "you linked it to jobs stopped by the wall-time limit",
+                  "condition": {
+                    "all": [
+                      {
+                        "questionId": "W_affected",
+                        "values": [
+                          "wall_time_termination"
+                        ]
+                      },
+                      {
+                        "form": {
+                          "questionId": "X_problems",
+                          "values": [
+                            "wall_time_termination"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "sameAsOption": {
+                "questionId": "SAME_scaling"
+              }
+            },
+            {
+              "id": "W_blk_memory",
+              "type": "block",
+              "required": false,
+              "label": "Memory",
+              "notAwareOption": {
+                "questionId": "NA_memory",
+                "label": "I don't know these details for this code"
               },
               "questions": [
                 {
@@ -2150,51 +2379,55 @@
                     "memory_test"
                   ]
                 }
-              ]
-            },
-            {
-              "id": "W_blk_gpu",
-              "type": "block",
-              "required": false,
-              "label": "GPU details",
-              "helpText": "Shown because this code runs on GPUs or is affected by GPU access. Gargi has no GPUs; Raman has one GPU node.",
-              "notAwareOption": {
-                "questionId": "NA_gpu",
-                "label": "I don't know these details for this code"
-              },
-              "conditionalOn": {
-                "any": [
-                  {
-                    "questionId": "W_device",
-                    "values": [
-                      "gpu"
-                    ]
-                  },
-                  {
-                    "questionId": "W_gpu_version",
-                    "values": [
-                      "in_use"
-                    ]
-                  },
-                  {
+              ],
+              "triggers": [
+                {
+                  "id": "memory_over_standard",
+                  "label": "it needs more memory per node than a standard node has (Gargi: 768 GB; Raman: 96 GB)",
+                  "condition": {
+                    "where": {
+                      "field": "W_mem_node",
+                      "op": "gt",
+                      "configRef": "thresholds.largestStandardNodeMemoryGB"
+                    }
+                  }
+                },
+                {
+                  "id": "problem_memory",
+                  "label": "you linked it to running out of memory",
+                  "condition": {
                     "all": [
                       {
                         "questionId": "W_affected",
                         "values": [
-                          "insufficient_gpu_access"
+                          "insufficient_memory"
                         ]
                       },
                       {
                         "form": {
                           "questionId": "X_problems",
                           "values": [
-                            "insufficient_gpu_access"
+                            "insufficient_memory"
                           ]
                         }
                       }
                     ]
                   }
-                ]
+                }
+              ],
+              "sameAsOption": {
+                "questionId": "SAME_memory"
+              }
+            },
+            {
+              "id": "W_blk_gpu",
+              "type": "block",
+              "required": false,
+              "label": "GPU details",
+              "helpText": "Gargi has no GPUs; Raman has one GPU node.",
+              "notAwareOption": {
+                "questionId": "NA_gpu",
+                "label": "I don't know these details for this code"
               },
               "questions": [
                 {
@@ -2279,73 +2512,64 @@
                     "gpu_spec"
                   ]
                 }
-              ]
-            },
-            {
-              "id": "W_blk_scratch",
-              "type": "block",
-              "required": false,
-              "label": "Files and scratch",
-              "helpText": "Shown because jobs of this code read or write large files while running, or are affected by scratch space. Where {scratch} is the area on the fast parallel file system, input files are best loaded from scratch as well, so both reading and writing count here.",
-              "notAwareOption": {
-                "questionId": "NA_scratch",
-                "label": "I don't know these details for this code"
-              },
-              "conditionalOn": {
-                "any": [
-                  {
-                    "where": {
-                      "field": "W_scratch_write",
-                      "op": "gt",
-                      "configRef": "thresholds.scratchPerJobTriggerGB"
-                    }
-                  },
-                  {
-                    "where": {
-                      "field": [
-                        "W_scratch_write",
-                        "W_concurrent"
-                      ],
-                      "op": "gt",
-                      "configRef": "thresholds.scratchConcurrentTriggerGB"
-                    }
-                  },
-                  {
-                    "where": {
-                      "field": "W_input_read",
-                      "op": "gt",
-                      "configRef": "thresholds.scratchPerJobTriggerGB"
-                    }
-                  },
-                  {
-                    "where": {
-                      "field": [
-                        "W_input_read",
-                        "W_concurrent"
-                      ],
-                      "op": "gt",
-                      "configRef": "thresholds.scratchConcurrentTriggerGB"
-                    }
-                  },
-                  {
+              ],
+              "triggers": [
+                {
+                  "id": "device_gpu",
+                  "label": "it runs on GPUs",
+                  "condition": {
+                    "questionId": "W_device",
+                    "values": [
+                      "gpu"
+                    ]
+                  }
+                },
+                {
+                  "id": "gpu_version_in_use",
+                  "label": "you use a GPU version of the code",
+                  "condition": {
+                    "questionId": "W_gpu_version",
+                    "values": [
+                      "in_use"
+                    ]
+                  }
+                },
+                {
+                  "id": "problem_gpu",
+                  "label": "you linked it to insufficient GPU access",
+                  "condition": {
                     "all": [
                       {
                         "questionId": "W_affected",
                         "values": [
-                          "scratch_insufficient"
+                          "insufficient_gpu_access"
                         ]
                       },
                       {
                         "form": {
                           "questionId": "X_problems",
                           "values": [
-                            "scratch_insufficient"
+                            "insufficient_gpu_access"
                           ]
                         }
                       }
                     ]
                   }
-                ]
+                }
+              ],
+              "sameAsOption": {
+                "questionId": "SAME_gpu"
+              }
+            },
+            {
+              "id": "W_blk_scratch",
+              "type": "block",
+              "required": false,
+              "label": "Files and scratch",
+              "helpText": "Where {scratch} is the area on the fast parallel file system, input files are best loaded from scratch as well, so both reading and writing count here.",
+              "notAwareOption": {
+                "questionId": "NA_scratch",
+                "label": "I don't know these details for this code"
               },
               "questions": [
                 {
@@ -2502,7 +2726,84 @@
                     "scratch_test"
                   ]
                 }
-              ]
+              ],
+              "triggers": [
+                {
+                  "id": "write_large",
+                  "label": "one job writes a large volume of files",
+                  "condition": {
+                    "where": {
+                      "field": "W_scratch_write",
+                      "op": "gt",
+                      "configRef": "thresholds.scratchPerJobTriggerGB"
+                    }
+                  }
+                },
+                {
+                  "id": "write_concurrent",
+                  "label": "its jobs running at the same time write a large volume together",
+                  "condition": {
+                    "where": {
+                      "field": [
+                        "W_scratch_write",
+                        "W_concurrent"
+                      ],
+                      "op": "gt",
+                      "configRef": "thresholds.scratchConcurrentTriggerGB"
+                    }
+                  }
+                },
+                {
+                  "id": "read_large",
+                  "label": "one job reads a large volume of input files",
+                  "condition": {
+                    "where": {
+                      "field": "W_input_read",
+                      "op": "gt",
+                      "configRef": "thresholds.scratchPerJobTriggerGB"
+                    }
+                  }
+                },
+                {
+                  "id": "read_concurrent",
+                  "label": "its jobs running at the same time read a large volume together",
+                  "condition": {
+                    "where": {
+                      "field": [
+                        "W_input_read",
+                        "W_concurrent"
+                      ],
+                      "op": "gt",
+                      "configRef": "thresholds.scratchConcurrentTriggerGB"
+                    }
+                  }
+                },
+                {
+                  "id": "problem_scratch",
+                  "label": "you linked it to insufficient scratch",
+                  "condition": {
+                    "all": [
+                      {
+                        "questionId": "W_affected",
+                        "values": [
+                          "scratch_insufficient"
+                        ]
+                      },
+                      {
+                        "form": {
+                          "questionId": "X_problems",
+                          "values": [
+                            "scratch_insufficient"
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ],
+              "sameAsOption": {
+                "questionId": "SAME_scratch"
+              }
             }
           ]
         }
@@ -2865,7 +3166,10 @@
               "label": "Which workload (from Section C) was this? (optional)",
               "optionsFrom": {
                 "questionId": "W_workloads",
-                "labelField": "W_code"
+                "labelField": [
+                  "W_code",
+                  "W_job_kind"
+                ]
               },
               "helpText": "Not listed? Add the code in Section C (Your Workloads) and it will appear here."
             },

@@ -48,7 +48,7 @@ function generateReportForSelected() {
 }
 
 // ---------------------------------------------------------------------------
-// Core report generator (schema 2.4.0)
+// Core report generator (schema 2.5.0)
 // ---------------------------------------------------------------------------
 
 /**
@@ -61,12 +61,12 @@ function generateReportForSelected() {
 var REPORT_SECTIONS = [
   { tab: 'Group',          title: 'A — About the group' },
   { tab: 'Experience',     title: 'B — HPC experience (any system)' },
-  { tab: 'Workloads',      title: 'C — Workloads (with D: how the jobs are organised)', titleCol: 'code' },
-  { tab: 'LongJobs',       title: 'D — Long runs', titleCol: 'code' },
-  { tab: 'Scaling',        title: 'D — Running on more cores', titleCol: 'code' },
-  { tab: 'Memory',         title: 'D — Memory', titleCol: 'code' },
-  { tab: 'Gpu',            title: 'D — GPU details', titleCol: 'code' },
-  { tab: 'Scratch',        title: 'D — Files and scratch', titleCol: 'code' },
+  { tab: 'Workloads',      title: 'C — Workloads (with D: how the jobs are organised)', titleCol: ['code', 'job_kind'] },
+  { tab: 'LongJobs',       title: 'D — Long runs', titleCol: ['code', 'job_kind'] },
+  { tab: 'Scaling',        title: 'D — Running on more cores', titleCol: ['code', 'job_kind'] },
+  { tab: 'Memory',         title: 'D — Memory', titleCol: ['code', 'job_kind'] },
+  { tab: 'Gpu',            title: 'D — GPU details', titleCol: ['code', 'job_kind'] },
+  { tab: 'Scratch',        title: 'D — Files and scratch', titleCol: ['code', 'job_kind'] },
   { tab: 'StorageTesting', title: 'E — Home area, testing and interactive use' },
   { tab: 'Queue',          title: 'F — Queue and turnaround', titleCol: 'queue' },
   { tab: 'Closing',        title: 'G — Growth and closing' }
@@ -74,8 +74,8 @@ var REPORT_SECTIONS = [
 
 /** Columns computed by the sheet writer rather than answered (shown in italics). */
 var DERIVED_COLUMNS = ['core_hours_year_max', 'core_hours_year_unconstrained_max', 'gpu_hours_year_max', 'peak_concurrent_cores',
-                       'peak_concurrent_gpus', 'peak_concurrent_scratch_gb', 'chain_queue_overhead_h', 'long_queue_overhead_h',
-                       'evidence_level', 'not_aware_sections', 'panels'];
+                       'peak_concurrent_gpus', 'peak_concurrent_scratch_gb', 'seq_queue_overhead_h',
+                       'evidence_level', 'not_aware_sections', 'panels', 'organisation_opened_by', 'opened_by'];
 
 /** "walltime_h" -> "Walltime (h)", "mem_node_gb" -> "Mem node (GB)". */
 function readableLabel(col) {
@@ -157,8 +157,11 @@ function generateReport(submissionId) {
       return;
     }
     rows.forEach(function(row) {
-      appendHeading3(body, readableValue(row[sec.titleCol]) || ('Entry ' + row['entry_index']));
-      var pairs = rowPairs(def, row).filter(function(p) { return p[0] !== readableLabel(sec.titleCol); });
+      var titleCols = [].concat(sec.titleCol);
+      var title = titleCols.map(function(c) { return readableValue(row[c]); }).filter(Boolean).join(' — ');
+      appendHeading3(body, 'Entry ' + row['entry_index'] + (title ? ': ' + title : ''));
+      var titleLabels = titleCols.map(readableLabel);
+      var pairs = rowPairs(def, row).filter(function(p) { return titleLabels.indexOf(p[0]) < 0; });
       if (pairs.length) appendTwoColTable(body, pairs);
     });
   });

@@ -1,6 +1,7 @@
-submission_id,pi_name,entry_index,code,not_aware,checkpoint,restart_loss_h,longest_run_h,terminations_12m
-SYN-01,Dr. Synthetic PI 1,1,Quantum ESPRESSO,,yes,0.333333,,25
-SYN-02,Dr. Synthetic PI 2,1,GROMACS,,yes,0.083333,,40
-SYN-03,Dr. Synthetic PI 3,1,WRF,,no,,216,6
-SYN-08,Dr. Synthetic PI 8,1,Stata,true,,,,
-SYN-09,Dr. Synthetic PI 9,1,LAMMPS,,dont_know,,288,10
+submission_id,pi_name,entry_index,code,job_kind,opened_by,same_as_entry,not_aware,checkpoint,restart_loss_h,longest_run_h,terminations_12m
+SYN-01,Dr. Synthetic PI 1,1,Quantum ESPRESSO,ground-state relaxations,long_calc; problem_walltime,,,yes,0.333333,,25
+SYN-01,Dr. Synthetic PI 1,2,Quantum ESPRESSO,ab initio MD,walltime_over_limit; long_calc; problem_walltime,1,,,,,
+SYN-02,Dr. Synthetic PI 2,1,GROMACS,protein MD,walltime_over_limit,,,yes,0.083333,,40
+SYN-03,Dr. Synthetic PI 3,1,WRF,regional climate runs,walltime_over_limit; long_calc; problem_walltime,,,no,,216,6
+SYN-08,Dr. Synthetic PI 8,1,Stata,panel regressions,problem_walltime,,true,,,,
+SYN-09,Dr. Synthetic PI 9,1,LAMMPS,large MD campaign,walltime_over_limit; long_calc; problem_walltime,,,dont_know,,288,10

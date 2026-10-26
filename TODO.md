@@ -2,10 +2,13 @@
 
 ## Status (2026-10-26)
 
-- **Branches.** `progressive-disclosure-v2` (pushed) carries v3 at schema 2.4.0, form and backend, published at the
-  preview <https://svaradh.github.io/hpc-questionnaire/v3-preview/> against the v3 backend. `inline-followups` is
-  merged into it. `main` / the root site still serve v1. The layout-only draft (`/v3-draft/`, `npm run deploy:layout`)
-  is no longer needed for review.
+- **Branches.** `progressive-disclosure-v2` (pushed) carries v3 at schema 2.5.0 (form and backend), on the draft
+  `/v3-draft/` (`npm run deploy:layout`) for review. The preview <https://svaradh.github.io/hpc-questionnaire/v3-preview/>
+  still serves 2.4.0, matching the deployed Apps Script. `main` / the root site still serve v1.
+- **Schema 2.5.0.** Each Section C entry is a code *and kind of job* (up to 8; the same code may have several).
+  Section D panels list every trigger that opened them (recorded as `opened_by`), "Same answers as" an earlier entry
+  of the same code, one merged set of sequence questions for chains and split calculations, and measured scaling runs
+  with an overall Don't know and a third run behind "Add 1 more run". The banner asks respondents to fill sections in order.
 - **Schema 2.4.0.** Section C is the same for every group; Section D "Details for Each Code" holds the per-code
   panels (job organisation, long runs, scaling, memory, GPU, scratch), all required with Don't know allowed. Every
   problem reported in B leads to required answers (problem linked to a code, queue entries, testing questions).
@@ -16,12 +19,14 @@
 
 ## Next
 
-- **Update the v3 Apps Script (manual).** Paste `apps-script/SheetWriter.gs` and `apps-script/ReportGenerator.gs`
-  into the v3 project (`Code.gs` unchanged); Deploy → Manage deployments → Edit → New version (the URL stays the
-  same). Then delete the old test rows on every tab, run HPC Committee → Initialize Sheets, and delete old test
-  reports.
+- **Review 2.5.0 on `/v3-draft/`**, then publish it to the preview (`npm run deploy:preview`) together with the Apps
+  Script update below, so the form and sheet writer match.
+- **Update the v3 Apps Script (manual, for 2.5.0).** Paste `apps-script/SheetWriter.gs` and
+  `apps-script/ReportGenerator.gs` into the v3 project (`Code.gs` unchanged); Deploy → Manage deployments → Edit →
+  New version (the URL stays the same). Then delete the old test rows on every tab, run HPC Committee → Initialize
+  Sheets (new columns: `job_kind`, `opened_by`, `same_as_entry`, `runs_not_known`, `seq_*`), and delete old test reports.
 - **Test submission on `/v3-preview/`**, with a code that opens a few Section D panels; check the Workloads and panel
-  tabs, the confirmation email, and Generate Report. If no email arrives, switch `GmailApp.sendEmail` to `MailApp`.
+  tabs, the confirmation email, and Generate Report. If no email arrives, see *Confirmation email* below.
 - **Dry run** with a student and a colleague; then the convener's answers to
   `docs/hardware-check/cluster-hardware-check.pdf` — add whether home is on the same fast parallel file system as
   scratch (`storage.scratchOnlyOnFastPFS`).

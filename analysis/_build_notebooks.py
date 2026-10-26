@@ -128,7 +128,7 @@ print(ha.deficit_summary(cpu, 'desired', 'capacity', ' core-h', 'desired'))
 print(f"Workloads with unknown inputs (not in the totals): {cpu.attrs['workloads_with_unknown_inputs']}")
 cpu.round(0)"""),
         md("Largest contributors to desired CPU demand (to see whether a deficit is broad or concentrated):"),
-        code("wl[wl['device'] != 'gpu'].nlargest(10, 'cpu_h_desired')[['pi_name', 'code', 'cluster', 'cores', 'walltime_h', 'jobs_year', 'jobs_year_unconstrained', 'cpu_h_used', 'cpu_h_desired']]"),
+        code("wl[wl['device'] != 'gpu'].nlargest(10, 'cpu_h_desired')[['pi_name', 'entry', 'cluster', 'cores', 'walltime_h', 'jobs_year', 'jobs_year_unconstrained', 'cpu_h_used', 'cpu_h_desired']]"),
         md("""## GPU-hours per year
 
 GPU capacity stays *n/a* until the Raman GPU node's GPU count is entered in `clusters.json`; demand is shown regardless."""),
@@ -228,7 +228,7 @@ year of their work would take at that limit.""",
         md("## High scalers: cores wanted vs the largest job allowed"),
         code("""hs = ha.high_scalers(wl, cfg)
 if len(hs):
-    hp.paired(hs.assign(label=hs['pi_name'] + ' · ' + hs['code']), 'label', 'wanted_cores', 'policy_max_cores',
+    hp.paired(hs.assign(label=hs['pi_name'] + ' · ' + hs['entry']), 'label', 'wanted_cores', 'policy_max_cores',
               'Cores usefully used', 'Largest job allowed', 'High scalers: useful job size vs policy', 'CPU cores')
 hs.round(1)"""),
         md("""`walltime_at_policy_max_h` estimates the wall time if the job is capped at the largest allowed size (from the measured or
@@ -242,7 +242,7 @@ tp.round(2)"""),
 per-user limit, not the hardware, paces the work. `concurrency_gap` = jobs wanted at once − jobs allowed at once."""),
         code("""thr = tp.dropna(subset=['years_to_finish']).sort_values('years_to_finish', ascending=False)
 if len(thr):
-    hp.barh(thr['pi_name'] + ' · ' + thr['code'], thr['years_to_finish'].round(2), 'Years to finish one year of work at the per-user job limit', 'Years')"""),
+    hp.barh(thr['pi_name'] + ' · ' + thr['entry'], thr['years_to_finish'].round(2), 'Years to finish one year of work at the per-user job limit', 'Years')"""),
         md("""## Queue waits
 
 Each entry records the queue and the resources requested. *Expansion factor* = (typical wait + requested wall time) /
@@ -271,12 +271,17 @@ for _, r in tr.iterrows():
     print('    ' + (r['reasons'].replace(chr(10), chr(10) + '    ') if r['reasons'] else '(no flags)'))"""),
         md("""## Answers to confirm (internal consistency)
 
-Answers within one submission that do not fit together — e.g. more cores than the stated nodes hold, a chain's
+Answers within one submission that do not fit together — e.g. more cores than the stated nodes hold, a sequence's
 running time longer than its calendar time, measured scaling runs that differ from the reported doubling effect. They are
 compared only with each other (and with node sizes from the cluster configuration), after submission; "don't know" and
 blank answers never trigger a check. Each is a question for the respondent, not a finding; they also appear above as
 category-2 reasons. Checking answers against outside knowledge of a code's performance is done by hand."""),
         code("ha.consistency_checks(dfs, wl, cfg)"),
+        md("""## Why the Section D panels opened
+
+Each panel is asked once per entry, whatever opened it; `opened_by` in each panel tab lists every trigger that held
+(e.g. `walltime_over_limit; long_calc`). Counts per panel and trigger:"""),
+        code("ha.panel_reasons(dfs).pivot_table(index='trigger', columns='panel', values='entries', fill_value=0)"),
         md("## Data quality: how many key numbers are unknown"),
         code("""key = ['cores', 'walltime_h', 'jobs_year', 'jobs_year_unconstrained', 'concurrent', 'mem_node_gb', 'scratch_write_gb']
 raw = dfs['Workloads']
