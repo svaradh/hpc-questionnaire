@@ -1,78 +1,95 @@
 {
-  "_comment": "Reference list for MANUAL cross-checks only: codes documented to support checkpoint/restart, with the mechanism and where it is documented. It is NOT used to flag entries or in any computation (the analysis is code-agnostic); hpc_analysis.restart_cross_check() lists matches when a committee member asks. Compiled 2026-10 from the codes' documentation; 'reference_type' says whether the reference is the code's own documentation ('official') or a secondary source still to verify ('secondary'); all are official as of 2026-10-26, and 'verified' records when an entry was checked against its manual. Support can depend on version, calculation type and settings (e.g. whether restart files were written before the job stopped). Matching is case-insensitive on the code name with spaces and punctuation removed; 'aliases' map other names.",
+  "_comment": "Reference list for MANUAL cross-checks only: codes documented to support checkpoint/restart, with the mechanism and where it is documented. It is NOT used to flag entries or in any computation (the analysis is code-agnostic); hpc_analysis.restart_cross_check() lists matches when a committee member asks. Compiled 2026-10 from the codes' documentation; 'reference_type' says whether the reference is the code's own documentation ('official') or a secondary source still to verify ('secondary'); all are official, and 'verified' records when and against which manual each entry was checked (all 17 on 2026-10-26). Support can depend on version, calculation type and settings (e.g. whether restart files were written before the job stopped). Matching is case-insensitive on the code name with spaces and punctuation removed; 'aliases' map other names.",
   "_compiled": "2026-10-26",
   "restart_supported": {
     "quantumespresso": {
       "name": "Quantum ESPRESSO (pw.x)",
-      "mechanism": "restart_mode='restart'; the earlier run must stop cleanly via max_seconds or a prefix.EXIT file, otherwise no clean restart",
+      "mechanism": "restart_mode='restart' continues an interrupted run; works only if it stopped cleanly via max_seconds (set below the queue limit) or a prefix.EXIT file in outdir, and with the same number of processors and parallelisation",
       "reference": "https://www.quantum-espresso.org/Doc/INPUT_PW.html",
-      "reference_type": "official"
+      "reference_type": "official",
+      "verified": "2026-10-26: pw.x input description, QE 7.5"
     },
     "vasp": {
       "name": "VASP",
-      "mechanism": "ISTART=1/2 reads orbitals from WAVECAR (falls back to a fresh start if WAVECAR is missing or does not match); CONTCAR for positions",
+      "mechanism": "ISTART=1 (constant cutoff) or 2 (constant basis) reads orbitals from WAVECAR, default 1 when WAVECAR exists; reverts to a fresh start if WAVECAR is missing or has a different number of bands/k-points; ISTART=3 also needs TMPCAR",
       "reference": "https://vasp.at/wiki/ISTART",
       "reference_type": "official",
-      "see_also": "https://vasp.at/wiki/Restart_and_output_files_cheat_sheet"
+      "see_also": "https://vasp.at/wiki/Restart_and_output_files_cheat_sheet",
+      "verified": "2026-10-26: VASP wiki, ISTART"
     },
     "gromacs": {
       "name": "GROMACS",
-      "mechanism": "gmx mdrun writes .cpt checkpoints (interval -cpt) and continues exactly with -cpi; -maxh stops cleanly before the wall-time limit",
-      "reference": "https://manual.gromacs.org/2023/user-guide/managing-simulations.html",
-      "reference_type": "official"
+      "mechanism": "gmx mdrun writes state.cpt checkpoints (interval -cpt) and continues with -cpi state.cpt 'exactly as if there was no interruption'; -maxh stops after a set wall-clock time",
+      "reference": "https://manual.gromacs.org/current/user-guide/managing-simulations.html",
+      "reference_type": "official",
+      "notes": "Binary-identical continuation only with the same build, hardware and processor count (without GPUs); otherwise statistically equivalent.",
+      "verified": "2026-10-26: GROMACS 2026.4 user guide, 'Managing long simulations'"
     },
     "lammps": {
       "name": "LAMMPS",
-      "mechanism": "restart N / write_restart write binary restart files; read_restart continues (fixes must be re-specified in the input)",
-      "reference": "https://doc.lammps.org/read_restart.html",
+      "mechanism": "restart N / write_restart write binary restart files; read_restart restores box, atoms and most settings ('*' in the name reads the latest); fixes, computes, variables, kspace and output settings must be re-specified",
+      "reference": "https://docs.lammps.org/read_restart.html",
       "reference_type": "official",
-      "see_also": "https://doc.lammps.org/restart.html"
+      "see_also": "https://docs.lammps.org/restart.html",
+      "notes": "Exact continuation needs the same executable and platform; different processor counts, fix shake/langevin and some pair styles give statistically similar rather than identical runs.",
+      "verified": "2026-10-26: LAMMPS documentation, read_restart"
     },
     "cp2k": {
       "name": "CP2K",
-      "mechanism": "EXT_RESTART section reads the .restart file written during the run; wavefunctions via WFN_RESTART_FILE_NAME",
+      "mechanism": "MD state (positions, velocities, cell, thermostat/barostat) in .restart files, restored via EXT_RESTART (RESTART_POS, RESTART_VEL, ...); wavefunctions in .wfn files via WFN_RESTART_FILE_NAME with SCF_GUESS RESTART",
       "reference": "https://manual.cp2k.org/trunk/methods/restarting.html",
       "reference_type": "official",
-      "see_also": "https://manual.cp2k.org/trunk/CP2K_INPUT/EXT_RESTART.html"
+      "see_also": "https://manual.cp2k.org/trunk/CP2K_INPUT/EXT_RESTART.html",
+      "notes": "Wavefunction files are binary and tied to the CP2K version that wrote them.",
+      "verified": "2026-10-26: CP2K manual, 'Restarting'"
     },
     "namd": {
       "name": "NAMD",
-      "mechanism": "restartname + restartfreq write restart coordinates/velocities; continue with bincoordinates, binvelocities and extendedSystem",
+      "mechanism": "restartname + restartfreq write restart files (binaryrestart default; restartsave keeps a series); continue with bincoordinates, binvelocities and, for periodic cells, extendedSystem (.xsc), setting firsttimestep",
       "reference": "https://www.ks.uiuc.edu/Research/namd/3.0/ug/node12.html",
-      "reference_type": "official"
+      "reference_type": "official",
+      "see_also": "https://www.ks.uiuc.edu/Training/Tutorials/namd/namd-tutorial-unix-html/node26.html",
+      "notes": "restart*/bin* options checked on the 3.0 configuration-parameters page; extendedSystem/firsttimestep usage from the official NAMD tutorial.",
+      "verified": "2026-10-26: NAMD 3.0 User's Guide, 'NAMD configuration parameters'"
     },
     "amber": {
       "name": "Amber (sander / pmemd)",
-      "mechanism": "restart file written every ntwr steps; continue with irest=1, ntx=5 (MD only; a minimisation restart has no velocities)",
-      "reference": "https://ambermd.org/tutorials/advanced/tutorial21/section2.php",
+      "mechanism": "'restrt' file written every ntwr MD steps and at the end of the run; continue with irest=1 and ntx=5 (reads coordinates, velocities and box)",
+      "reference": "https://www.ambermd.org/doc12/Amber26.pdf",
       "reference_type": "official",
-      "notes": "Reference is an official Amber tutorial; the variable definitions are in the Amber manual for the version used."
+      "notes": "Amber 2026 Reference Manual, section 23.6 'General minimization and dynamics parameters' (pp. 431-432, ntx/irest/ntwr). Older than Amber 20: ntx >= 4.",
+      "see_also": "https://ambermd.org/tutorials/advanced/tutorial21/section2.php",
+      "verified": "2026-10-26: Amber 2026 Reference Manual"
     },
     "openfoam": {
       "name": "OpenFOAM",
-      "mechanism": "time directories written per writeControl/writeInterval in controlDict; startFrom latestTime continues from the newest",
+      "mechanism": "fields written to time directories per writeControl/writeInterval in controlDict; startFrom latestTime continues from the most recent",
       "reference": "https://doc.cfd.direct/openfoam/user-guide-v12/controldict",
       "reference_type": "official",
-      "see_also": "https://doc.openfoam.com/2312/fundamentals/case-structure/controldict/"
+      "see_also": "https://doc.openfoam.com/2312/fundamentals/case-structure/controldict/",
+      "verified": "2026-10-26: OpenFOAM v12 user guide, controlDict"
     },
     "wrf": {
       "name": "WRF",
-      "mechanism": "restart_interval (minutes) writes wrfrst files; continue with restart=.true. and new start time (no need to rerun WPS/real.exe)",
+      "mechanism": "restart_interval (minutes, <= run length) writes wrfrst_d<domain>_<date>; continue with restart=.true. and the new start/end times, running only wrf.exe (no WPS or real.exe)",
       "reference": "https://www2.mmm.ucar.edu/wrf/OnLineTutorial/CASES/Restart/wrf.php",
       "reference_type": "official",
-      "see_also": "https://www2.mmm.ucar.edu/wrf/site/users_guide/namelist_variables.html"
+      "see_also": "https://www2.mmm.ucar.edu/wrf/site/users_guide/namelist_variables.html",
+      "verified": "2026-10-26: WRF online tutorial, 'Restart Run'"
     },
     "octopus": {
       "name": "Octopus",
-      "mechanism": "restart data (e.g. wavefunctions) written to restart directories; RestartOptions controls reading them",
+      "mechanism": "binary restart data (e.g. wavefunctions) in subdirectories of 'restart' (gs, td, ...); RestartOptions sets paths and what is read; RestartWrite/RestartWriteInterval/RestartWallTimePeriod control writing",
       "reference": "https://octopus-code.org/documentation/13/variables/execution/io/restartoptions",
-      "reference_type": "official"
+      "reference_type": "official",
+      "verified": "2026-10-26: Octopus 13 variable reference, RestartOptions"
     },
     "gpaw": {
       "name": "GPAW",
-      "mechanism": ".gpw restart files (calc.write, or calc.attach for every n SCF steps); restart with GPAW('file.gpw')",
+      "mechanism": ".gpw files: calc.write('x.gpw') (mode='all' adds wavefunctions), or calc.attach(calc.write, n, 'x.gpw') every n SCF iterations; continue with GPAW('x.gpw') or restart('x.gpw')",
       "reference": "https://gpaw.readthedocs.io/documentation/restart_files.html",
-      "reference_type": "official"
+      "reference_type": "official",
+      "verified": "2026-10-26: GPAW documentation, 'Restart files'"
     },
     "nwchem": {
       "name": "NWChem",
@@ -101,11 +118,11 @@
     },
     "dlpoly": {
       "name": "DL_POLY",
-      "mechanism": "REVCON (configuration) and REVIVE (statistics) written every ndump steps; rename to CONFIG and REVOLD and add 'restart' to CONTROL",
-      "reference": "https://wanglab.hosted.uark.edu/DLPOLY2/node172.html",
+      "mechanism": "REVCON (configuration) and REVIVE (statistics) dumped every ndump steps (data_dump_frequency) and at the end; continue by copying REVCON to CONFIG and REVIVE to REVOLD and adding the restart directive to CONTROL; with close time / job time set, a run out of job time stops cleanly",
+      "reference": "https://ccp5.gitlab.io/dl-poly/UserManual/construction_and_execution/compilation.html#restarting",
       "reference_type": "official",
-      "notes": "Copy of the DL_POLY 2 user manual; DL_POLY 4/5 file names may differ.",
-      "see_also": "https://wanglab.hosted.uark.edu/DLPOLY3/USRMAN3-122.html"
+      "see_also": "https://ccp5.gitlab.io/dl-poly/UserManual/data_files/output_files.html",
+      "verified": "2026-10-26: DL_POLY 5.3.0 documentation (DL_POLY Collective), 'Restarting'"
     },
     "cpmd": {
       "name": "CPMD",
@@ -117,9 +134,11 @@
     },
     "castep": {
       "name": "CASTEP",
-      "mechanism": "checkpoint written to seedname.check; continue with CONTINUATION (only some parameters may change)",
+      "mechanism": "checkpoint written to seedname.check; CONTINUATION : DEFAULT restarts from the end of the previous run (only a limited subset of parameters may change; not combinable with REUSE)",
       "reference": "https://www.tcm.phy.cam.ac.uk/castep/documentation/WebHelp/content/modules/castep/keywords/k_continuation_castep.htm",
-      "reference_type": "official"
+      "reference_type": "official",
+      "notes": "Page is the BIOVIA Materials Studio 2023 CASTEP help, hosted by the CASTEP group at TCM Cambridge.",
+      "verified": "2026-10-26: CASTEP keyword reference, CONTINUATION"
     }
   },
   "aliases": {
