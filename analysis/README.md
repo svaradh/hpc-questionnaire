@@ -56,7 +56,7 @@ and scratch trigger fractions. The form's follow-up triggers and these notebooks
 The analysis is code-agnostic: no flag or total depends on which code a workload runs. Checking answers against outside
 knowledge of a code (or against Slurm accounting) is done by hand. For that, `code_capabilities.json` keeps a reference
 list of codes documented to support checkpoint/restart, with the mechanism and a documentation link for each
-(`reference_type` marks secondary sources still to verify). `ha.restart_cross_check(wl)` lists the workloads whose code is
+(all references are to the codes' own documentation). `ha.restart_cross_check(wl)` lists the workloads whose code is
 on it, next to the reported checkpoint answer, when a committee member asks; nothing else uses it.
 
 - **Missing answers get neutral defaults** (`ha.NEUTRAL_DEFAULTS`): a blank, optional or "don't know" answer neither adds

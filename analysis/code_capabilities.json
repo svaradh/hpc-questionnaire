@@ -1,5 +1,5 @@
 {
-  "_comment": "Reference list for MANUAL cross-checks only: codes documented to support checkpoint/restart, with the mechanism and where it is documented. It is NOT used to flag entries or in any computation (the analysis is code-agnostic); hpc_analysis.restart_cross_check() lists matches when a committee member asks. Compiled 2026-10 from the codes' documentation; 'reference_type' says whether the reference is the code's own documentation ('official') or a secondary source still to verify against the official manual ('secondary'). Support can depend on version, calculation type and settings (e.g. whether restart files were written before the job stopped). Matching is case-insensitive on the code name with spaces and punctuation removed; 'aliases' map other names.",
+  "_comment": "Reference list for MANUAL cross-checks only: codes documented to support checkpoint/restart, with the mechanism and where it is documented. It is NOT used to flag entries or in any computation (the analysis is code-agnostic); hpc_analysis.restart_cross_check() lists matches when a committee member asks. Compiled 2026-10 from the codes' documentation; 'reference_type' says whether the reference is the code's own documentation ('official') or a secondary source still to verify ('secondary'); all are official as of 2026-10-26, and 'verified' records when an entry was checked against its manual. Support can depend on version, calculation type and settings (e.g. whether restart files were written before the job stopped). Matching is case-insensitive on the code name with spaces and punctuation removed; 'aliases' map other names.",
   "_compiled": "2026-10-26",
   "restart_supported": {
     "quantumespresso": {
@@ -76,24 +76,28 @@
     },
     "nwchem": {
       "name": "NWChem",
-      "mechanism": "'restart' top-level directive continues from the run database (files from 'start <name>'); only some calculation types can restart",
-      "reference": "https://github.com/nwchemgit/nwchem/wiki/Sample",
-      "reference_type": "secondary",
-      "notes": "Example input in the NWChem wiki; verify against the 'START and RESTART' section of the NWChem manual."
+      "mechanism": "RESTART directive reuses the run database (file_prefix.db) and its files, keeping the same file prefix; list only the unfinished tasks after it. Recommended when a job runs out of queue time",
+      "reference": "https://nwchemgit.github.io/Start_Restart.html",
+      "reference_type": "official",
+      "verified": "2026-10-26: NWChem manual, 'START and RESTART'"
     },
     "siesta": {
       "name": "SIESTA",
-      "mechanism": "DM.UseSaveDM reuses the saved density matrix (.DM); MD.UseSaveXV reuses saved positions/velocities (.XV)",
-      "reference": "https://docs.siesta-project.org/projects/siesta/en/5.0/index.html",
-      "reference_type": "secondary",
-      "notes": "Only the manual's landing page was found; keyword definitions not yet checked."
+      "mechanism": "positions and velocities saved to SystemLabel.XV every step (MD.UseSaveXV reads them); seamless MD continuation via SystemLabel.VERLET_RESTART / NOSE_RESTART / PR_RESTART / NPR_RESTART / ANNEAL_RESTART; DM.UseSaveDM (default true) reads the saved density matrix",
+      "reference": "https://docs.siesta-project.org/projects/siesta/en/latest/reference/siesta.html#restarting-geometry-optimizations-and-md-runs",
+      "reference_type": "official",
+      "notes": "Without the *_RESTART file, MD 'restarts' by repeating the last step from XV, which the manual says is not a seamless continuation.",
+      "see_also": "https://docs.siesta-project.org/projects/siesta/en/latest/reference/siesta.html#fdfparam-dm-usesavedm",
+      "verified": "2026-10-26: SIESTA reference manual (latest)"
     },
     "abinit": {
       "name": "ABINIT",
-      "mechanism": "irdwfk/getwfk read earlier wavefunctions; restartxf restarts a structural optimisation from the (x,f) history",
-      "reference": "https://sympa-1.sipr.ucl.ac.be/abinit.org/arc/forum/2010-02/msg00004.html",
-      "reference_type": "secondary",
-      "notes": "ABINIT forum post (v5.8 era); verify against the variable pages at docs.abinit.org."
+      "mechanism": "restartxf = -1/-2/-3 restarts MD or structural optimisation from the HIST.nc file written every iteration (also for unfinished runs; only predictors without random numbers); irdwfk=1 / getwfk read earlier _WFK wavefunctions",
+      "reference": "https://docs.abinit.org/variables/rlx/#restartxf",
+      "reference_type": "official",
+      "notes": "Positive restartxf values are deprecated since ABINIT v8 (older forum advice to use restartxf 1 no longer applies).",
+      "see_also": "https://docs.abinit.org/variables/files/#irdwfk",
+      "verified": "2026-10-26: ABINIT variable documentation"
     },
     "dlpoly": {
       "name": "DL_POLY",
@@ -105,10 +109,11 @@
     },
     "cpmd": {
       "name": "CPMD",
-      "mechanism": "RESTART WAVEFUNCTION COORDINATES [VELOCITIES] LATEST in &CPMD reads the RESTART file written during the run",
+      "mechanism": "RESTART [options] in &CPMD reads the binary RESTART file (MD: WAVEFUNCTION COORDINATES VELOCITIES, plus ACCUMULATORS and Nose options if used; LATEST reads the newest). Written at the end and at intervals set by STORE; RESTFILE keeps several",
       "reference": "https://rcs.ucalgary.ca/images/2/21/Cpmd-4.3-manual.pdf",
-      "reference_type": "secondary",
-      "notes": "Mirrored CPMD 4.3 manual (section 11.7 'Restarts'); contents not yet checked."
+      "reference_type": "official",
+      "notes": "The CPMD consortium's manual for CPMD 4.3.0 (6 March 2024), section 11.7 'Restarts' and keyword RESTART; this link is a copy hosted by the University of Calgary (project site: http://www.cpmd.org/).",
+      "verified": "2026-10-26: CPMD 4.3.0 manual"
     },
     "castep": {
       "name": "CASTEP",

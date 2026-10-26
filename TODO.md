@@ -33,7 +33,6 @@
 - **Verify against a live deployment.** Generate one real report and run the notebooks in Colab on real v3 responses.
 - **Committee parameters** in `src/config/clusters.json`: target utilisation (0.8 placeholder), home:scratch split
   (0.5 placeholder), largest scratch area per user, home guide per group, Raman GPU count (from the hardware check);
-  verify the four 'secondary' references in `analysis/code_capabilities.json` (NWChem, SIESTA, ABINIT, CPMD);
   `storage.scratchOnlyOnFastPFS` per cluster (is home on the same fast PFS as scratch? — add to the hardware check). Re-run `docs/hardware-check/make_hardware_form.py` after edits.
 - **Slurm accounting.** Ask the HPC admins for a per-group export (last 12 months) to check reported figures.
 - **Confirmation email.** If none arrives on a test submission, check the execution log. The deployed project picks its
