@@ -83,12 +83,12 @@ Storage is judged per group against a guide figure, not by adding up wishes.
 | CPU-hour demand vs capacity: Gargi, Raman, unattributed, combined; used vs unconstrained | Is there a *volume* shortfall? | P2, P7 | 02 |
 | GPU-hour demand vs capacity; latent GPU demand from CPU codes; CPU-viability of GPU workloads | How much GPU, and how much would CPU nodes absorb? | P9 | 02 |
 | Home and scratch demand vs capacity per cluster; per-group outliers; output residence | Is storage short, or held too long? | P8 | 03 |
-| Long-job requirement split by checkpoint status (with a known-capability cross-check) | Genuine long-wall-time need, or awareness gap? | P3 | 04 |
+| Long-job requirement split by checkpoint status | Genuine long-wall-time need, or awareness gap? | P3 | 04 |
 | Long jobs without checkpoint, split by scaling | Should these run *longer* or *wider*? | P3, P4 | 04 |
 | High-scalers: cores wanted vs policy maximum; estimated wall time at the cap vs at the wanted size | Where does policy hold back the parallel hardware? | P4 | 05 |
 | Low/intermediate scalers: queue fit, concurrency need vs per-user limit, time to finish a year's work, queue waits | Where do queue limits throttle throughput or turnaround? | P5, P6 | 05 |
 | Debug/interactive demand vs the 30-min debug queues | Is the on-ramp adequate? | P6 | 05 |
-| Clarification and technical-assessment candidates; data quality | Which submissions need a follow-up? | P1, P12 | 06 |
+| Clarification and technical-assessment candidates; answers to confirm (internal consistency); data quality | Which submissions need a follow-up? | P1, P12 | 06 |
 
 ## 4. Suggested decision tests (for the committee to adopt, amend or reject)
 
@@ -100,7 +100,7 @@ Storage is judged per group against a guide figure, not by adding up wishes.
 | High memory | Peak memory per node exceeds a standard node and cannot be distributed (Section D, Memory). |
 | Scratch above the per-user cap | Peak concurrent scratch exceeds the cap, the I/O is write-heavy or re-read, and local disk is not an option (Section D, Files and scratch). |
 | GPU expansion | Measured GPU node speed-up ≥ 5× and CPU-only not viable, with enough GPU-hours to keep extra GPUs busy at the target utilisation. |
-| Support / training rather than policy | Checkpoint "Not tested" or "Don't know" for a code known to support restart; "Not aware" declarations; scaling never tested. |
+| Support / training rather than policy | Checkpoint "Not tested" or "Don't know" for a long-job workload; "Not aware" declarations; scaling never tested. |
 
 ## 5. Caveats
 
@@ -108,4 +108,6 @@ Storage is judged per group against a guide figure, not by adding up wishes.
 - **"Unconstrained" demand** is self-estimated and tends to be optimistic. Treat it as an upper bound and the "used" figure as the lower bound.
 - **Cluster attribution:** workloads with cluster "Both" are split 50:50. "Not decided" and "Don't know" go into an *unattributed* pool, shown separately and in the combined total.
 - **Averages vs peaks:** scratch and concurrency are reported both as sums of peaks (worst case) and as time-averaged load (Little's law: average running jobs = jobs per year × wall time / 8,760 h).
-- **Code capability list:** the "known to support restart" list in `analysis/code_capabilities.json` is a starting list to verify, not an authority.
+- **Only the respondents' data:** the scripts are code-agnostic — no flag depends on which code a workload runs. Checking answers against outside knowledge of a code's performance, or against Slurm accounting, is manual.
+- **Missing answers are neutral:** blank, optional and "don't know" answers get defaults that neither add demand nor raise a flag (`NEUTRAL_DEFAULTS` in `hpc_analysis.py`); a test whose inputs are unknown is reported as undecided (`<NA>`), not as failed.
+- **Internal consistency** is checked after submission, by comparing a respondent's answers with each other (`consistency_checks`); the form does not check it. Each mismatch is something to confirm, not a finding.

@@ -19,7 +19,7 @@ REPO_REF = 'main'                                   # git branch/tag for the hel
 
 import os, urllib.request
 if not os.path.exists('hpc_analysis.py'):            # in Colab: fetch the helper modules once per session
-    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'code_capabilities.json']:
+    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py']:
         urllib.request.urlretrieve(f'https://raw.githubusercontent.com/svaradh/hpc-questionnaire/{REPO_REF}/analysis/{f}', f)
 
 import pandas as pd
@@ -49,7 +49,7 @@ def intro(title, purpose, principles):
 
 {purpose}
 
-*Principles: {principles} in the [analysis framework]({FRAMEWORK}). Nothing here scores or ranks groups; flags are candidates for the committee to look at. Totals cover responding groups only, and "Don't know" is never counted as zero.*
+*Principles: {principles} in the [analysis framework]({FRAMEWORK}). Nothing here scores or ranks groups; flags are candidates for the committee to look at. Totals cover responding groups only, and "Don't know" is never counted as zero; a yes/no flag shown as `<NA>` means its inputs are unknown. Only the respondents' answers and the cluster configuration are used — nothing depends on which code a workload runs.*
 
 **To run:** paste the Spreadsheet ID in the first code cell, then *Runtime → Run all*. Colab asks once per session to sign in with your IISER Google account.""")
 
@@ -163,7 +163,7 @@ print(ha.deficit_summary(home, 'demand_now_tb', 'capacity_tb', ' TB', 'now'))
 print(ha.deficit_summary(home, 'demand_3y_tb', 'capacity_tb', ' TB', 'in 3 years'))
 print(f"Groups with unknown home need: {home.attrs['groups_unknown']}")
 home.round(2)"""),
-        md("""Per group, largest first. `over_guide` uses the committee's home guide per group (not set = False);
+        md("""Per group, largest first. `over_guide` uses the committee's home guide per group (not set = `<NA>`);
 `outputs_kept_over_3_months` marks groups whose final outputs stay on the cluster for more than 3 months before transfer."""),
         code("home_groups.assign(home_now_tb=lambda d: d['home_now_gb'] / 1024).round(2)"),
         md("## Scratch"),
@@ -174,7 +174,7 @@ print(ha.deficit_summary(scr, 'peak_sum_tb', 'capacity_tb', ' TB', 'sum of peaks
 print(ha.deficit_summary(scr, 'average_tb', 'capacity_tb', ' TB', 'time-averaged'))
 scr.round(2)"""),
         md("""Per workload, largest peak first. `over_trigger` = peak concurrent scratch above the follow-up trigger;
-`over_user_cap` uses the committee's largest-area-per-user (not set = False). Both use the peak *with inputs*
+`over_user_cap` uses the committee's largest-area-per-user (not set = `<NA>`). Both use the peak *with inputs*
 (files read + written), the case where only scratch is on the fast parallel file system; the cluster table counts
 inputs only for clusters with `storage.scratchOnlyOnFastPFS` set. The Section D "Files and scratch" details (I/O share,
 re-reads, local-disk option) tell whether a large need is write-heavy enough to justify scratch."""),
@@ -196,8 +196,7 @@ lj"""),
 
 - *checkpoint available*: the requirement can usually be met by chaining jobs.
 - *no checkpoint*: a candidate genuine requirement (see split 2).
-- *unknown — code supports restart*: the code is on the known-capability list (`code_capabilities.json`, to be verified) but the respondent did not know or had not tested it — **an awareness gap**, best met with support rather than policy.
-- *unknown*: neither the respondent nor the list can say."""),
+- *unknown*: not tested or not known — possibly **an awareness gap**, best met with support rather than policy. Whether the code itself can restart is for the committee to check by hand."""),
         code("hp.counts(lj['checkpoint_class'], 'Long-job workloads by checkpoint status')"),
         md("""## Split 2 — scaling (excluding workloads that can checkpoint)
 
@@ -208,8 +207,11 @@ lj"""),
         md("""## Suggested long-wall-time test
 
 Needed run time > applicable limit **and** no checkpoint **and** not high-scaling **and** evidence level ≤ 3
-(see section 4 of the framework). Workloads meeting it are candidates for a long-wall-time service; the committee decides."""),
-        code("lj[lj['long_walltime_test']]"),
+(see section 4 of the framework). Workloads meeting it are candidates for a long-wall-time service; the committee decides.
+`<NA>` = a part of the test is unknown (e.g. checkpoint not tested, evidence source not given): a follow-up, not a failed test."""),
+        code("""display(lj[lj['long_walltime_test'].fillna(False)])
+print('Test undecided (inputs unknown):')
+lj[lj['long_walltime_test'].isna()]"""),
     ],
 
     "05_parallel_and_throughput.ipynb": [
@@ -234,7 +236,7 @@ reported scaling); compare it with `multi_node_limit_h` (72 h for multi-node job
 coordinated campaigns needing more cores at once than one user can hold in any single queue."""),
         md("## Low and intermediate scalers: queue fit, concurrency and time to finish a year's work"),
         code("""tp = ha.throughput(wl)
-hp.counts(tp['queue'], 'Typical job: the queue it fits ("none fits" = no queue allows this shape)')
+hp.counts(tp['queue'], 'Typical job: the queue it fits ("none fits" = no queue allows this shape; "unknown" = size or wall time not given)')
 tp.round(2)"""),
         md("""`years_to_finish` = (jobs per year × wall time) / (per-user job limit of that queue × 8,760 h): above ~0.5, the
 per-user limit, not the hardware, paces the work. `concurrency_gap` = jobs wanted at once − jobs allowed at once."""),
@@ -267,6 +269,14 @@ hp.counts(tr['suggested_category'].map({1: '1 — no flags', 2: '2 — clarifica
 for _, r in tr.iterrows():
     print(f"{r['submission_id']}  {r['pi_name']}  — suggested category {r['suggested_category']}")
     print('    ' + (r['reasons'].replace(chr(10), chr(10) + '    ') if r['reasons'] else '(no flags)'))"""),
+        md("""## Answers to confirm (internal consistency)
+
+Answers within one submission that do not fit together — e.g. more cores than the stated nodes hold, a chain's
+running time longer than its calendar time, measured scaling runs that differ from the reported doubling effect. They are
+compared only with each other (and with node sizes from the cluster configuration), after submission; "don't know" and
+blank answers never trigger a check. Each is a question for the respondent, not a finding; they also appear above as
+category-2 reasons. Checking answers against outside knowledge of a code's performance is done by hand."""),
+        code("ha.consistency_checks(dfs, wl, cfg)"),
         md("## Data quality: how many key numbers are unknown"),
         code("""key = ['cores', 'walltime_h', 'jobs_year', 'jobs_year_unconstrained', 'concurrent', 'mem_node_gb', 'scratch_write_gb']
 raw = dfs['Workloads']

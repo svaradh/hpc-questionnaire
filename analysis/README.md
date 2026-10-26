@@ -51,7 +51,15 @@ Set in [`src/config/clusters.json`](../src/config/clusters.json) under `committe
 `storage.scratchFraction`): target utilisation, home:scratch split, largest scratch area per user, home guide per group,
 and scratch trigger fractions. The form's follow-up triggers and these notebooks read the same file.
 
-The known-checkpoint list in `code_capabilities.json` is a starting list to verify.
+## Only the respondents' data
+
+The analysis is code-agnostic: nothing depends on which code a workload runs, and there is no list of "known" code
+capabilities. Checking answers against outside knowledge of a code (or against Slurm accounting) is done by hand.
+
+- **Missing answers get neutral defaults** (`ha.NEUTRAL_DEFAULTS`): a blank, optional or "don't know" answer neither adds
+  demand nor raises a flag, and yes/no flags whose inputs are unknown are `<NA>`, not False.
+- **Internal consistency** (`ha.consistency_checks`): answers in one submission that do not fit together, listed after
+  submission as things to confirm (notebook 06, and category-2 reasons in triage). The form does not check them.
 
 ## Writing your own analysis
 
