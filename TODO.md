@@ -2,9 +2,13 @@
 
 ## Status (2026-10-26)
 
-- **Branches.** `progressive-disclosure-v2` (pushed) carries v3 at schema 2.5.0 (form and backend), on the draft
-  `/v3-draft/` (`npm run deploy:layout`) for review, now at 2.6.0. The preview
-  <https://svaradh.github.io/hpc-questionnaire/v3-preview/> still serves 2.4.0, matching the deployed Apps Script. `main` / the root site still serve v1.
+- **Branches.** `progressive-disclosure-v2` (pushed) carries v3 at schema 2.6.0, form and backend. Published at the
+  preview <https://svaradh.github.io/hpc-questionnaire/v3-preview/> (submissions on, v3 backend) and the draft
+  `/v3-draft/` (submissions off). The v3 Apps Script and response sheet were updated for 2.6.0 on 2026-10-26.
+  `main` / the root site still serve v1.
+- **Working on another computer.** Clone, `git checkout progressive-disclosure-v2`, `npm install`, and copy
+  `.env.local` (v3 web-app URL and Google client ID; not in git). Notebooks: a Python venv with pandas, matplotlib,
+  nbformat, nbclient, ipykernel. Slides: `slides/` (LaTeX, `latexmk -pdf`).
 - **Schema 2.5.0.** Each Section C entry is a code *and kind of job* (up to 8; the same code may have several).
   Section D panels list every trigger that opened them (recorded as `opened_by`), "Same answers as" an earlier entry
   of the same code, one merged set of sequence questions for chains and split calculations, and measured scaling runs
@@ -23,13 +27,9 @@
 
 ## Next
 
-- **Review 2.5.0 on `/v3-draft/`**, then publish it to the preview (`npm run deploy:preview`) together with the Apps
-  Script update below, so the form and sheet writer match.
-- **Update the v3 Apps Script (manual, for 2.5.0).** Paste `apps-script/SheetWriter.gs` and
-  `apps-script/ReportGenerator.gs` into the v3 project (`Code.gs` unchanged); Deploy → Manage deployments → Edit →
-  New version (the URL stays the same). Then delete the old test rows on every tab, run HPC Committee → Initialize
-  Sheets (new columns: `job_kind`, `opened_by`, `same_as_entry`, `runs_not_known`, `seq_*`, `problems_gargi`,
-  `problems_raman`, `gargi_nonuse`, `raman_nonuse`; `problems_where` removed), and delete old test reports.
+- **Whenever `apps-script/*.gs` change:** paste `SheetWriter.gs` and `ReportGenerator.gs` into the v3 project
+  (`Code.gs` unchanged); Deploy → Manage deployments → Edit → New version (URL stays the same); clear test rows and run
+  HPC Committee → Initialize Sheets. Done for 2.6.0.
 - **Test submission on `/v3-preview/`**, with a code that opens a few Section D panels; check the Workloads and panel
   tabs, the confirmation email, and Generate Report. If no email arrives, see *Confirmation email* below.
 - **Dry run** with a student and a colleague; then the convener's answers to
