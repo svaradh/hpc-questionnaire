@@ -12,4 +12,5 @@ Placeholders in orange (`\TBD{…}`) — form link, deadline, department volunte
 are to be filled in before presenting.
 
 `figures/` holds screenshots of the form (schema 2.6.0) with neutral placeholder entries ("Example code").
-If the form changes, retake them so the slides match.
+If the form changes, retake them with `npm run slides:figures` (`make_figures.mjs`: starts the dev server, loads the
+example answers, saves the crops), then rebuild the PDF.

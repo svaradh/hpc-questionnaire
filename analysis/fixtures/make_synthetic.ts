@@ -5,7 +5,7 @@
  * `_triggers` added to each workload entry) and then the real apps-script/SheetWriter.gs, so
  * column names, follow-up rows and derived values match production.
  *
- * Usage:  npx tsx analysis/fixtures/make_synthetic.ts
+ * Usage:  npm run fixtures   (or: npx tsx analysis/fixtures/make_synthetic.ts)
  * Output: analysis/fixtures/synthetic_v3/<Tab>.csv
  *
  * ALL GROUPS BELOW ARE FICTIONAL. Each one is designed to exercise a

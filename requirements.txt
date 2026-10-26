@@ -1,0 +1,19 @@
+# Python packages for this project (Python 3.10+).
+#   python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt
+# The web form itself needs only Node (see package.json / .nvmrc); this file is for the analysis side.
+
+# Analysis notebooks and helpers (analysis/)
+pandas>=2.2
+numpy>=1.26
+matplotlib>=3.8
+# Reading the response sheet from Google Sheets (also preinstalled in Colab)
+gspread>=6.0
+google-auth>=2.30
+
+# Building and test-running the notebooks locally (analysis/_build_notebooks.py, analysis/run_notebooks.py)
+nbformat>=5.10
+nbclient>=0.10
+ipykernel>=6.29
+
+# Hardware-check PDF for the cluster convener (docs/hardware-check/make_hardware_form.py)
+reportlab>=4.0

@@ -6,9 +6,8 @@
   preview <https://svaradh.github.io/hpc-questionnaire/v3-preview/> (submissions on, v3 backend) and the draft
   `/v3-draft/` (submissions off). The v3 Apps Script and response sheet were updated for 2.6.0 on 2026-10-26.
   `main` / the root site still serve v1.
-- **Working on another computer.** Clone, `git checkout progressive-disclosure-v2`, `npm install`, and copy
-  `.env.local` (v3 web-app URL and Google client ID; not in git). Notebooks: a Python venv with pandas, matplotlib,
-  nbformat, nbclient, ipykernel. Slides: `slides/` (LaTeX, `latexmk -pdf`).
+- **Working on another computer.** See *Setting up on a new computer* in `README.md`: `npm ci`, `pip install -r
+  requirements.txt`, and a copy of `.env.local` (v3 web-app URL and Google client ID; not in git).
 - **Schema 2.5.0.** Each Section C entry is a code *and kind of job* (up to 8; the same code may have several).
   Section D panels list every trigger that opened them (recorded as `opened_by`), "Same answers as" an earlier entry
   of the same code, one merged set of sequence questions for chains and split calculations, and measured scaling runs

@@ -2,7 +2,7 @@
   "name": "hpc-questionnaire",
   "private": true,
   "version": "1.0.0",
-  "description": "HPC Workload Characterisation & QoS Questionnaire \u2014 Phase 1",
+  "description": "HPC Workload Characterisation & QoS Questionnaire — Phase 1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,7 +11,9 @@
     "typecheck": "tsc --noEmit",
     "deploy": "npm run build && gh-pages -d dist",
     "deploy:preview": "tsc && vite build --base=/hpc-questionnaire/v3-preview/ && gh-pages -d dist --dest v3-preview --add -m 'Deploy v3 preview'",
-    "deploy:layout": "tsc && VITE_SUBMIT_DISABLED=true vite build --base=/hpc-questionnaire/v3-draft/ && gh-pages -d dist --dest v3-draft --add -m 'Deploy v3 layout draft'"
+    "deploy:layout": "tsc && VITE_SUBMIT_DISABLED=true vite build --base=/hpc-questionnaire/v3-draft/ && gh-pages -d dist --dest v3-draft --add -m 'Deploy v3 layout draft'",
+    "fixtures": "tsx analysis/fixtures/make_synthetic.ts",
+    "slides:figures": "node slides/make_figures.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
@@ -22,7 +24,12 @@
     "@types/react-dom": "^18.3.0",
     "@vitejs/plugin-react": "^4.3.1",
     "gh-pages": "^6.3.0",
+    "playwright-core": "^1.64.1",
+    "tsx": "^4.23.15",
     "typescript": "^5.4.5",
     "vite": "^5.3.4"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
