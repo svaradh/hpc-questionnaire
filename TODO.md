@@ -6,6 +6,8 @@
   preview <https://svaradh.github.io/hpc-questionnaire/v3-preview/> (submissions on, v3 backend) and the draft
   `/v3-draft/` (submissions off). The v3 Apps Script and response sheet were updated for 2.6.0 on 2026-10-26.
   `main` / the root site still serve v1.
+- **Slides.** `slides/survey_intro.pdf` is final (approved 2026-10-26), built from `survey_intro.tex`. If the form
+  changes before it is presented, run `npm run slides:figures` and rebuild so the screenshots match.
 - **Working on another computer.** See *Setting up on a new computer* in `README.md`: `npm ci`, `pip install -r
   requirements.txt`, and a copy of `.env.local` (v3 web-app URL and Google client ID; not in git).
 - **Schema 2.5.0.** Each Section C entry is a code *and kind of job* (up to 8; the same code may have several).
