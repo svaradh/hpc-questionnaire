@@ -50,7 +50,7 @@ const submissions = [
   group(1, 'chemistry', {
     A_hpc_users_now: 6, A_hpc_users_3y: 9,
     X_systems_used: ['gargi', 'national'], X_share_iiserb: 60,
-    X_problems: ['wall_time_termination', 'insufficient_node_count'], X_problems_gargi: ['wall_time_termination', 'insufficient_node_count'], X_problems_raman: ['none'],
+    X_problems: ['wall_time_termination', 'insufficient_node_count'], X_problems_gargi: ['wall_time_termination', 'insufficient_node_count'], X_gargi_nonuse: 'no', X_problems_raman: ['none'],
     W_workloads: [{ W_code: 'Quantum ESPRESSO', W_job_kind: 'ground-state relaxations', W_type: ['electronic_structure'], W_source: 'gargi', W_cluster: 'gargi',
       W_affected: ['wall_time_termination', 'insufficient_node_count'], W_device: 'cpu',
       W_nodes: 3, W_cores: 384, W_mem_node: gb(300), W_walltime: h(70), W_input_read: gb(2), W_scratch_write: gb(150),
@@ -76,7 +76,7 @@ const submissions = [
   group(2, 'chemistry', {
     A_hpc_users_now: 5, A_hpc_users_3y: 8,
     X_systems_used: ['raman', 'collaborator'], X_share_iiserb: 30,
-    X_problems: ['insufficient_gpu_access', 'excessive_queue_wait'], X_problems_gargi: ['not_used'], X_problems_raman: ['insufficient_gpu_access', 'excessive_queue_wait'],
+    X_problems: ['insufficient_gpu_access', 'excessive_queue_wait'], X_problems_gargi: ['not_used'], X_problems_raman: ['insufficient_gpu_access', 'excessive_queue_wait'], X_raman_nonuse: 'no',
     W_workloads: [{ W_code: 'GROMACS', W_job_kind: 'protein MD', W_type: ['molecular_dynamics'], W_source: 'raman', W_cluster: 'raman',
       W_affected: ['insufficient_gpu_access', 'excessive_queue_wait'], W_device: 'gpu',
       W_nodes: 1, W_cores: 12, W_gpus: 1, W_mem_node: gb(40), W_walltime: h(48), W_input_read: gb(1), W_scratch_write: gb(20),
@@ -92,7 +92,7 @@ const submissions = [
   // 3. Climate model: long, NOT checkpointable, low scaling -> genuine long-wall-time candidate
   group(3, 'earth_environmental', {
     A_hpc_users_now: 3, A_hpc_users_3y: 4,
-    X_systems_used: ['gargi'], X_problems: ['wall_time_termination'], X_problems_gargi: ['wall_time_termination'], X_problems_raman: ['none'],
+    X_systems_used: ['gargi'], X_problems: ['wall_time_termination'], X_problems_gargi: ['wall_time_termination'], X_gargi_nonuse: 'no', X_problems_raman: ['none'],
     W_workloads: [{ W_code: 'WRF', W_job_kind: 'regional climate runs', W_type: ['climate_environmental'], W_source: 'gargi', W_cluster: 'gargi',
       W_affected: ['wall_time_termination'], W_device: 'cpu',
       W_nodes: 1, W_cores: 128, W_mem_node: gb(200), W_walltime: d(9), W_input_read: gb(300), W_scratch_write: gb(400),
@@ -105,7 +105,7 @@ const submissions = [
   // 4. Exact diagonalisation: high memory, single node
   group(4, 'physics', {
     A_hpc_users_now: 2, A_hpc_users_3y: 2,
-    X_systems_used: ['gargi'], X_problems: ['insufficient_memory'], X_problems_gargi: ['insufficient_memory'], X_problems_raman: ['none'],
+    X_systems_used: ['gargi'], X_problems: ['insufficient_memory'], X_problems_gargi: ['insufficient_memory'], X_gargi_nonuse: 'no', X_problems_raman: ['none'],
     W_workloads: [{ W_code: 'ED-custom', W_job_kind: 'exact diagonalisation', W_type: ['many_body_exact_diagonalisation'], W_source: 'gargi', W_cluster: 'gargi',
       W_affected: ['insufficient_memory'], W_device: 'cpu',
       W_nodes: 1, W_cores: 128, W_mem_node: tb(1.8), W_walltime: h(100), W_input_read: gb(0), W_scratch_write: gb(0),
@@ -117,7 +117,7 @@ const submissions = [
   group(5, 'biological_sciences', {
     A_hpc_users_now: 8, A_hpc_users_3y: 12,
     X_systems_used: ['gargi', 'cloud'], X_share_iiserb: 70,
-    X_problems: ['excessive_queue_wait', 'insufficient_total_capacity'], X_problems_gargi: ['excessive_queue_wait', 'insufficient_total_capacity'], X_problems_raman: ['none'],
+    X_problems: ['excessive_queue_wait', 'insufficient_total_capacity'], X_problems_gargi: ['excessive_queue_wait', 'insufficient_total_capacity'], X_gargi_nonuse: 'no', X_problems_raman: ['none'],
     W_workloads: [{ W_code: 'GATK', W_job_kind: 'variant calling', W_type: ['bioinformatics_genomics'], W_source: 'gargi', W_cluster: 'gargi',
       W_affected: ['excessive_queue_wait', 'insufficient_total_capacity'], W_device: 'cpu',
       W_nodes: 1, W_cores: 16, W_mem_node: gb(64), W_walltime: h(6), W_input_read: gb(30), W_scratch_write: gb(50),
@@ -155,7 +155,7 @@ const submissions = [
   // 8. Mostly "Don't know": clarification candidate; "don't know these details" on the long-runs panel
   group(8, 'humanities_social_sciences', {
     A_hpc_users_now: 'dont_know', A_hpc_users_3y: 'dont_know',
-    X_systems_used: ['raman'], X_problems: ['wall_time_termination'], X_problems_gargi: ['not_used'], X_problems_raman: ['wall_time_termination'],
+    X_systems_used: ['raman'], X_problems: ['wall_time_termination'], X_problems_gargi: ['not_used'], X_problems_raman: ['wall_time_termination'], X_raman_nonuse: 'no',
     W_workloads: [{ W_code: 'Stata', W_job_kind: 'panel regressions', W_type: ['data_analysis'], W_source: 'dont_know', W_cluster: 'raman',
       W_affected: ['wall_time_termination'], W_device: 'cpu',
       W_nodes: 'dont_know', W_cores: 'dont_know', W_mem_node: 'dont_know', W_walltime: 'dont_know',
@@ -168,7 +168,7 @@ const submissions = [
   group(9, 'physics', {
     A_hpc_users_now: 4, A_hpc_users_3y: 5,
     X_systems_used: ['gargi', 'national'], X_share_iiserb: 50,
-    X_problems: ['insufficient_node_count', 'wall_time_termination', 'could_not_run_here'], X_problems_gargi: ['insufficient_node_count', 'could_not_run_here'], X_problems_raman: ['not_used'],
+    X_problems: ['insufficient_node_count', 'wall_time_termination'], X_problems_gargi: ['insufficient_node_count'], X_gargi_nonuse: 'yes_some', X_problems_raman: ['not_used'],
     W_workloads: [{ W_code: 'LAMMPS', W_job_kind: 'large MD campaign', W_type: ['molecular_dynamics', 'atomistic_simulation'], W_source: 'national', W_cluster: 'gargi',
       W_affected: ['insufficient_node_count', 'wall_time_termination', 'could_not_run_here'], W_device: 'cpu',
       W_nodes: 4, W_cores: 512, W_mem_node: gb(150), W_walltime: h(96), W_input_read: gb(10), W_scratch_write: gb(300),
@@ -184,7 +184,7 @@ const submissions = [
   // 10. CFD sequential chain on Raman (medium queue): queue overhead = calendar − running time
   group(10, 'earth_environmental', {
     A_hpc_users_now: 3, A_hpc_users_3y: 3,
-    X_systems_used: ['raman'], X_problems: ['excessive_queue_wait'], X_problems_gargi: ['not_used'], X_problems_raman: ['excessive_queue_wait'],
+    X_systems_used: ['raman'], X_problems: ['excessive_queue_wait'], X_problems_gargi: ['not_used'], X_problems_raman: ['excessive_queue_wait'], X_raman_nonuse: 'no',
     W_workloads: [{ W_code: 'OpenFOAM', W_job_kind: 'turbulent flow chain', W_type: ['cfd'], W_source: 'raman', W_cluster: 'raman',
       W_affected: ['excessive_queue_wait'], W_device: 'cpu',
       W_nodes: 4, W_cores: 96, W_mem_node: gb(80), W_walltime: h(60), W_input_read: gb(20), W_scratch_write: gb(100),
@@ -198,7 +198,7 @@ const submissions = [
   // 11. Scratch-heavy quantum chemistry: write-heavy, re-read, I/O bound
   group(11, 'chemistry', {
     A_hpc_users_now: 3, A_hpc_users_3y: 4,
-    X_systems_used: ['gargi'], X_problems: ['scratch_insufficient'], X_problems_gargi: ['scratch_insufficient'], X_problems_raman: ['none'],
+    X_systems_used: ['gargi'], X_problems: ['scratch_insufficient'], X_problems_gargi: ['scratch_insufficient'], X_gargi_nonuse: 'no', X_problems_raman: ['none'],
     W_workloads: [{ W_code: 'Gaussian', W_job_kind: 'conformer screening', W_type: ['electronic_structure'], W_source: 'gargi', W_cluster: 'both',
       W_affected: ['scratch_insufficient'], W_device: 'cpu',
       W_nodes: 1, W_cores: 64, W_mem_node: gb(250), W_walltime: h(30), W_input_read: gb(5), W_scratch_write: tb(2),

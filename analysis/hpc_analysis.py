@@ -70,8 +70,8 @@ PROBLEM_LABELS = {
     "insufficient_total_capacity": "Not enough total capacity",
     "scratch_insufficient": "Insufficient scratch",
     "debug_wait": "Debug jobs wait too long",
-    "could_not_run_here": "Could not run on Gargi/Raman at all (run elsewhere or not at all)",
-    "software_unavailable": "Software or libraries not available on Gargi/Raman",
+    "could_not_run_here": "Work not run on Gargi/Raman because of these problems",
+    "software_unavailable": "Software or libraries not available",
     "other": "Other",
     "no_problems_observed": "No problems observed",
     "no_hpc_experience": "No HPC experience yet",
@@ -507,7 +507,11 @@ def problems(dfs: dict) -> pd.DataFrame:
 
 
 def cluster_engagement(dfs: dict) -> pd.DataFrame:
-    """Per cluster: groups that faced problems there, faced none, had not used or considered it, or did not know."""
+    """
+    Per cluster: groups that faced problems there, faced none, had not used or
+    considered it, or did not know; and of those facing problems, the groups
+    whose work these problems kept off the cluster (some of it, or all of it).
+    """
     exp = dfs["Experience"]
     rows = []
     for cid in CLUSTERS:
@@ -517,7 +521,9 @@ def cluster_engagement(dfs: dict) -> pd.DataFrame:
                      "no_problems": sum(1 for v in vals if v == ["none"]),
                      "not_used_or_considered": sum(1 for v in vals if v == ["not_used"]),
                      "dont_know": sum(1 for v in vals if v == ["dont_know"]),
-                     "not_asked": sum(1 for v in vals if not v)})
+                     "not_asked": sum(1 for v in vals if not v),
+                     "work_kept_off_some": int((_col(exp, f"{cid}_nonuse") == "yes_some").sum()),
+                     "work_kept_off_all": int((_col(exp, f"{cid}_nonuse") == "yes_all").sum())})
     return pd.DataFrame(rows)
 
 
@@ -842,9 +848,12 @@ def consistency_checks(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     rows = []
     add = lambda sid, code, check, detail: rows.append({"submission_id": sid, "code": code, "check": check, "detail": detail})
     key = ["submission_id", "entry_index"]
-    probs = {}
-    if not dfs["Experience"].empty:
-        probs = dict(zip(dfs["Experience"]["submission_id"], split_semicolons(dfs["Experience"]["problems"])))
+    probs, kept_off = {}, set()
+    exp = dfs["Experience"]
+    if not exp.empty:
+        probs = dict(zip(exp["submission_id"], split_semicolons(exp["problems"])))
+        kept_off = set(exp.loc[_col(exp, "gargi_nonuse").isin(["yes_some", "yes_all"])
+                               | _col(exp, "raman_nonuse").isin(["yes_some", "yes_all"]), "submission_id"])
 
     if not wl.empty:
         t = wl.copy()
@@ -905,9 +914,9 @@ def consistency_checks(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             # Problems
             if "could_not_run_here" in affected[i] and isinstance(r["queue"], str) and "." in r["queue"]:
                 add(sid, code, "could not run here", f"linked to 'could not run on Gargi/Raman', but the job shape fits the {r['queue']} queue")
-            if r["queue"] == "none fits" and "could_not_run_here" not in probs.get(sid, []) and r["source"] not in ("gargi", "raman"):
+            if r["queue"] == "none fits" and sid not in kept_off and r["source"] not in ("gargi", "raman"):
                 add(sid, code, "could not run here", "no Gargi/Raman queue allows this job shape, and it was run elsewhere, "
-                    "but 'could not run on Gargi or Raman' was not reported")
+                    "but the group did not report problems keeping work off Gargi or Raman")
             term = g("_terminations_12m")[i]
             if pd.notna(term) and term > 0 and "no_problems_observed" in probs.get(sid, []):
                 add(sid, code, "problems", f"no problems reported in Section B, but {fmt(term)} jobs stopped by the wall-time limit")

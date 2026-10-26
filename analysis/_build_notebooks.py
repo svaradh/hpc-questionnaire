@@ -96,7 +96,8 @@ pr"""),
 
 Each problem reported above was asked about again for Gargi and for Raman separately (their hardware and policies
 differ; Gargi is newer and its policies are still settling). `elsewhere_only` = reported, but faced on neither — context
-from other systems. *Could not run on Gargi/Raman at all* counts work displaced elsewhere (or not run) by limits or policy."""),
+from other systems. In the cluster table, `work_kept_off_some` / `work_kept_off_all` count groups whose problems on that
+cluster kept some, or all, of their work off it (run elsewhere or not at all): demand displaced by limits or policy."""),
         code("""on = pr[pr['on_gargi'] + pr['on_raman'] > 0]
 if len(on):
     hp.paired(on, 'label', 'on_gargi', 'on_raman', 'Gargi', 'Raman', 'Groups facing each problem, by cluster', 'Groups')

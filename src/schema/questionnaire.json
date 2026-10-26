@@ -340,12 +340,8 @@
               "label": "Short test/debug jobs wait too long to start ({debug session})"
             },
             {
-              "value": "could_not_run_here",
-              "label": "Some jobs could not be run on Gargi or Raman at all (no queue allows their size or length), so they are run elsewhere or not at all"
-            },
-            {
               "value": "software_unavailable",
-              "label": "Software or libraries we need are not available on Gargi or Raman"
+              "label": "Software or libraries we need were not available"
             },
             {
               "value": "other",
@@ -471,16 +467,6 @@
               }
             },
             {
-              "value": "could_not_run_here",
-              "label": "Some jobs could not be run on Gargi at all (no queue allows their size or length), so they are run elsewhere or not at all",
-              "conditionalOn": {
-                "questionId": "X_problems",
-                "values": [
-                  "could_not_run_here"
-                ]
-              }
-            },
-            {
               "value": "software_unavailable",
               "label": "Software or libraries we need are not available on Gargi",
               "conditionalOn": {
@@ -527,13 +513,56 @@
               "insufficient_total_capacity",
               "scratch_insufficient",
               "debug_wait",
-              "could_not_run_here",
               "software_unavailable",
               "other"
             ]
           },
           "committeeUse": [
             "present_cluster_problems"
+          ]
+        },
+        {
+          "id": "X_gargi_nonuse",
+          "type": "radio",
+          "required": true,
+          "label": "Did these problems stop your group from running some of its work on Gargi?",
+          "helpText": "For example, jobs that no queue allows, or software that is missing. Work that went to another system, or was not run at all, counts.",
+          "options": [
+            {
+              "value": "yes_some",
+              "label": "Yes — some of our work was run elsewhere or not at all"
+            },
+            {
+              "value": "yes_all",
+              "label": "Yes — we do not use Gargi because of them"
+            },
+            {
+              "value": "no",
+              "label": "No"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware"
+            }
+          ],
+          "conditionalOn": {
+            "questionId": "X_problems_gargi",
+            "values": [
+              "wall_time_termination",
+              "excessive_queue_wait",
+              "insufficient_node_count",
+              "insufficient_memory",
+              "insufficient_gpu_access",
+              "insufficient_total_capacity",
+              "scratch_insufficient",
+              "debug_wait",
+              "software_unavailable",
+              "other"
+            ]
+          },
+          "committeeUse": [
+            "present_cluster_problems",
+            "displaced_demand"
           ]
         },
         {
@@ -624,16 +653,6 @@
               }
             },
             {
-              "value": "could_not_run_here",
-              "label": "Some jobs could not be run on Raman at all (no queue allows their size or length), so they are run elsewhere or not at all",
-              "conditionalOn": {
-                "questionId": "X_problems",
-                "values": [
-                  "could_not_run_here"
-                ]
-              }
-            },
-            {
               "value": "software_unavailable",
               "label": "Software or libraries we need are not available on Raman",
               "conditionalOn": {
@@ -680,13 +699,56 @@
               "insufficient_total_capacity",
               "scratch_insufficient",
               "debug_wait",
-              "could_not_run_here",
               "software_unavailable",
               "other"
             ]
           },
           "committeeUse": [
             "present_cluster_problems"
+          ]
+        },
+        {
+          "id": "X_raman_nonuse",
+          "type": "radio",
+          "required": true,
+          "label": "Did these problems stop your group from running some of its work on Raman?",
+          "helpText": "For example, jobs that no queue allows, or software that is missing. Work that went to another system, or was not run at all, counts.",
+          "options": [
+            {
+              "value": "yes_some",
+              "label": "Yes — some of our work was run elsewhere or not at all"
+            },
+            {
+              "value": "yes_all",
+              "label": "Yes — we do not use Raman because of them"
+            },
+            {
+              "value": "no",
+              "label": "No"
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware"
+            }
+          ],
+          "conditionalOn": {
+            "questionId": "X_problems_raman",
+            "values": [
+              "wall_time_termination",
+              "excessive_queue_wait",
+              "insufficient_node_count",
+              "insufficient_memory",
+              "insufficient_gpu_access",
+              "insufficient_total_capacity",
+              "scratch_insufficient",
+              "debug_wait",
+              "software_unavailable",
+              "other"
+            ]
+          },
+          "committeeUse": [
+            "present_cluster_problems",
+            "displaced_demand"
           ]
         }
       ]
@@ -928,17 +990,29 @@
                 },
                 {
                   "value": "could_not_run_here",
-                  "label": "Could not be run on Gargi or Raman at all",
+                  "label": "Some of these jobs could not be run on Gargi or Raman because of these problems",
                   "conditionalOn": {
-                    "questionId": "X_problems",
-                    "values": [
-                      "could_not_run_here"
+                    "any": [
+                      {
+                        "questionId": "X_gargi_nonuse",
+                        "values": [
+                          "yes_some",
+                          "yes_all"
+                        ]
+                      },
+                      {
+                        "questionId": "X_raman_nonuse",
+                        "values": [
+                          "yes_some",
+                          "yes_all"
+                        ]
+                      }
                     ]
                   }
                 },
                 {
                   "value": "software_unavailable",
-                  "label": "Software or libraries not available on Gargi or Raman",
+                  "label": "Software or libraries not available",
                   "conditionalOn": {
                     "questionId": "X_problems",
                     "values": [

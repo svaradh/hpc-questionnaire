@@ -10,8 +10,9 @@
   of the same code, one merged set of sequence questions for chains and split calculations, and measured scaling runs
   with an overall Don't know and a third run behind "Add 1 more run". The banner asks respondents to fill sections in order.
 - **Schema 2.6.0.** Section B keeps problems "on any system" and asks separately which of them were faced on Gargi
-  and on Raman (policies differ; Gargi is newer), replacing "on which systems". New problems: *could not run on
-  Gargi/Raman at all* (work displaced elsewhere or not run) and *software not available*. Jobs per year count any system.
+  and on Raman (policies differ; Gargi is newer), replacing "on which systems", each followed by whether those
+  problems kept some or all of the group's work off that cluster. New problem: *software or libraries not available*.
+  Jobs per year count any system.
 - **Schema 2.4.0.** Section C is the same for every group; Section D "Details for Each Code" holds the per-code
   panels (job organisation, long runs, scaling, memory, GPU, scratch), all required with Don't know allowed. Every
   problem reported in B leads to required answers (problem linked to a code, queue entries, testing questions).
@@ -28,7 +29,7 @@
   `apps-script/ReportGenerator.gs` into the v3 project (`Code.gs` unchanged); Deploy → Manage deployments → Edit →
   New version (the URL stays the same). Then delete the old test rows on every tab, run HPC Committee → Initialize
   Sheets (new columns: `job_kind`, `opened_by`, `same_as_entry`, `runs_not_known`, `seq_*`, `problems_gargi`,
-  `problems_raman`; `problems_where` removed), and delete old test reports.
+  `problems_raman`, `gargi_nonuse`, `raman_nonuse`; `problems_where` removed), and delete old test reports.
 - **Test submission on `/v3-preview/`**, with a code that opens a few Section D panels; check the Workloads and panel
   tabs, the confirmation email, and Generate Report. If no email arrives, see *Confirmation email* below.
 - **Dry run** with a student and a colleague; then the convener's answers to
