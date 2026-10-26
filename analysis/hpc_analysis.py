@@ -8,9 +8,10 @@ Everything here produces *evidence tables*. Nothing scores, ranks or assigns
 queues; flags are candidates for the committee to look at.
 
 Only the respondents' answers and the facility configuration (clusters.json)
-are used. Nothing depends on which code a workload runs: there is no list of
-"known" code capabilities or performance. Checking answers against outside
-knowledge of a code is left to the committee, by hand.
+are used. Nothing depends on which code a workload runs. Checking answers
+against outside knowledge of a code is left to the committee, by hand;
+restart_cross_check() helps with that on request (code_capabilities.json, a
+reference list with documentation links), and is not used by any flag.
 
 Conventions
 - num() turns a column into numbers; 'dont_know' and blanks become NaN.
@@ -42,7 +43,10 @@ Typical use
 
 from __future__ import annotations
 
+import json
 import math
+import os
+import re
 
 import numpy as np
 import pandas as pd
@@ -129,6 +133,46 @@ def known(flag, *inputs) -> pd.Series:
     for x in inputs:
         out[x.isna() | x.astype(str).str.strip().isin(["", "dont_know", "nan"])] = pd.NA
     return out
+
+
+def norm_code(name: str) -> str:
+    return re.sub(r"[^a-z0-9]", "", str(name).lower())
+
+
+def load_capabilities(path: str | None = None) -> dict:
+    """The reference list of codes documented to support checkpoint/restart (code_capabilities.json)."""
+    path = path or os.path.join(os.path.dirname(os.path.abspath(__file__)), "code_capabilities.json")
+    if not os.path.exists(path):
+        return {"restart_supported": {}, "aliases": {}}
+    with open(path) as f:
+        return json.load(f)
+
+
+def restart_cross_check(wl: pd.DataFrame, caps: dict | None = None) -> pd.DataFrame:
+    """
+    For a manual cross-check only (never used to flag): each workload whose code
+    is on the reference list, with its reported checkpoint answer, the restart
+    mechanism and the documentation link. Name matching is approximate, and
+    support depends on version and calculation type, so each match is to be
+    checked by hand.
+    """
+    caps = caps or load_capabilities()
+    ref, aliases = caps.get("restart_supported", {}), caps.get("aliases", {})
+
+    def _match(code):
+        n = norm_code(code)
+        n = aliases.get(n, n)
+        return next((k for k in ref if n == k or n.startswith(k)), None)
+    t = wl.assign(_ref=wl["code"].map(_match))
+    t = t[t["_ref"].notna()]
+    return pd.DataFrame({
+        "submission_id": t["submission_id"], "pi_name": t["pi_name"], "code": t["code"],
+        "reported_checkpoint": t["checkpoint"].replace("", "not asked"), "long_job": t["long_job"],
+        "reference_code": t["_ref"].map(lambda k: ref[k]["name"]),
+        "mechanism": t["_ref"].map(lambda k: ref[k]["mechanism"]),
+        "reference": t["_ref"].map(lambda k: ref[k]["reference"]),
+        "reference_type": t["_ref"].map(lambda k: ref[k]["reference_type"]),
+    }).reset_index(drop=True)
 
 
 def not_set(index) -> pd.Series:

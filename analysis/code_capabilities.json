@@ -1,0 +1,127 @@
+{
+  "_comment": "Reference list for MANUAL cross-checks only: codes documented to support checkpoint/restart, with the mechanism and where it is documented. It is NOT used to flag entries or in any computation (the analysis is code-agnostic); hpc_analysis.restart_cross_check() lists matches when a committee member asks. Compiled 2026-10 from the codes' documentation; 'reference_type' says whether the reference is the code's own documentation ('official') or a secondary source still to verify against the official manual ('secondary'). Support can depend on version, calculation type and settings (e.g. whether restart files were written before the job stopped). Matching is case-insensitive on the code name with spaces and punctuation removed; 'aliases' map other names.",
+  "_compiled": "2026-10-26",
+  "restart_supported": {
+    "quantumespresso": {
+      "name": "Quantum ESPRESSO (pw.x)",
+      "mechanism": "restart_mode='restart'; the earlier run must stop cleanly via max_seconds or a prefix.EXIT file, otherwise no clean restart",
+      "reference": "https://www.quantum-espresso.org/Doc/INPUT_PW.html",
+      "reference_type": "official"
+    },
+    "vasp": {
+      "name": "VASP",
+      "mechanism": "ISTART=1/2 reads orbitals from WAVECAR (falls back to a fresh start if WAVECAR is missing or does not match); CONTCAR for positions",
+      "reference": "https://vasp.at/wiki/ISTART",
+      "reference_type": "official",
+      "see_also": "https://vasp.at/wiki/Restart_and_output_files_cheat_sheet"
+    },
+    "gromacs": {
+      "name": "GROMACS",
+      "mechanism": "gmx mdrun writes .cpt checkpoints (interval -cpt) and continues exactly with -cpi; -maxh stops cleanly before the wall-time limit",
+      "reference": "https://manual.gromacs.org/2023/user-guide/managing-simulations.html",
+      "reference_type": "official"
+    },
+    "lammps": {
+      "name": "LAMMPS",
+      "mechanism": "restart N / write_restart write binary restart files; read_restart continues (fixes must be re-specified in the input)",
+      "reference": "https://doc.lammps.org/read_restart.html",
+      "reference_type": "official",
+      "see_also": "https://doc.lammps.org/restart.html"
+    },
+    "cp2k": {
+      "name": "CP2K",
+      "mechanism": "EXT_RESTART section reads the .restart file written during the run; wavefunctions via WFN_RESTART_FILE_NAME",
+      "reference": "https://manual.cp2k.org/trunk/methods/restarting.html",
+      "reference_type": "official",
+      "see_also": "https://manual.cp2k.org/trunk/CP2K_INPUT/EXT_RESTART.html"
+    },
+    "namd": {
+      "name": "NAMD",
+      "mechanism": "restartname + restartfreq write restart coordinates/velocities; continue with bincoordinates, binvelocities and extendedSystem",
+      "reference": "https://www.ks.uiuc.edu/Research/namd/3.0/ug/node12.html",
+      "reference_type": "official"
+    },
+    "amber": {
+      "name": "Amber (sander / pmemd)",
+      "mechanism": "restart file written every ntwr steps; continue with irest=1, ntx=5 (MD only; a minimisation restart has no velocities)",
+      "reference": "https://ambermd.org/tutorials/advanced/tutorial21/section2.php",
+      "reference_type": "official",
+      "notes": "Reference is an official Amber tutorial; the variable definitions are in the Amber manual for the version used."
+    },
+    "openfoam": {
+      "name": "OpenFOAM",
+      "mechanism": "time directories written per writeControl/writeInterval in controlDict; startFrom latestTime continues from the newest",
+      "reference": "https://doc.cfd.direct/openfoam/user-guide-v12/controldict",
+      "reference_type": "official",
+      "see_also": "https://doc.openfoam.com/2312/fundamentals/case-structure/controldict/"
+    },
+    "wrf": {
+      "name": "WRF",
+      "mechanism": "restart_interval (minutes) writes wrfrst files; continue with restart=.true. and new start time (no need to rerun WPS/real.exe)",
+      "reference": "https://www2.mmm.ucar.edu/wrf/OnLineTutorial/CASES/Restart/wrf.php",
+      "reference_type": "official",
+      "see_also": "https://www2.mmm.ucar.edu/wrf/site/users_guide/namelist_variables.html"
+    },
+    "octopus": {
+      "name": "Octopus",
+      "mechanism": "restart data (e.g. wavefunctions) written to restart directories; RestartOptions controls reading them",
+      "reference": "https://octopus-code.org/documentation/13/variables/execution/io/restartoptions",
+      "reference_type": "official"
+    },
+    "gpaw": {
+      "name": "GPAW",
+      "mechanism": ".gpw restart files (calc.write, or calc.attach for every n SCF steps); restart with GPAW('file.gpw')",
+      "reference": "https://gpaw.readthedocs.io/documentation/restart_files.html",
+      "reference_type": "official"
+    },
+    "nwchem": {
+      "name": "NWChem",
+      "mechanism": "'restart' top-level directive continues from the run database (files from 'start <name>'); only some calculation types can restart",
+      "reference": "https://github.com/nwchemgit/nwchem/wiki/Sample",
+      "reference_type": "secondary",
+      "notes": "Example input in the NWChem wiki; verify against the 'START and RESTART' section of the NWChem manual."
+    },
+    "siesta": {
+      "name": "SIESTA",
+      "mechanism": "DM.UseSaveDM reuses the saved density matrix (.DM); MD.UseSaveXV reuses saved positions/velocities (.XV)",
+      "reference": "https://docs.siesta-project.org/projects/siesta/en/5.0/index.html",
+      "reference_type": "secondary",
+      "notes": "Only the manual's landing page was found; keyword definitions not yet checked."
+    },
+    "abinit": {
+      "name": "ABINIT",
+      "mechanism": "irdwfk/getwfk read earlier wavefunctions; restartxf restarts a structural optimisation from the (x,f) history",
+      "reference": "https://sympa-1.sipr.ucl.ac.be/abinit.org/arc/forum/2010-02/msg00004.html",
+      "reference_type": "secondary",
+      "notes": "ABINIT forum post (v5.8 era); verify against the variable pages at docs.abinit.org."
+    },
+    "dlpoly": {
+      "name": "DL_POLY",
+      "mechanism": "REVCON (configuration) and REVIVE (statistics) written every ndump steps; rename to CONFIG and REVOLD and add 'restart' to CONTROL",
+      "reference": "https://wanglab.hosted.uark.edu/DLPOLY2/node172.html",
+      "reference_type": "official",
+      "notes": "Copy of the DL_POLY 2 user manual; DL_POLY 4/5 file names may differ.",
+      "see_also": "https://wanglab.hosted.uark.edu/DLPOLY3/USRMAN3-122.html"
+    },
+    "cpmd": {
+      "name": "CPMD",
+      "mechanism": "RESTART WAVEFUNCTION COORDINATES [VELOCITIES] LATEST in &CPMD reads the RESTART file written during the run",
+      "reference": "https://rcs.ucalgary.ca/images/2/21/Cpmd-4.3-manual.pdf",
+      "reference_type": "secondary",
+      "notes": "Mirrored CPMD 4.3 manual (section 11.7 'Restarts'); contents not yet checked."
+    },
+    "castep": {
+      "name": "CASTEP",
+      "mechanism": "checkpoint written to seedname.check; continue with CONTINUATION (only some parameters may change)",
+      "reference": "https://www.tcm.phy.cam.ac.uk/castep/documentation/WebHelp/content/modules/castep/keywords/k_continuation_castep.htm",
+      "reference_type": "official"
+    }
+  },
+  "aliases": {
+    "qe": "quantumespresso",
+    "pwx": "quantumespresso",
+    "gmx": "gromacs",
+    "pmemd": "amber",
+    "sander": "amber"
+  }
+}

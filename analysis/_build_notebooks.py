@@ -19,7 +19,7 @@ REPO_REF = 'main'                                   # git branch/tag for the hel
 
 import os, urllib.request
 if not os.path.exists('hpc_analysis.py'):            # in Colab: fetch the helper modules once per session
-    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py']:
+    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'code_capabilities.json']:
         urllib.request.urlretrieve(f'https://raw.githubusercontent.com/svaradh/hpc-questionnaire/{REPO_REF}/analysis/{f}', f)
 
 import pandas as pd
