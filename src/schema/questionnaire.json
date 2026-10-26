@@ -1073,7 +1073,7 @@
                 },
                 {
                   "value": "chain",
-                  "label": "{Sequential chain|chain} — each job needs the previous job's output (e.g. SCF → relaxation → phonons, or ground state → excited-state dynamics)"
+                  "label": "{Sequential chain|chain} — each job needs the previous job's output (e.g. preparation → main calculation → analysis, submitted as separate jobs)"
                 },
                 {
                   "value": "long_calc",
@@ -3945,7 +3945,7 @@
         "chains",
         "sequential chain"
       ],
-      "definition": "Jobs where each one needs the output of the one before, so a step cannot start until the previous one finishes — for example SCF → relaxation → SCF → phonons → post-processing."
+      "definition": "Jobs where each one needs the output of the one before, so a step cannot start until the previous one finishes — for example preparation → main calculation → analysis, each submitted as its own job."
     },
     {
       "id": "campaign",
