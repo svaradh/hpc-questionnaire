@@ -92,9 +92,16 @@ issues = pr[~pr['problem'].isin(['no_problems_observed', 'no_hpc_experience', 'd
 hp.pie(issues['label'], issues['groups'], 'Problem reports by type')
 hp.barh(pr['label'], pr['share_of_groups'], 'Share of groups reporting each problem', pct=True)
 pr"""),
-        md("Where the problems happened: a problem on Gargi or Raman concerns the present clusters; one elsewhere is context."),
-        code("""pw = ha.problems_where(dfs)
-hp.barh(pw.index, pw.values, 'Groups reporting problems, by system', 'Groups', integer=True)"""),
+        md("""## Problems faced on Gargi and on Raman
+
+Each problem reported above was asked about again for Gargi and for Raman separately (their hardware and policies
+differ; Gargi is newer and its policies are still settling). `elsewhere_only` = reported, but faced on neither — context
+from other systems. *Could not run on Gargi/Raman at all* counts work displaced elsewhere (or not run) by limits or policy."""),
+        code("""on = pr[pr['on_gargi'] + pr['on_raman'] > 0]
+if len(on):
+    hp.paired(on, 'label', 'on_gargi', 'on_raman', 'Gargi', 'Raman', 'Groups facing each problem, by cluster', 'Groups')
+display(ha.cluster_engagement(dfs))
+pr[['label', 'groups', 'on_gargi', 'on_raman', 'elsewhere_only']]"""),
         md("## Systems used and share of computing done at IISER Bhopal"),
         code("""from sheets_client import explode_semicolons
 su = explode_semicolons(dfs['Experience'], 'systems_used').value_counts()

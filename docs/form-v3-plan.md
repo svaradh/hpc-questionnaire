@@ -225,7 +225,7 @@ All thresholds live under `thresholds` in the config; `null` disables a trigger.
 
 - Section letters (from 2.3.0): A About · B Experience · C Workloads · D Details for each code (the follow-up panels, one card per code that opens any; required, Don't know always allowed) · E Storage & testing · F Queue · G Growth & closing. Section 1 keeps the `A_*` question IDs (PI auto-fill and the duplicate-PI check depend on them); other IDs as in §4.
 - Follow-ups E1–E5 are short per-workload lists (max 5 entries), each starting with a workload picker, so a group with two long-running codes can describe both.
-- `X_problems_where` is one checkbox for all problems ticked (not a problem × system matrix).
+- `X_problems_where` was replaced in 2.6.0 by `X_problems_gargi` / `X_problems_raman`: of the problems ticked, those faced on each cluster.
 - The checkpoint question lives only in E1 (not duplicated in the workload card).
 - The workload table is core for everyone, with at least one entry required (confirmed 2026-10-24).
 - Drafts use a v3 storage key, so a v1/v2 draft on the same device is not loaded into v3.

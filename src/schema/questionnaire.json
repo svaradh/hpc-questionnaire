@@ -1,5 +1,5 @@
 {
-  "version": "2.5.0",
+  "version": "2.6.0",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -340,6 +340,14 @@
               "label": "Short test/debug jobs wait too long to start ({debug session})"
             },
             {
+              "value": "could_not_run_here",
+              "label": "Some jobs could not be run on Gargi or Raman at all (no queue allows their size or length), so they are run elsewhere or not at all"
+            },
+            {
+              "value": "software_unavailable",
+              "label": "Software or libraries we need are not available on Gargi or Raman"
+            },
+            {
               "value": "other",
               "label": "Other operational problem"
             },
@@ -376,31 +384,136 @@
           }
         },
         {
-          "id": "X_problems_where",
+          "id": "X_problems_gargi",
           "type": "checkbox",
-          "label": "On which systems did these problems occur?",
           "required": true,
-          "helpText": "This tells the committee whether a problem concerns the present clusters.",
+          "label": "Which of these did your group face on Gargi, including when deciding whether to run there?",
+          "helpText": "Only the problems you ticked above are listed. Gargi and Raman are asked separately because their hardware and usage policies differ.",
           "options": [
             {
-              "value": "gargi",
-              "label": "Gargi"
+              "value": "wall_time_termination",
+              "label": "Jobs stopped by the {wall-time limit} before completion",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "wall_time_termination"
+                ]
+              }
             },
             {
-              "value": "raman",
-              "label": "Raman"
+              "value": "excessive_queue_wait",
+              "label": "Long waiting time in the queue ({queue wait})",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "excessive_queue_wait"
+                ]
+              }
             },
             {
-              "value": "iiserb_earlier",
-              "label": "Earlier IISER Bhopal cluster"
+              "value": "insufficient_node_count",
+              "label": "Jobs needed more nodes or cores than allowed",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_node_count"
+                ]
+              }
             },
             {
-              "value": "elsewhere",
-              "label": "Elsewhere"
+              "value": "insufficient_memory",
+              "label": "Jobs failed for lack of memory ({out-of-memory} errors)",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_memory"
+                ]
+              }
+            },
+            {
+              "value": "insufficient_gpu_access",
+              "label": "Insufficient GPU access",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_gpu_access"
+                ]
+              }
+            },
+            {
+              "value": "insufficient_total_capacity",
+              "label": "Not enough total capacity to run all planned calculations",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_total_capacity"
+                ]
+              }
+            },
+            {
+              "value": "scratch_insufficient",
+              "label": "Insufficient scratch space, or jobs failed on scratch limits",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "scratch_insufficient"
+                ]
+              }
+            },
+            {
+              "value": "debug_wait",
+              "label": "Short test/debug jobs wait too long to start ({debug session})",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "debug_wait"
+                ]
+              }
+            },
+            {
+              "value": "could_not_run_here",
+              "label": "Some jobs could not be run on Gargi at all (no queue allows their size or length), so they are run elsewhere or not at all",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "could_not_run_here"
+                ]
+              }
+            },
+            {
+              "value": "software_unavailable",
+              "label": "Software or libraries we need are not available on Gargi",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "software_unavailable"
+                ]
+              }
+            },
+            {
+              "value": "other",
+              "label": "Other operational problem",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "other"
+                ]
+              }
+            },
+            {
+              "value": "none",
+              "label": "None of these on Gargi",
+              "exclusive": true
+            },
+            {
+              "value": "not_used",
+              "label": "We have not used Gargi or considered running there",
+              "exclusive": true
             },
             {
               "value": "dont_know",
-              "label": "Don't know / not aware"
+              "label": "Don't know / not aware",
+              "exclusive": true
             }
           ],
           "conditionalOn": {
@@ -414,6 +527,161 @@
               "insufficient_total_capacity",
               "scratch_insufficient",
               "debug_wait",
+              "could_not_run_here",
+              "software_unavailable",
+              "other"
+            ]
+          },
+          "committeeUse": [
+            "present_cluster_problems"
+          ]
+        },
+        {
+          "id": "X_problems_raman",
+          "type": "checkbox",
+          "required": true,
+          "label": "Which of these did your group face on Raman, including when deciding whether to run there?",
+          "helpText": "Only the problems you ticked above are listed.",
+          "options": [
+            {
+              "value": "wall_time_termination",
+              "label": "Jobs stopped by the {wall-time limit} before completion",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "wall_time_termination"
+                ]
+              }
+            },
+            {
+              "value": "excessive_queue_wait",
+              "label": "Long waiting time in the queue ({queue wait})",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "excessive_queue_wait"
+                ]
+              }
+            },
+            {
+              "value": "insufficient_node_count",
+              "label": "Jobs needed more nodes or cores than allowed",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_node_count"
+                ]
+              }
+            },
+            {
+              "value": "insufficient_memory",
+              "label": "Jobs failed for lack of memory ({out-of-memory} errors)",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_memory"
+                ]
+              }
+            },
+            {
+              "value": "insufficient_gpu_access",
+              "label": "Insufficient GPU access",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_gpu_access"
+                ]
+              }
+            },
+            {
+              "value": "insufficient_total_capacity",
+              "label": "Not enough total capacity to run all planned calculations",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "insufficient_total_capacity"
+                ]
+              }
+            },
+            {
+              "value": "scratch_insufficient",
+              "label": "Insufficient scratch space, or jobs failed on scratch limits",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "scratch_insufficient"
+                ]
+              }
+            },
+            {
+              "value": "debug_wait",
+              "label": "Short test/debug jobs wait too long to start ({debug session})",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "debug_wait"
+                ]
+              }
+            },
+            {
+              "value": "could_not_run_here",
+              "label": "Some jobs could not be run on Raman at all (no queue allows their size or length), so they are run elsewhere or not at all",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "could_not_run_here"
+                ]
+              }
+            },
+            {
+              "value": "software_unavailable",
+              "label": "Software or libraries we need are not available on Raman",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "software_unavailable"
+                ]
+              }
+            },
+            {
+              "value": "other",
+              "label": "Other operational problem",
+              "conditionalOn": {
+                "questionId": "X_problems",
+                "values": [
+                  "other"
+                ]
+              }
+            },
+            {
+              "value": "none",
+              "label": "None of these on Raman",
+              "exclusive": true
+            },
+            {
+              "value": "not_used",
+              "label": "We have not used Raman or considered running there",
+              "exclusive": true
+            },
+            {
+              "value": "dont_know",
+              "label": "Don't know / not aware",
+              "exclusive": true
+            }
+          ],
+          "conditionalOn": {
+            "questionId": "X_problems",
+            "values": [
+              "wall_time_termination",
+              "excessive_queue_wait",
+              "insufficient_node_count",
+              "insufficient_memory",
+              "insufficient_gpu_access",
+              "insufficient_total_capacity",
+              "scratch_insufficient",
+              "debug_wait",
+              "could_not_run_here",
+              "software_unavailable",
               "other"
             ]
           },
@@ -426,7 +694,7 @@
     {
       "id": "C",
       "title": "C. Your Workloads",
-      "description": "Describe the main codes your group runs: one entry per code and kind of job, up to 8 entries. The same code can have several entries when it runs quite different kinds of jobs — for example Quantum ESPRESSO ground-state relaxation and band structures in one entry, and Quantum ESPRESSO ab initio molecular dynamics in another — since their size, length and problems can differ. Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, Section D asks a few more questions about it.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
+      "description": "Describe the main codes your group runs: one entry per code and kind of job, up to 8 entries. The same code can have several entries when it runs quite different kinds of jobs — for example Quantum ESPRESSO ground-state relaxation and band structures in one entry, and Quantum ESPRESSO ab initio molecular dynamics in another — since their size, length and problems can differ. Every group is asked for at least one entry — including groups that have had no problems, and groups that have not used HPC yet (an estimate is fine). If a code cannot run at IISER Bhopal (for example, no queue allows the nodes it needs), describe its jobs as you run them elsewhere, say where under \"Where do the numbers below come from?\", and give the cluster you would use. Numbers for one job (the heaviest) are enough; ticking \"Don't know\" always counts as an answer.\n\nIf a code has long, large, memory-heavy, GPU or file-heavy jobs, or is affected by a problem you reported, Section D asks a few more questions about it.\n\nThe committee calculates totals (such as {core-hours}) from these numbers — you do not need to.",
       "questions": [
         {
           "id": "W_problem_notice",
@@ -659,6 +927,26 @@
                   }
                 },
                 {
+                  "value": "could_not_run_here",
+                  "label": "Could not be run on Gargi or Raman at all",
+                  "conditionalOn": {
+                    "questionId": "X_problems",
+                    "values": [
+                      "could_not_run_here"
+                    ]
+                  }
+                },
+                {
+                  "value": "software_unavailable",
+                  "label": "Software or libraries not available on Gargi or Raman",
+                  "conditionalOn": {
+                    "questionId": "X_problems",
+                    "values": [
+                      "software_unavailable"
+                    ]
+                  }
+                },
+                {
                   "value": "other",
                   "label": "The other problem you described",
                   "conditionalOn": {
@@ -870,7 +1158,7 @@
             {
               "id": "W_jobs_year",
               "type": "number",
-              "label": "Jobs of this kind run in the last 12 months",
+              "label": "Jobs of this kind run in the last 12 months, on any system",
               "required": true,
               "integer": true,
               "allowUnknown": true,
@@ -878,7 +1166,7 @@
               "committeeUse": [
                 "core_hours"
               ],
-              "helpText": "Count each submission to the scheduler; for a chain or a split calculation, count every job. 0 if you have not run these jobs yet."
+              "helpText": "Include jobs run elsewhere, e.g. at a national facility because they could not run here. Count each submission to the scheduler; for a chain or a split calculation, count every job. 0 if you have not run these jobs yet."
             },
             {
               "id": "W_jobs_year_unconstrained",

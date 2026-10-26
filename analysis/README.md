@@ -81,7 +81,8 @@ panel; join them to Workloads on `(submission_id, entry_index)`. `opened_by` lis
 (a panel opened for several reasons is asked once); `same_as_entry` is set where the respondent ticked "Same answers
 as" an earlier entry of the same code (`ha.follow_up` copies that entry's answers); `not_aware` is true where they
 ticked "don't know these details". Chains and split calculations share one set of columns (`seq_jobs`, `seq_run_h`,
-`seq_calendar_h`). Yearly totals (`core_hours_year_max` …) are upper bounds, since each entry describes its heaviest job.
+`seq_calendar_h`). Experience has `problems` (any system) and, of those, `problems_gargi` / `problems_raman`
+(faced on each cluster, including when deciding whether to run there). Yearly totals (`core_hours_year_max` …) are upper bounds, since each entry describes its heaviest job.
 
 ## Testing without real data
 

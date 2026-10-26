@@ -1,5 +1,5 @@
 /**
- * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.5.0).
+ * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.6.0).
  *
  * Every sheet has submission_id as column A and pi_name as column B
  * so any tab is self-identifying without needing to cross-reference
@@ -44,7 +44,9 @@ var SHEET_DEFINITIONS = [
     source: 'top',
     columns: [
       ['systems_used', 'X_systems_used'], ['share_iiserb_pct', 'X_share_iiserb'],
-      ['problems', 'X_problems'], ['problems_other', 'X_problems_other'], ['problems_where', 'X_problems_where'],
+      ['problems', 'X_problems'], ['problems_other', 'X_problems_other'],
+      // Of those problems, the ones faced on each IISER Bhopal cluster (asked separately: policies differ)
+      ['problems_gargi', 'X_problems_gargi'], ['problems_raman', 'X_problems_raman'],
       ['share_not_run_pct', 'Q_share_not_run'],
       ['not_aware_sections', 'not_aware_sections', 'd']
     ]

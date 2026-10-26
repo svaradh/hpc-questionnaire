@@ -1,7 +1,7 @@
 """
 hpc_analysis.py
 ---------------
-Computations behind the committee notebooks (schema 2.5.0 responses).
+Computations behind the committee notebooks (schema 2.6.0 responses).
 The principles they implement are in docs/analysis-framework.md.
 
 Everything here produces *evidence tables*. Nothing scores, ranks or assigns
@@ -70,6 +70,8 @@ PROBLEM_LABELS = {
     "insufficient_total_capacity": "Not enough total capacity",
     "scratch_insufficient": "Insufficient scratch",
     "debug_wait": "Debug jobs wait too long",
+    "could_not_run_here": "Could not run on Gargi/Raman at all (run elsewhere or not at all)",
+    "software_unavailable": "Software or libraries not available on Gargi/Raman",
     "other": "Other",
     "no_problems_observed": "No problems observed",
     "no_hpc_experience": "No HPC experience yet",
@@ -482,20 +484,41 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 
 def problems(dfs: dict) -> pd.DataFrame:
-    """Problem mentions and share of groups reporting each (multi-select)."""
+    """
+    Problem mentions: groups reporting each on any system, and of those, the
+    groups that faced it on Gargi and on Raman (asked separately, since the
+    two clusters' policies differ). 'elsewhere_only' = reported, but on neither.
+    """
     exp = dfs["Experience"]
     n = len(exp)
     counts = explode_semicolons(exp, "problems").value_counts()
     out = pd.DataFrame({"problem": counts.index, "groups": counts.values})
     out["label"] = out["problem"].map(PROBLEM_LABELS).fillna(out["problem"])
+    for cid in CLUSTERS:
+        per = explode_semicolons(exp, f"problems_{cid}").value_counts() if f"problems_{cid}" in exp else pd.Series(dtype=int)
+        out[f"on_{cid}"] = out["problem"].map(per).fillna(0).astype(int)
+    reported = split_semicolons(_col(exp, "problems"))
+    here = [set(g) | set(r) for g, r in zip(split_semicolons(_col(exp, "problems_gargi")), split_semicolons(_col(exp, "problems_raman")))]
+    not_problems = {"no_problems_observed", "no_hpc_experience", "dont_know"}
+    out["elsewhere_only"] = [np.nan if p in not_problems else sum(p in ps and p not in h for ps, h in zip(reported, here))
+                             for p in out["problem"]]
     out["share_of_groups"] = out["groups"] / n if n else np.nan
-    out["share_of_mentions"] = out["groups"] / out["groups"].sum() if len(out) else np.nan
     return out.reset_index(drop=True)
 
 
-def problems_where(dfs: dict) -> pd.Series:
-    """Where reported problems occurred (groups per system)."""
-    return explode_semicolons(dfs["Experience"], "problems_where").value_counts()
+def cluster_engagement(dfs: dict) -> pd.DataFrame:
+    """Per cluster: groups that faced problems there, faced none, had not used or considered it, or did not know."""
+    exp = dfs["Experience"]
+    rows = []
+    for cid in CLUSTERS:
+        vals = split_semicolons(_col(exp, f"problems_{cid}"))
+        rows.append({"cluster": cid,
+                     "faced_problems": sum(1 for v in vals if set(v) - {"none", "not_used", "dont_know"}),
+                     "no_problems": sum(1 for v in vals if v == ["none"]),
+                     "not_used_or_considered": sum(1 for v in vals if v == ["not_used"]),
+                     "dont_know": sum(1 for v in vals if v == ["dont_know"]),
+                     "not_asked": sum(1 for v in vals if not v)})
+    return pd.DataFrame(rows)
 
 
 # ---------------------------------------------------------------------------
@@ -880,6 +903,11 @@ def consistency_checks(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             if pd.notna(tested) and any(pd.notna(c) and c > tested for c in pairs):
                 add(sid, code, "scaling", f"a measured run used more {unit} ({fmt(max(c for c in pairs if pd.notna(c)))}) than the largest tested ({fmt(tested)})")
             # Problems
+            if "could_not_run_here" in affected[i] and isinstance(r["queue"], str) and "." in r["queue"]:
+                add(sid, code, "could not run here", f"linked to 'could not run on Gargi/Raman', but the job shape fits the {r['queue']} queue")
+            if r["queue"] == "none fits" and "could_not_run_here" not in probs.get(sid, []) and r["source"] not in ("gargi", "raman"):
+                add(sid, code, "could not run here", "no Gargi/Raman queue allows this job shape, and it was run elsewhere, "
+                    "but 'could not run on Gargi or Raman' was not reported")
             term = g("_terminations_12m")[i]
             if pd.notna(term) and term > 0 and "no_problems_observed" in probs.get(sid, []):
                 add(sid, code, "problems", f"no problems reported in Section B, but {fmt(term)} jobs stopped by the wall-time limit")
