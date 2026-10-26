@@ -730,7 +730,7 @@
               "committeeUse": [
                 "workflow_pattern"
               ],
-              "helpText": "Tick all that describe these jobs, e.g. a chain whose longest step needs restarts. If the same code runs kinds of job with different set-ups (say, many small screening jobs and a few large production runs), give each its own entry."
+              "helpText": "Tick all that describe these jobs, e.g. a chain whose longest step needs restarts. Count it as a chain only if the steps are submitted as separate jobs; steps run inside one job script make one stand-alone job. If the same code runs kinds of job with different set-ups (say, many small screening jobs and a few large production runs), give each its own entry."
             },
             {
               "id": "W_h_job",
