@@ -29,6 +29,17 @@ plt.rcParams.update({
 })
 
 
+# Notebooks show each chart as it is drawn; the committee report sets SHOW = False and embeds the returned figure.
+SHOW = True
+
+
+def _done(fig):
+    if SHOW:
+        plt.show()      # returns nothing, so a notebook does not display the chart a second time
+        return None
+    return fig
+
+
 def _grid(ax, axis="x"):
     ax.grid(axis=axis, color=GRID, linewidth=0.8)
     ax.set_axisbelow(True)
@@ -48,7 +59,7 @@ def pie(labels, values, title: str, max_slices: int = 7):
     ax.set_title(title)
     ax.axis("equal")
     plt.tight_layout()
-    plt.show()
+    return _done(fig)
 
 
 def barh(labels, values, title: str, xlabel: str = "", pct: bool = False, color: str = SERIES[0], integer: bool = False):
@@ -66,7 +77,7 @@ def barh(labels, values, title: str, xlabel: str = "", pct: bool = False, color:
     ax.set_title(title)
     _grid(ax)
     plt.tight_layout()
-    plt.show()
+    return _done(fig)
 
 
 def balance(df: pd.DataFrame, title: str, measures: dict, capacity_col: str = "capacity",
@@ -95,7 +106,7 @@ def balance(df: pd.DataFrame, title: str, measures: dict, capacity_col: str = "c
     ax.set_title(title, pad=28)
     _grid(ax, "y")
     plt.tight_layout()
-    plt.show()
+    return _done(fig)
 
 
 def counts(series: pd.Series, title: str, xlabel: str = "Workloads", order: list | None = None):
@@ -103,7 +114,7 @@ def counts(series: pd.Series, title: str, xlabel: str = "Workloads", order: list
     s = series.value_counts()
     if order:
         s = s.reindex([o for o in order if o in s.index])
-    barh(s.index, s.values, title, xlabel, integer=True)
+    return barh(s.index, s.values, title, xlabel, integer=True)
 
 
 def paired(df: pd.DataFrame, label_col: str, a: str, b: str, a_label: str, b_label: str, title: str, xlabel: str):
@@ -120,4 +131,4 @@ def paired(df: pd.DataFrame, label_col: str, a: str, b: str, a_label: str, b_lab
     ax.set_title(title, pad=28)
     _grid(ax)
     plt.tight_layout()
-    plt.show()
+    return _done(fig)

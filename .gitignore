@@ -29,3 +29,7 @@ __pycache__/
 # Python virtual environments
 .venv/
 venv/
+
+# Committee reports contain response data; never commit them (the repository is public)
+committee_report*.html
+committee_report*.pdf

@@ -33,6 +33,20 @@ the branch or tag: `main` normally, or `progressive-disclosure-v2` until v3 is m
 | `04_long_jobs` | Long-job requirements split by checkpointing (genuine need vs awareness gap) and by scaling (run wider vs run longer) |
 | `05_parallel_and_throughput` | High scalers: useful job size vs policy maximum. Low/intermediate scalers: queue fit, concurrency limits, time to finish a year's work, queue waits, debug use |
 | `06_triage` | Suggested clarification (2) and technical-assessment (3) candidates; data quality |
+| `07_committee_report` | The committee report: one HTML file organised by the committee's priorities, totals only (no group named). Chapters for usage patterns (a) and expansion (e) are written; queues (b) and charges (c, d) are in preparation |
+
+## Committee report
+
+`committee_report.py` builds the report for the whole committee; notebook 07 runs it in Colab and downloads the file.
+Locally: `python analysis/committee_report.py [csv_folder] -o report.html` (default: the synthetic data). Open the
+file in a browser and print it to PDF to circulate. It names no group and shows no submission ID, so it can go to
+members who have no access to the response sheet. Every table has a *Basis* line (groups and entries counted,
+unknowns left out), and each chapter ends with what its data cannot show. Report files are ignored by git: the
+repository is public, so never commit one built from real responses.
+
+Its summaries are ordinary functions in `hpc_analysis.py` (section 7: `pattern_summary`, `size_walltime_table`,
+`problems_by_pattern`, `queue_fit_summary`, `turnaround_summary`, `cpu_outlook`, `beyond_hardware`, ...), so they can
+also be used for other questions.
 
 ## What the numbers mean
 

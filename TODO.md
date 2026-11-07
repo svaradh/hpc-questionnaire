@@ -33,6 +33,11 @@
   and fixtures (keep it out of `ReportGenerator.gs` and the committee's Sheet, totals only), then paste the Apps Script,
   republish `/v3-preview/`, and update the slides (`A--G`, screenshots). Do not republish the preview before the backend
   change, or H answers are dropped. ₹ bands are placeholders until the annual target is known.
+- **Committee report** (`analysis/committee_report.py`, notebook 07): skeleton with chapters (a) usage patterns and
+  (e) expansion, tested on the synthetic data only. Next: (b) needs the committee's candidate queue tables (in
+  `clusters.json`) and, for fair-share, Slurm accounting; (c, d) needs the `Charging` tab, the annual target, the share
+  of groups with an allowance, its size and the premium multiple. Still open: the committee's own Sheet for general
+  queries (named rows, no budget answers).
 - **Limit the v3 response sheet to the convener** (Share settings), before real responses arrive.
 - **Whenever `apps-script/*.gs` change:** paste `SheetWriter.gs` and `ReportGenerator.gs` into the v3 project
   (`Code.gs` unchanged); Deploy → Manage deployments → Edit → New version (URL stays the same); clear test rows and run

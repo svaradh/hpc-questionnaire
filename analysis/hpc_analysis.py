@@ -102,6 +102,8 @@ NEUTRAL_DEFAULTS = {
     "measured scaling pairs (optional 3rd pair)": "the pairs given; fewer than two -> the reported doubling effect",
     "checkpoint / scaling / evidence level": "class 'unknown'; tests that need them give <NA>, not False",
     "committee parameters not set": "flags that need them give <NA>",
+    "share_iiserb_pct": "the group's reported figures are not scaled down (treated as all on IISER Bhopal clusters)",
+    "growth_3y_factor": "no growth assumed (factor 1)",
 }
 
 
@@ -1021,3 +1023,284 @@ def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                      "suggested_category": cat, "n_flags": len(rs),
                      "reasons": "\n".join(f"[{c}] {m}" for c, m in sorted(rs, key=lambda x: -x[0]))})
     return pd.DataFrame(rows).sort_values(["suggested_category", "n_flags"], ascending=False).reset_index(drop=True)
+
+
+# ---------------------------------------------------------------------------
+# 7. Summaries for the committee report (committee_report.py)
+#    Aggregates only: no table here carries a group's name or submission ID.
+# ---------------------------------------------------------------------------
+
+PATTERN_LABELS = {
+    "standalone": "Single stand-alone calculations",
+    "independent": "Many independent jobs",
+    "chain": "Sequential chains",
+    "long_calc": "Calculations longer than the wall-time limit",
+    "campaign": "Coordinated campaigns",
+    "dont_know": "Don't know",
+    "": "Not answered",
+}
+SYSTEM_LABELS = {
+    "gargi": "Gargi", "raman": "Raman", "iiserb_earlier": "An earlier IISER Bhopal cluster",
+    "national": "National facility", "collaborator": "Collaborator's or another institution's cluster",
+    "cloud": "Cloud computing", "workstation": "Workstation or local server", "none_yet": "None yet",
+    "dont_know": "Don't know",
+}
+SOURCE_LABELS = {
+    "gargi": "Jobs on Gargi", "raman": "Jobs on Raman", "iiserb_earlier": "Jobs on an earlier IISER Bhopal cluster",
+    "national": "Jobs on a national facility", "collaborator": "Jobs on a collaborator's cluster",
+    "cloud": "Jobs on cloud resources", "benchmark": "A benchmark run", "published": "Published or developer data",
+    "estimate": "Estimate (no direct measurement)", "dont_know": "Don't know", "": "Not answered",
+}
+PATTERN_SHORT = {"standalone": "Stand-alone", "independent": "Independent jobs", "chain": "Chains",
+                 "long_calc": "Longer than limit", "campaign": "Campaigns", "dont_know": "Don't know", "": "Not answered"}
+DEPARTMENT_LABELS = {
+    "biological_sciences": "Biological Sciences", "chemistry": "Chemistry",
+    "earth_environmental": "Earth and Environmental Sciences", "economics": "Economics",
+    "humanities_social_sciences": "Humanities and Social Sciences", "mathematics": "Mathematics", "physics": "Physics",
+    "interdisciplinary": "Interdisciplinary / Cross-departmental", "other": "Other", "": "Not given",
+}
+ROLE_LABELS = {
+    "pi": "Principal Investigator (PI)", "postdoctoral_researcher": "Postdoctoral researcher", "phd_student": "PhD student",
+    "designated_computational_member": "Designated computational group member",
+    "technical_staff": "Technical / research staff", "other": "Other", "": "Not given",
+}
+GPU_VERSION_LABELS = {
+    "in_use": "Yes, in use", "tested_not_adopted": "Yes, tested but not adopted", "available_not_tested": "Yes, not tested",
+    "none": "No GPU version exists", "dont_know": "Don't know", "not answered": "Not answered",
+}
+CPU_VIABLE_LABELS = {
+    "similar": "Yes, in similar time", "2_5_slower": "Yes, but 2–5× longer", "gt_5_slower": "Yes, but more than 5× longer",
+    "no": "No, the code needs GPUs", "dont_know": "Don't know", "not answered": "Not answered",
+}
+
+# Job-size bands in CPU cores: a Raman node, a Gargi node, the largest multi-node job allowed, and beyond
+CORE_BANDS = [(0, 24, "up to 24 cores"), (24, 128, "25–128 cores"), (128, 384, "129–384 cores"),
+              (384, 1024, "385–1,024 cores"), (1024, math.inf, "more than 1,024 cores")]
+# Wall-time bands in hours, at the present queue limits (36 h, 72 h, 168 h)
+WALLTIME_BANDS = [(0, 36, "up to 36 h"), (36, 72, "36–72 h"), (72, 168, "72–168 h"), (168, math.inf, "more than 168 h")]
+UNKNOWN_BAND = "not given"
+
+
+def _band(x: float, bands: list) -> str:
+    if pd.isna(x):
+        return UNKNOWN_BAND
+    return next(label for lo, hi, label in bands if lo < x <= hi) if x > 0 else UNKNOWN_BAND
+
+
+def _by_pattern(wl: pd.DataFrame) -> pd.DataFrame:
+    """One row per (entry, pattern); an entry with several patterns appears under each."""
+    e = wl.assign(pattern=wl["org"].apply(lambda o: o if o else [""])).explode("pattern")
+    return e.assign(pattern_label=e["pattern"].map(PATTERN_LABELS).fillna(e["pattern"]))
+
+
+def evidence_sources(wl: pd.DataFrame) -> pd.DataFrame:
+    """Where each entry's numbers come from (Section C), as entries and groups."""
+    src = _col(wl, "source").replace("", "")
+    t = wl.assign(source_label=src.map(SOURCE_LABELS).fillna(src))
+    out = t.groupby("source_label").agg(entries=("entry", "size"), groups=("submission_id", "nunique"))
+    return out.sort_values("entries", ascending=False).reset_index()
+
+
+def systems_used(dfs: dict) -> pd.DataFrame:
+    """Systems groups have run jobs on in the last 3 years (Section B)."""
+    exp = dfs["Experience"]
+    n = len(exp)
+    c = explode_semicolons(exp, "systems_used").value_counts()
+    out = pd.DataFrame({"system": [SYSTEM_LABELS.get(k, k) for k in c.index], "groups": c.values})
+    out["share_of_groups"] = out["groups"] / n if n else np.nan
+    return out
+
+
+def pattern_summary(wl: pd.DataFrame) -> pd.DataFrame:
+    """
+    Per job pattern: entries, groups, CPU/GPU split, the middle (median) job size
+    and wall time, and the reported CPU core-hours of the last 12 months with
+    their share of all reported core-hours. Entries with several patterns count
+    under each, so the shares can add up to more than 100 %.
+    """
+    e = _by_pattern(wl)
+    total = wl["cpu_h_used"].sum()
+    rows = []
+    for label, g in e.groupby("pattern_label", sort=False):
+        cpu = g[g["device"] != "gpu"]
+        rows.append({"pattern": label, "entries": len(g), "groups": g["submission_id"].nunique(),
+                     "gpu_entries": int((g["device"] == "gpu").sum()),
+                     "median_cores": cpu["cores"].median(), "median_walltime_h": g["walltime_h"].median(),
+                     "cpu_h_used": cpu["cpu_h_used"].sum(min_count=1),
+                     "share_of_cpu_h": cpu["cpu_h_used"].sum() / total if total else np.nan})
+    order = list(PATTERN_LABELS.values())
+    out = pd.DataFrame(rows)
+    return out.assign(_o=out["pattern"].map(lambda p: order.index(p) if p in order else len(order))) \
+              .sort_values("_o").drop(columns="_o").reset_index(drop=True)
+
+
+def size_walltime_table(wl: pd.DataFrame, value: str = "entries") -> pd.DataFrame:
+    """
+    CPU entries by job size (cores) and wall time of the heaviest job, at the
+    present queue limits. value='entries' counts entries; value='share' gives
+    each cell's share of the reported CPU core-hours (last 12 months).
+    """
+    cpu = wl[wl["device"] != "gpu"].copy()
+    cpu["size_band"] = cpu["cores"].map(lambda x: _band(x, CORE_BANDS))
+    cpu["time_band"] = cpu["walltime_h"].map(lambda x: _band(x, WALLTIME_BANDS))
+    rows = [b[2] for b in CORE_BANDS] + [UNKNOWN_BAND]
+    cols = [b[2] for b in WALLTIME_BANDS] + [UNKNOWN_BAND]
+    if value == "share":
+        total = cpu["cpu_h_used"].sum()
+        t = cpu.pivot_table(index="size_band", columns="time_band", values="cpu_h_used", aggfunc="sum", fill_value=0) / (total or np.nan)
+    else:
+        t = pd.crosstab(cpu["size_band"], cpu["time_band"])
+    t = t.reindex(index=rows, columns=cols, fill_value=0)
+    return t.loc[(t != 0).any(axis=1), (t != 0).any(axis=0)]
+
+
+def problems_by_pattern(wl: pd.DataFrame) -> pd.DataFrame:
+    """
+    Entries of each job pattern (columns) linked to each reported problem (rows),
+    from Section C's 'which problems affect this code'. The first row counts
+    the entries of each pattern; an entry linked to several problems counts in each row.
+    """
+    e = wl.assign(pattern=wl["org"].apply(lambda o: o if o else [""])).explode("pattern")
+    order = [p for p in PATTERN_SHORT if p in set(e["pattern"])]
+    totals = e.groupby("pattern").size().reindex(order)
+    e = e.assign(problem=split_semicolons(_col(e, "affected_by"))).explode("problem")
+    e["problem"] = e["problem"].fillna("").map(lambda p: PROBLEM_LABELS.get(p, p) if p else "No problem linked")
+    t = pd.crosstab(e["problem"], e["pattern"]).reindex(columns=order, fill_value=0)
+    t = t.loc[t.sum(axis=1).sort_values(ascending=False).index]
+    t = pd.concat([totals.to_frame().T.rename(index={0: "Entries"}), t])
+    t.index.name = "problem"
+    return t.rename(columns=PATTERN_SHORT)
+
+
+def queue_fit_summary(wl: pd.DataFrame) -> pd.DataFrame:
+    """Entries whose heaviest job fits one of the present queues, by the cluster named in Section C."""
+    status = np.select([wl["queue"] == "none fits", wl["queue"].str.startswith("unknown")],
+                       ["fits no present queue", "job size or wall time not given"], "fits a present queue")
+    cl = wl["cluster"].map({"gargi": "Gargi", "raman": "Raman", "both": "Both"}).fillna("Not decided / don't know")
+    t = pd.crosstab(cl, pd.Series(status, index=wl.index, name="status"))
+    cols = [c for c in ["fits a present queue", "fits no present queue", "job size or wall time not given"] if c in t]
+    return t[cols]
+
+
+def turnaround_summary(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """Per queue named in Section F: entries, groups, middle typical wait and middle expansion factor."""
+    q = queue_waits(dfs, wl, cfg)
+    if q.empty:
+        return q
+    q["queue"] = q["queue"].replace("other", "other system")
+    return q.groupby("queue").agg(entries=("queue", "size"), groups=("submission_id", "nunique"),
+                                  median_typical_wait_h=("typical_wait_h", "median"),
+                                  median_longest_wait_h=("longest_wait_h", "median"),
+                                  median_expansion_factor=("expansion_factor", "median")).reset_index()
+
+
+def group_factors(dfs: dict) -> pd.DataFrame:
+    """
+    Per group: share of its computing done on IISER Bhopal clusters (Section B)
+    and expected demand in 3 years relative to now (Section G), with flags for
+    unknown answers. Unknown answers leave the reported figures unchanged
+    (share 1, growth 1), so they neither add nor remove demand.
+    """
+    exp = dfs["Experience"][["submission_id", "share_iiserb_pct"]].copy() if "share_iiserb_pct" in dfs["Experience"] \
+        else dfs["Experience"][["submission_id"]].assign(share_iiserb_pct="")
+    exp["share_iiserb"] = num(exp["share_iiserb_pct"]) / 100
+    clo = dfs["Closing"]
+    gr = clo[["submission_id"]].assign(growth_3y=num(_col(clo, "growth_3y_factor"))) if not clo.empty \
+        else pd.DataFrame(columns=["submission_id", "growth_3y"])
+    f = exp[["submission_id", "share_iiserb"]].merge(gr, on="submission_id", how="outer")
+    f["share_known"] = f["share_iiserb"].notna()
+    f["growth_known"] = f["growth_3y"].notna()
+    f["share_iiserb"] = f["share_iiserb"].fillna(1.0)
+    f["growth_3y"] = f["growth_3y"].fillna(1.0)
+    return f
+
+
+def cpu_outlook(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """
+    CPU core-hours per year per cluster, as a range of reported figures next to
+    deliverable capacity:
+      used_iiser  = last 12 months, scaled by each group's IISER share (where given)
+      used_any    = last 12 months on any system (as reported)
+      desired     = what groups would run if limits did not bind
+      in_3y_low / in_3y_high = used_any / desired, times each group's expected growth
+    All are upper bounds in one respect: each entry describes its heaviest job.
+    """
+    f = group_factors(dfs).set_index("submission_id")
+    cpu = wl[wl["device"] != "gpu"].copy()
+    share = cpu["submission_id"].map(f["share_iiserb"]).fillna(1.0)
+    growth = cpu["submission_id"].map(f["growth_3y"]).fillna(1.0)
+    cpu["used_iiser"] = cpu["cpu_h_used"] * share
+    cpu["in_3y_low"] = cpu["cpu_h_used"] * growth
+    cpu["in_3y_high"] = cpu["cpu_h_desired"] * growth
+    cap = cpu_capacity_hours(cfg)
+    measures = {"used_iiser": "used_iiser", "used_any": "cpu_h_used", "desired": "cpu_h_desired",
+                "in_3y_low": "in_3y_low", "in_3y_high": "in_3y_high"}
+    att = {k: _attributed(cpu, col) for k, col in measures.items()}
+    rows = [{"cluster": cid, "capacity": cap.get(cid, np.nan), **{k: att[k][cid] for k in measures}}
+            for cid in CLUSTERS + [UNATTR]]
+    rows.append({"cluster": "combined", "capacity": sum(cap.values()), **{k: sum(att[k].values()) for k in measures}})
+    out = pd.DataFrame(rows)
+    groups = cpu["submission_id"].unique()
+    out.attrs.update({"entries": len(cpu), "entries_unknown": int(cpu["cpu_h_used"].isna().sum()),
+                      "groups": len(groups),
+                      "groups_share_unknown": int((~f.reindex(groups)["share_known"].fillna(False)).sum()),
+                      "groups_growth_unknown": int((~f.reindex(groups)["growth_known"].fillna(False)).sum())})
+    return out
+
+
+def people_outlook(dfs: dict) -> dict:
+    """Group members who submit HPC jobs now and expected in 3 years (Section A), over groups that gave both."""
+    g = dfs["Group"]
+    now, later = num(_col(g, "hpc_users_now")), num(_col(g, "hpc_users_3y"))
+    both = now.notna() & later.notna()
+    return {"groups": int(both.sum()), "groups_unknown": int((~both).sum()),
+            "now": float(now[both].sum()), "in_3y": float(later[both].sum())}
+
+
+def work_not_run(dfs: dict) -> dict:
+    """Share of planned calculations not run because of queue wait or capacity (Section F), over groups that answered."""
+    s = num(_col(dfs["Experience"], "share_not_run_pct"))
+    return {"groups": int(s.notna().sum()), "median_pct": s.median(), "max_pct": s.max(),
+            "groups_over_25pct": int((s > 25).sum())}
+
+
+def beyond_hardware(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """
+    Requirements that the present hardware cannot meet under any queue policy,
+    or meets only on a few special nodes: entries and groups for each.
+    Policy limits (wall time, nodes per job) are left to the queue chapter.
+    """
+    def largest_mem(c):
+        return max(n["memoryGB"] for cid in candidate_clusters(c, "cpu") for n in cluster(cfg, cid)["nodeTypes"])
+
+    def standard_mem(c):
+        return max(standard_memory_gb(cfg, cid) for cid in candidate_clusters(c, "cpu"))
+
+    def cluster_cores(c):
+        return max(cluster(cfg, cid)["cpuCores"] for cid in candidate_clusters(c, "cpu"))
+
+    cpu = wl[wl["device"] != "gpu"]
+    mem = cpu["mem_node_gb"]
+    gpu_rows = follow_up(dfs, "Gpu")
+    gpus = wl[wl["device"] == "gpu"]
+
+    def row(label, mask, frame):
+        m = mask.fillna(False).astype(bool)
+        return {"requirement": label, "entries": int(m.sum()), "groups": frame.loc[m, "submission_id"].nunique()}
+
+    rows = [
+        row("Memory per node above a standard node (fits only the few high-memory nodes)",
+            (mem > cpu["cluster"].map(standard_mem)) & (mem <= cpu["cluster"].map(largest_mem)), cpu),
+        row("Memory per node above the largest node", mem > cpu["cluster"].map(largest_mem), cpu),
+        row("Job larger than the whole cluster named", cpu["wanted_cores"] > cpu["cluster"].map(cluster_cores), cpu),
+        row("Jobs that run on GPUs (one GPU node at present)", pd.Series(True, index=gpus.index), gpus),
+    ]
+    if not gpu_rows.empty:
+        rows.append(row("GPU jobs needing fast GPU-to-GPU links (e.g. NVLink)", _col(gpu_rows, "nvlink_needed") == "yes", gpu_rows))
+        rows.append(row("GPU jobs using GPUs across several nodes, now or planned",
+                        _col(gpu_rows, "multinode_gpu").isin(["yes_now", "yes_planned"]), gpu_rows))
+    exp = dfs["Experience"]
+    sw = split_semicolons(_col(exp, "problems")).apply(lambda p: "software_unavailable" in p)
+    rows.append({"requirement": "Software or libraries not available (groups reporting it)", "entries": np.nan,
+                 "groups": int(sw.sum())})
+    return pd.DataFrame(rows)

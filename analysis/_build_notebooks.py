@@ -19,7 +19,7 @@ REPO_REF = 'main'                                   # git branch/tag for the hel
 
 import os, urllib.request
 if not os.path.exists('hpc_analysis.py'):            # in Colab: fetch the helper modules once per session
-    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'code_capabilities.json']:
+    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'committee_report.py', 'code_capabilities.json']:
         urllib.request.urlretrieve(f'https://raw.githubusercontent.com/svaradh/hpc-questionnaire/{REPO_REF}/analysis/{f}', f)
 
 import pandas as pd
@@ -296,6 +296,29 @@ raw = dfs['Workloads']
 pd.DataFrame({'answered': [(ha.num(raw[c]).notna()).sum() for c in key],
               "don't know": [ha.is_unknown(raw[c]).sum() for c in key],
               'blank': [(raw[c].astype(str).str.strip() == '').sum() for c in key]}, index=key)"""),
+    ],
+    "07_committee_report.ipynb": [
+        md("""# 07 — Committee report
+
+Builds the committee report as one HTML file, organised by the committee's priorities: usage patterns and issues
+on the present clusters (a), queue design and turnaround (b), standard and premium queues and charges (c, d),
+and requirements that may call for expansion (e). Chapters for (b) and (c, d) are in preparation.
+
+The report shows **totals only**: no group's name or submission ID appears in it, so it can be circulated to the
+whole committee. Open the downloaded file in a browser, and use *Print → Save as PDF* to share it.
+
+**To run:** paste the Spreadsheet ID in the first code cell, then *Runtime → Run all*. Only the convener has access
+to the response sheet."""),
+        code("%pip install -q gspread pandas matplotlib"),
+        code(SETUP),
+        code("""import committee_report as cr
+with open('committee_report.html', 'w', encoding='utf-8') as f:
+    f.write(cr.build(dfs, cfg))
+try:
+    from google.colab import files      # in Colab: download the report
+    files.download('committee_report.html')
+except ModuleNotFoundError:
+    print('Wrote committee_report.html')"""),
     ],
 }
 
