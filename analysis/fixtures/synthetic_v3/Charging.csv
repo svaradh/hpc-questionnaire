@@ -1,0 +1,13 @@
+submission_id,pi_name,premium_services,premium_multiple,budget_band
+SYN-01,Dr. Synthetic PI 1,more_nodes; longer_walltime,up_to_2,1l_5l
+SYN-02,Dr. Synthetic PI 2,specialised_hardware; faster_start,up_to_1_5,25k_1l
+SYN-03,Dr. Synthetic PI 3,longer_walltime,varies,depends_grants
+SYN-04,Dr. Synthetic PI 4,specialised_hardware,up_to_3,up_to_25k
+SYN-05,Dr. Synthetic PI 5,faster_start,dont_know,gt_5l
+SYN-06,Dr. Synthetic PI 6,specialised_hardware,up_to_1_5,none
+SYN-07,Dr. Synthetic PI 7,none,,up_to_25k
+SYN-08,Dr. Synthetic PI 8,dont_know,,ask_pi
+SYN-09,Dr. Synthetic PI 9,more_nodes; faster_start,gt_3,1l_5l
+SYN-10,Dr. Synthetic PI 10,faster_start,up_to_2,
+SYN-11,Dr. Synthetic PI 11,none,,prefer_not
+SYN-12,Dr. Synthetic PI 12,none,,none

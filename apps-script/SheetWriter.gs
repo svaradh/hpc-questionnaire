@@ -1,5 +1,5 @@
 /**
- * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.6.0).
+ * SheetWriter.gs — creates and populates spreadsheet tabs (schema 2.7.0).
  *
  * Every sheet has submission_id as column A and pi_name as column B
  * so any tab is self-identifying without needing to cross-reference
@@ -165,6 +165,16 @@ var SHEET_DEFINITIONS = [
       ['benchmark_help', 'Z_benchmark_help'], ['benchmark_codes', 'Z_benchmark_codes'],
       ['volunteer', 'Z_volunteer'], ['volunteer_codes', 'Z_volunteer_codes'],
       ['comments', 'Z_comments']
+    ]
+  },
+  {
+    // Section H. Budget answers are seen only by the convener (the form says so): keep this tab
+    // out of ReportGenerator.gs and of anything shared with the committee; report it as totals only.
+    name: 'Charging',
+    source: 'top',
+    columns: [
+      ['premium_services', 'H_premium_services'], ['premium_multiple', 'H_premium_multiple'],
+      ['budget_band', 'H_budget_band']
     ]
   }
 ];

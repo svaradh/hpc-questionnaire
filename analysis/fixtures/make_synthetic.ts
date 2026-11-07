@@ -220,8 +220,25 @@ const submissions = [
   }),
 ]
 
+// Section H, one per group above: a spread of premium interest and budget answers (H3 is optional)
+const charging: Record<string, unknown>[] = [
+  { H_premium_services: ['more_nodes', 'longer_walltime'], H_premium_multiple: 'up_to_2', H_budget_band: '1l_5l' },
+  { H_premium_services: ['specialised_hardware', 'faster_start'], H_premium_multiple: 'up_to_1_5', H_budget_band: '25k_1l' },
+  { H_premium_services: ['longer_walltime'], H_premium_multiple: 'varies', H_budget_band: 'depends_grants' },
+  { H_premium_services: ['specialised_hardware'], H_premium_multiple: 'up_to_3', H_budget_band: 'up_to_25k' },
+  { H_premium_services: ['faster_start'], H_premium_multiple: 'dont_know', H_budget_band: 'gt_5l' },
+  { H_premium_services: ['specialised_hardware'], H_premium_multiple: 'up_to_1_5', H_budget_band: 'none' },
+  { H_premium_services: ['none'], H_budget_band: 'up_to_25k' },
+  { H_premium_services: ['dont_know'], H_budget_band: 'ask_pi' },
+  { H_premium_services: ['more_nodes', 'faster_start'], H_premium_multiple: 'gt_3', H_budget_band: '1l_5l' },
+  { H_premium_services: ['faster_start'], H_premium_multiple: 'up_to_2' },
+  { H_premium_services: ['none'], H_budget_band: 'prefer_not' },
+  { H_premium_services: ['none'], H_budget_band: 'none' },
+]
+
 const write = vm.runInContext('writeToSheets', ctx)
-submissions.forEach((a, i) => {
+submissions.forEach((s, i) => {
+  const a = { ...s, ...charging[i] }
   const id = `SYN-${String(i + 1).padStart(2, '0')}`
   // Fixtures need not be complete; report what the form would still ask for (other than contact details).
   const missing = missingRequired(schema.sections, a).filter(m => m.sectionId !== 'A')

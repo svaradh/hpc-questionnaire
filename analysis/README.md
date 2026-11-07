@@ -91,7 +91,8 @@ wl[wl['walltime_h'] > 72]            # standard pandas from here
 ```
 
 Sheet tabs: `Submissions, Group, Experience, Workloads, StorageTesting, LongJobs, Scaling, Memory, Gpu, Scratch,
-Queue, Closing, CommitteeAssessment`. Quantities are already in hours and GB. LongJobs, Scaling, Memory, Gpu and
+Queue, Closing, Charging, CommitteeAssessment`. `Charging` (Section H: premium services, charge multiple, budget band)
+is for the convener only: report it as totals, never per group. Quantities are already in hours and GB. LongJobs, Scaling, Memory, Gpu and
 Scratch (the Section D panels) have one row per entry (a code and kind of job, `code` + `job_kind`) that opened the
 panel; join them to Workloads on `(submission_id, entry_index)`. `opened_by` lists the triggers that opened the panel
 (a panel opened for several reasons is asked once); `same_as_entry` is set where the respondent ticked "Same answers

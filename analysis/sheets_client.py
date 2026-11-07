@@ -37,7 +37,7 @@ import pandas as pd
 SHEET_TABS = [
     "Submissions", "Group", "Experience", "Workloads", "StorageTesting",
     "LongJobs", "Scaling", "Memory", "Gpu", "Scratch", "Queue", "Closing",
-    "CommitteeAssessment",
+    "Charging", "CommitteeAssessment",
 ]
 
 # Where notebooks fetch the cluster config and helper modules from in Colab.

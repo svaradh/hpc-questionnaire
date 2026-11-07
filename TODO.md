@@ -28,11 +28,13 @@
 
 ## Next
 
-- **Section H (schema 2.7.0), on `/v3-draft/` only, for committee review.** Form only so far: premium services, charge
-  multiple, optional budget band; closing comments moved to the end of H. After approval: `Charging` tab in `SheetWriter.gs`
-  and fixtures (keep it out of `ReportGenerator.gs` and the committee's Sheet, totals only), then paste the Apps Script,
-  republish `/v3-preview/`, and update the slides (`A--G`, screenshots). Do not republish the preview before the backend
-  change, or H answers are dropped. ₹ bands are placeholders until the annual target is known.
+- **Section H (schema 2.7.0), on `/v3-draft/` only, for committee review.** Premium services, charge multiple, optional
+  budget band; closing comments moved to the end of H. The backend code is ready (`Charging` tab in `SheetWriter.gs`,
+  left out of `ReportGenerator.gs`; fixtures and loader updated) but **not yet pasted**. After approval: paste
+  `SheetWriter.gs` and `ReportGenerator.gs` into the v3 project, deploy a new version, clear test rows, run HPC Committee →
+  Initialize Sheets (creates `Charging`), then republish `/v3-preview/` and update the slides (`A--G`, screenshots).
+  Do not republish the preview before the paste, or H answers are dropped. ₹ bands are placeholders until the annual
+  target is known.
 - **Committee report** (`analysis/committee_report.py`, notebook 07): skeleton with chapters (a) usage patterns and
   (e) expansion, tested on the synthetic data only. Next: (b) needs the committee's candidate queue tables (in
   `clusters.json`) and, for fair-share, Slurm accounting; (c, d) needs the `Charging` tab, the annual target, the share

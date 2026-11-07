@@ -249,7 +249,7 @@ export interface QueueRecord {
   longestWaitH?: NumOrUnknown
 }
 
-/** Section F — tab "Closing". */
+/** Section G (and H's closing comments) — tab "Closing". */
 export interface ClosingRecord {
   growth3yFactor?: NumOrUnknown
   benchmarkHelp?: 'yes' | 'no' | 'not_sure'
@@ -257,6 +257,16 @@ export interface ClosingRecord {
   volunteer?: 'yes' | 'possibly' | 'no'
   volunteerCodes?: string
   comments?: string
+}
+
+/**
+ * Section H — tab "Charging". Individual answers are seen only by the convener
+ * and reach the committee only as totals.
+ */
+export interface ChargingRecord {
+  premiumServices?: Array<'faster_start' | 'longer_walltime' | 'more_nodes' | 'specialised_hardware' | 'none' | 'dont_know'>
+  premiumMultiple?: 'up_to_1_5' | 'up_to_2' | 'up_to_3' | 'gt_3' | 'varies' | 'dont_know'
+  budgetBand?: 'none' | 'up_to_25k' | '25k_1l' | '1l_5l' | 'gt_5l' | 'depends_grants' | 'ask_pi' | 'prefer_not'
 }
 
 // ---------------------------------------------------------------------------
@@ -301,6 +311,7 @@ export interface Submission {
   scratch: ScratchRecord[]
   queue: QueueRecord[]
   closing: ClosingRecord
+  charging: ChargingRecord
   committeeAssessment?: CommitteeAssessment
 
   /** Raw flat answers from the form, keyed by questionId (primary store in the UI). */

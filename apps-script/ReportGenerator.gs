@@ -48,7 +48,7 @@ function generateReportForSelected() {
 }
 
 // ---------------------------------------------------------------------------
-// Core report generator (schema 2.6.0)
+// Core report generator (schema 2.7.0)
 // ---------------------------------------------------------------------------
 
 /**
@@ -57,6 +57,9 @@ function generateReportForSelected() {
  * fields skipped. Repeatable tabs render one sub-table per entry, titled by
  * `titleCol`. Cluster comparisons and triage suggestions are in the analysis
  * notebooks (analysis/04–06), which read the cluster configuration.
+ *
+ * The Charging tab (Section H) is left out on purpose: the form tells respondents
+ * that individual budget answers are seen only by the convener. Do not add it.
  */
 var REPORT_SECTIONS = [
   { tab: 'Group',          title: 'A — About the group' },
@@ -69,7 +72,7 @@ var REPORT_SECTIONS = [
   { tab: 'Scratch',        title: 'D — Files and scratch', titleCol: ['code', 'job_kind'] },
   { tab: 'StorageTesting', title: 'E — Home area, testing and interactive use' },
   { tab: 'Queue',          title: 'F — Queue and turnaround', titleCol: 'queue' },
-  { tab: 'Closing',        title: 'G — Growth and closing' }
+  { tab: 'Closing',        title: 'G — Growth and benchmarking (with the closing comments from H)' }
 ];
 
 /** Columns computed by the sheet writer rather than answered (shown in italics). */
