@@ -1,5 +1,5 @@
 {
-  "version": "2.6.0",
+  "version": "2.7.0",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -3739,7 +3739,7 @@
     },
     {
       "id": "G",
-      "title": "G. Growth and Closing",
+      "title": "G. Growth and Benchmarking",
       "questions": [
         {
           "id": "Z_growth_3y",
@@ -3824,6 +3824,64 @@
             ]
           },
           "placeholder": "e.g. Quantum ESPRESSO, LAMMPS"
+        }
+      ]
+    },
+    {
+      "id": "H",
+      "title": "H. Possible Premium Services and Charges",
+      "description": "The committee is considering how services and charges could be organised. These answers help with overall planning and do not affect your group's access or service. Nothing here has been decided. The PI may be best placed to answer this section.",
+      "questions": [
+        {
+          "id": "H_premium_services",
+          "type": "checkbox",
+          "label": "If these were available at a higher charge than the standard queue, which would your group have used in the last 12 months?",
+          "required": true,
+          "helpText": "Select all that apply.",
+          "options": [
+            { "value": "faster_start", "label": "Faster job start" },
+            { "value": "longer_walltime", "label": "Longer wall time" },
+            { "value": "more_nodes", "label": "More nodes per job" },
+            { "value": "specialised_hardware", "label": "Specialised hardware (GPU or high memory)" },
+            { "value": "none", "label": "None", "exclusive": true },
+            { "value": "dont_know", "label": "Don't know", "exclusive": true }
+          ]
+        },
+        {
+          "id": "H_premium_multiple",
+          "type": "radio",
+          "label": "Up to what charge, relative to the standard rate, would your group use them?",
+          "required": true,
+          "helpText": "Current charges are ₹0.10 per core-hour and ₹1 per GPU-hour, and the 7-day queue is already charged at ₹0.20 per core-hour (2×). Future rates may differ.",
+          "conditionalOn": {
+            "questionId": "H_premium_services",
+            "values": ["faster_start", "longer_walltime", "more_nodes", "specialised_hardware"]
+          },
+          "options": [
+            { "value": "up_to_1_5", "label": "Up to 1.5×" },
+            { "value": "up_to_2", "label": "Up to 2×" },
+            { "value": "up_to_3", "label": "Up to 3×" },
+            { "value": "gt_3", "label": "More than 3×" },
+            { "value": "varies", "label": "Varies by job" },
+            { "value": "dont_know", "label": "Don't know" }
+          ]
+        },
+        {
+          "id": "H_budget_band",
+          "type": "radio",
+          "label": "Roughly what annual amount could your group plan for central computing charges? (optional)",
+          "required": false,
+          "helpText": "This helps the committee plan charges as a whole. It does not affect your group's access or service. Individual answers are seen only by the convener and reach the committee only as totals.",
+          "options": [
+            { "value": "none", "label": "No funds currently available for computing charges" },
+            { "value": "up_to_25k", "label": "Up to ₹25,000" },
+            { "value": "25k_1l", "label": "₹25,000 – ₹1 lakh" },
+            { "value": "1l_5l", "label": "₹1 lakh – ₹5 lakh" },
+            { "value": "gt_5l", "label": "More than ₹5 lakh" },
+            { "value": "depends_grants", "label": "Depends on grants" },
+            { "value": "ask_pi", "label": "Don't know — the PI would need to answer" },
+            { "value": "prefer_not", "label": "Prefer not to say" }
+          ]
         },
         {
           "id": "Z_comments",

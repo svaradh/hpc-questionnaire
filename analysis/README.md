@@ -11,7 +11,9 @@ flags are prompts for the committee, which makes all decisions.
 
 ## Getting started (Google Colab, nothing to install)
 
-1. **Get access.** The HPC admin shares the v3 response sheet with your `@iiserb.ac.in` account (Viewer access).
+1. **Get access.** Only the convener opens the v3 response sheet, because its `Charging` tab holds each group's budget answer and
+   anyone who can view a Google Sheet can read all its tabs. Do not share the sheet with other committee members; they use the
+   generated report and their own Sheet, which leave that answer out.
 2. **Find the Spreadsheet ID**: the long string in the sheet URL between `/d/` and `/edit`.
 3. **Open a notebook** at colab.research.google.com → File → Open notebook → GitHub →
    `https://github.com/svaradh/hpc-questionnaire` → `analysis/`.

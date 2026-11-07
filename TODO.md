@@ -28,6 +28,12 @@
 
 ## Next
 
+- **Section H (schema 2.7.0), on `/v3-draft/` only, for committee review.** Form only so far: premium services, charge
+  multiple, optional budget band; closing comments moved to the end of H. After approval: `Charging` tab in `SheetWriter.gs`
+  and fixtures (keep it out of `ReportGenerator.gs` and the committee's Sheet, totals only), then paste the Apps Script,
+  republish `/v3-preview/`, and update the slides (`A--G`, screenshots). Do not republish the preview before the backend
+  change, or H answers are dropped. ₹ bands are placeholders until the annual target is known.
+- **Limit the v3 response sheet to the convener** (Share settings), before real responses arrive.
 - **Whenever `apps-script/*.gs` change:** paste `SheetWriter.gs` and `ReportGenerator.gs` into the v3 project
   (`Code.gs` unchanged); Deploy → Manage deployments → Edit → New version (URL stays the same); clear test rows and run
   HPC Committee → Initialize Sheets. Done for 2.6.0.
