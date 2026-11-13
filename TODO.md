@@ -31,14 +31,14 @@
   problem reported in B leads to required answers (problem linked to a code, queue entries, testing questions).
   Input volume read per job is asked beside volume written.
 - **v3 backend.** Separate Apps Script project (web app, access "Anyone"; URL in `.env.local`), response sheet
-  "HPC Questionnaire Responses v3", reports folder "HPC Committee Reports/v3". The v1 Apps Script project and the
+  "HPC Questionnaire Response v3", reports folder "HPC Committee Reports/v3". The v1 Apps Script project and the
   Google Cloud sign-in project are kept.
 
 ## Next
 
-- **Section H go-live on the preview.** Paste `SheetWriter.gs` and `ReportGenerator.gs` into the v3 project, deploy a new
-  version, clear test rows, run HPC Committee → Initialize Sheets (creates `Charging`), then republish `/v3-preview/`
-  and update the slides (`A--G`, screenshots). Do not republish the preview before the paste, or H answers are dropped.
+- **Section H on the preview (2026-11-13).** Backend pasted, new version deployed, Initialize Sheets run (`Charging` tab
+  created), `/v3-preview/` republished at 2.7.0. Still to do: update the slides (`A--G`, screenshots). The v3 project is
+  standalone, so the sheet has no HPC Committee menu: run `initializeSheets` from the script editor.
 - **Committee report** (`analysis/committee_report.py`, notebook 07): skeleton with chapters (a) usage patterns and
   (e) expansion, tested on the synthetic data only. Next: (b) needs the candidate queue table (from the
   notebook 07 form) and, for fair-share, Slurm accounting; (c, d) uses the `Charging` tab and the charging parameters
