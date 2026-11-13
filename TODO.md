@@ -34,6 +34,25 @@
   "HPC Questionnaire Response v3", reports folder "HPC Committee Reports/v3". The v1 Apps Script project and the
   Google Cloud sign-in project are kept.
 
+## Where we left off (2026-11-13)
+
+- **Done today.** Section H approved; v3 backend updated for 2.7.0 (`Charging` tab); `/v3-preview/` republished at
+  2.7.0; one test submission checked end to end (Submissions, Workloads one row per code, Charging, confirmation
+  email). The evaluation-parameter form for the committee report was added to notebook 07.
+- **Resume with:** a walk-through of the analysis engine. The overview (load → workload table → evidence tables →
+  notebooks and report) is in `analysis/README.md` and `docs/analysis-framework.md`. Next step: run
+  `analysis/07_committee_report.ipynb` in Colab on "HPC Questionnaire Response v3" (File → Open notebook → GitHub,
+  branch `progressive-disclosure-v2`; in the first cell set `SPREADSHEET_ID` and `REPO_REF = 'progressive-disclosure-v2'`),
+  save a trial scenario in the form, and read the report; or first look at `ha.workloads()` and `ha.cpu_balance()`
+  on the synthetic data locally.
+- **Test rows in "Response v3"** (the test submission) to delete before real responses arrive; also any trial rows in
+  the `Scenarios` tab, which the form creates on first save.
+- **Generate Report for Selected Row** cannot be used: the v3 Apps Script project is standalone, so the sheet has no
+  HPC Committee menu. To fix (e.g. a small script bound to the sheet, or run by submission ID from the editor).
+- **Running the notebooks locally:** `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`, then
+  `.venv/bin/python -m ipykernel install --sys-prefix --name hpc-venv` and
+  `.venv/bin/python analysis/run_notebooks.py --kernel hpc-venv` (all of 00–07 pass on the synthetic data).
+
 ## Next
 
 - **Section H on the preview (2026-11-13).** Backend pasted, new version deployed, Initialize Sheets run (`Charging` tab
