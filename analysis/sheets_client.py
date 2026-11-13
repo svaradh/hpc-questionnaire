@@ -33,6 +33,8 @@ import urllib.request
 
 import pandas as pd
 
+import parameters as pm
+
 # Sheet tabs written by apps-script/SheetWriter.gs (schema 2.0.0)
 SHEET_TABS = [
     "Submissions", "Group", "Experience", "Workloads", "StorageTesting",
@@ -64,24 +66,33 @@ def load_local(folder: str) -> dict[str, pd.DataFrame]:
     return out
 
 
+_GC = None
+
+
+def gspread_client():
+    """A signed-in gspread client (Colab asks once per session)."""
+    global _GC
+    if _GC is None:
+        try:
+            from google.colab import auth  # type: ignore
+            from google.auth import default
+            import gspread
+
+            auth.authenticate_user()
+            creds, _ = default()
+            _GC = gspread.authorize(creds)
+        except ModuleNotFoundError:
+            raise RuntimeError(
+                "Reading the Google Sheet must be done from a Google Colab notebook.\n"
+                "Open the notebook at colab.research.google.com and run it there,\n"
+                "or pass a folder of CSV files to load_data() instead."
+            )
+    return _GC
+
+
 def load_sheets(spreadsheet_id: str) -> dict[str, pd.DataFrame]:
     """Load all tabs from the Google Sheet (must run in Google Colab)."""
-    try:
-        from google.colab import auth  # type: ignore
-        from google.auth import default
-        import gspread
-
-        auth.authenticate_user()
-        creds, _ = default()
-        gc = gspread.authorize(creds)
-    except ModuleNotFoundError:
-        raise RuntimeError(
-            "load_sheets() must be called from a Google Colab notebook.\n"
-            "Open the notebook at colab.research.google.com and run it there,\n"
-            "or pass a folder of CSV files to load_data() instead."
-        )
-
-    spreadsheet = gc.open_by_key(spreadsheet_id)
+    spreadsheet = gspread_client().open_by_key(spreadsheet_id)
     worksheets = {ws.title: ws for ws in spreadsheet.worksheets()}
     out = {}
     for tab in SHEET_TABS:
@@ -110,9 +121,12 @@ def load_data(source: str) -> dict[str, pd.DataFrame]:
 
 def load_config(source: str | None = None, ref: str = DEFAULT_REF) -> dict:
     """
-    Load clusters.json and add the values derived from committee parameters
-    (the same derivation as src/config/clusterConfig.ts):
+    Load clusters.json and add the values derived from it (the same
+    derivation as src/config/clusterConfig.ts):
       storage.scratchTB / homeTB, cpuCores, thresholds.scratch*TriggerGB.
+    The evaluation parameters are attached at their defaults from
+    analysis/parameters.json (cfg['parameters']); pass a saved scenario to
+    parameters.apply() to use other values.
     `source` may be a local path or URL; by default the file is looked for
     next to the repository, then fetched from GitHub at `ref`.
     """
@@ -131,7 +145,7 @@ def load_config(source: str | None = None, ref: str = DEFAULT_REF) -> dict:
         url = source if source and source.startswith("http") else f"{REPO_RAW}/{ref}/src/config/clusters.json"
         with urllib.request.urlopen(url) as r:
             cfg = json.load(r)
-    return derive_config(cfg)
+    return pm.apply(derive_config(cfg), pm.load_schema(ref=ref))
 
 
 def derive_config(cfg: dict) -> dict:

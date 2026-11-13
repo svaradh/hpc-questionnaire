@@ -1,5 +1,5 @@
 """
-Builds the committee notebooks (00–06) from the cell lists below, so that
+Builds the committee notebooks (00–07) from the cell lists below, so that
 their shared set-up stays identical. Run after editing:
 
     python analysis/_build_notebooks.py
@@ -19,7 +19,8 @@ REPO_REF = 'main'                                   # git branch/tag for the hel
 
 import os, urllib.request
 if not os.path.exists('hpc_analysis.py'):            # in Colab: fetch the helper modules once per session
-    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'committee_report.py', 'code_capabilities.json']:
+    for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'committee_report.py', 'code_capabilities.json',
+              'parameters.py', 'parameters.json', 'param_form.py']:
         urllib.request.urlretrieve(f'https://raw.githubusercontent.com/svaradh/hpc-questionnaire/{REPO_REF}/analysis/{f}', f)
 
 import pandas as pd
@@ -59,22 +60,24 @@ NOTEBOOKS = {
         md("""# 00 — Setup and data check
 
 Run this first in a new Colab session. It connects to the response sheet, loads the cluster configuration
-(`src/config/clusters.json`, including the committee parameters), and shows what was loaded.
+(`src/config/clusters.json`) and the evaluation parameters at their defaults (`analysis/parameters.json`; the
+committee's own values are entered in notebook 07), and shows what was loaded.
 
 **You need:** Viewer access to the response sheet, and its Spreadsheet ID (the long string in the sheet URL between `/d/` and `/edit`)."""),
         code("%pip install -q gspread pandas matplotlib"),
         code(SETUP),
         md("## Tabs loaded"),
         code("from sheets_client import summarise_sheets\nsummarise_sheets(dfs)"),
-        md("""## Cluster configuration and committee parameters
+        md("""## Cluster configuration and evaluation parameters
 
-Capacity figures in the other notebooks are computed from these. `None` means *not yet set by the committee*;
-analyses that need such a value say so instead of guessing."""),
+Capacity figures in the other notebooks are computed from these. *Not yet set* means the committee has not decided
+the value; analyses that need it say so instead of guessing."""),
         code("""rows = [{'cluster': c['name'], 'CPU cores': c['cpuCores'], 'GPUs': c['gpuCount'],
          'home TB': c['storage']['homeTB'], 'scratch TB': c['storage']['scratchTB'],
          'scratch fraction': c['storage']['scratchFraction']} for c in cfg['clusters']]
 display(pd.DataFrame(rows))
-pd.Series(cfg['committeeParameters']).drop('_comment', errors='ignore')"""),
+import parameters as pm
+pm.summary_table(cfg)"""),
         md("## Submissions"),
         code("dfs['Submissions'][['submission_id', 'pi_name', 'group_name', 'department', 'submitted_at', 'questionnaire_version']]"),
     ],
@@ -298,11 +301,16 @@ pd.DataFrame({'answered': [(ha.num(raw[c]).notna()).sum() for c in key],
               'blank': [(raw[c].astype(str).str.strip() == '').sum() for c in key]}, index=key)"""),
     ],
     "07_committee_report.ipynb": [
-        md("""# 07 — Committee report
+        md("""# 07 — Evaluation parameters and committee report
 
 Builds the committee report as one HTML file, organised by the committee's priorities: usage patterns and issues
 on the present clusters (a), queue design and turnaround (b), standard and premium queues and charges (c, d),
 and requirements that may call for expansion (e). Chapters for (b) and (c, d) are in preparation.
+
+The report is built for a **scenario**: one named set of evaluation parameters (annual target, allowance, premium
+multiple, target utilisation, candidate queues, ...), entered in the form below. Values not yet decided can be
+left empty. Scenarios are saved in a `Scenarios` tab of the response sheet and never overwritten, and each report
+names the scenario it used, so several options can be built and compared.
 
 The report shows **totals only**: no group's name or submission ID appears in it, so it can be circulated to the
 whole committee. Open the downloaded file in a browser, and use *Print → Save as PDF* to share it.
@@ -311,14 +319,12 @@ whole committee. Open the downloaded file in a browser, and use *Print → Save 
 to the response sheet."""),
         code("%pip install -q gspread pandas matplotlib"),
         code(SETUP),
-        code("""import committee_report as cr
-with open('committee_report.html', 'w', encoding='utf-8') as f:
-    f.write(cr.build(dfs, cfg))
-try:
-    from google.colab import files      # in Colab: download the report
-    files.download('committee_report.html')
-except ModuleNotFoundError:
-    print('Wrote committee_report.html')"""),
+        md("""## Evaluation parameters
+
+Start from the defaults or a saved scenario, change the values, name the scenario, then **Save and build report**.
+The report downloads when it is ready."""),
+        code("""import param_form
+form = param_form.show(dfs, cfg, SPREADSHEET_ID)"""),
     ],
 }
 

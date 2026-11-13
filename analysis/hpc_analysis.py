@@ -324,12 +324,12 @@ def max_concurrent_cores(cfg: dict, cid: str) -> int:
 
 
 def cpu_capacity_hours(cfg: dict) -> dict:
-    u = cfg["committeeParameters"]["targetUtilisation"]
+    u = cfg["parameters"]["targetUtilisation"]
     return {c["id"]: c["cpuCores"] * HOURS_PER_YEAR * u for c in cfg["clusters"]}
 
 
 def gpu_capacity_hours(cfg: dict) -> dict:
-    u = cfg["committeeParameters"]["targetUtilisation"]
+    u = cfg["parameters"]["targetUtilisation"]
     return {c["id"]: (c["gpuCount"] * HOURS_PER_YEAR * u if c.get("gpuCount") is not None else None) for c in cfg["clusters"]}
 
 
@@ -654,7 +654,7 @@ def home_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, 
     out["deficit_3y_tb"] = out["demand_3y_tb"] - out["capacity_tb"]
     out.attrs["groups_unknown"] = int(st["home_now_gb"].isna().sum())
 
-    guide = cfg["committeeParameters"].get("homeGuidePerGroupTB")
+    guide = cfg["parameters"]["homeGuidePerGroupTB"]
     per = st[["submission_id", "pi_name", "home_now_gb", "home_3y_gb", "output_stay"]].copy()
     per["over_guide"] = known(per["home_now_gb"] / 1024 > guide, per["home_now_gb"]) if guide else not_set(per.index)
     per["outputs_kept_over_3_months"] = known(per["output_stay"] == "gt_3m", per["output_stay"])
@@ -707,7 +707,7 @@ def scratch_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFram
     t["scratch_peak_gb"] = t["scratch_write_gb"] * t["concurrent"]
     t["scratch_peak_with_inputs_gb"] = per_job(True) * t["concurrent"]
     t["scratch_avg_gb"] = t["scratch_write_gb"] * conc
-    cap_user = cfg["committeeParameters"].get("maxScratchPerUserTB")
+    cap_user = cfg["parameters"]["maxScratchPerUserTB"]
     per = t[["submission_id", "pi_name", "entry", "cluster", "input_read_gb", "scratch_write_gb", "concurrent",
              "scratch_peak_gb", "scratch_peak_with_inputs_gb", "scratch_avg_gb"]].copy()
     pk = per["scratch_peak_with_inputs_gb"]

@@ -41,13 +41,11 @@ import pandas as pd
 
 import hpc_analysis as ha
 import hpc_plots as hp
+import parameters as pm
 from sheets_client import load_config, load_data
 
 TITLE = "HPC workload survey: committee report"
-PARAMETER_LABELS = {
-    "targetUtilisation": "Target utilisation (share of core-hours deliverable in a year)",
-    "maxScratchPerUserTB": "Largest scratch area per user (TB)",
-    "homeGuidePerGroupTB": "Home-area guide per group (TB)",
+TRIGGER_LABELS = {
     "scratchPerJobTriggerFraction": "Scratch per job that opens the scratch questions (share of the smallest scratch area)",
     "scratchConcurrentTriggerFraction": "Scratch at once that opens the scratch questions (share of the smallest scratch area)",
 }
@@ -233,7 +231,7 @@ def chapter_about(d: Doc, ctx: dict):
         "queue design and turnaround, standard and premium queues with their charges, and requirements that may "
         "call for expansion. It presents evidence; the committee draws the conclusions.")
     d.h3("How to read the numbers")
-    u = cfg["committeeParameters"]["targetUtilisation"]
+    u = pm.param(cfg, "targetUtilisation")
     d.ul([
         "<strong>Totals only.</strong> No group is named. Tables count groups and job entries.",
         "<strong>Nothing is scored or ranked.</strong> No figure here assigns a queue or judges a group's work.",
@@ -356,7 +354,7 @@ def chapter_patterns(d: Doc, ctx: dict):
           "Accounting records would show actual job sizes, wall times and waits.")
 
 
-def chapter_pending(d: Doc, number: str, title: str, anchor: str, priority: str, question: str,
+def chapter_pending(d: Doc, ctx: dict, number: str, title: str, anchor: str, priority: str, question: str,
                     contents: list[str], inputs: list[str]):
     d.h2(f"{number}. {title}", anchor)
     d.box("question", priority, question)
@@ -364,6 +362,11 @@ def chapter_pending(d: Doc, number: str, title: str, anchor: str, priority: str,
     d.ul(contents)
     d.p("<strong>It will need:</strong>")
     d.ul(inputs)
+    params = [p for p in pm.parameters(ctx["cfg"]["parameterSchema"]) if anchor in p.get("chapters", [])]
+    if params:
+        missing = {p["id"] for p in pm.missing_for(ctx["cfg"], anchor)}
+        d.p(f"<strong>Evaluation parameters for this chapter</strong> in scenario “{esc(ctx['cfg']['scenario']['name'])}”:")
+        d.ul([f"{esc(pm.label(p))}: " + ("<em>not yet set</em>" if p["id"] in missing else "set") for p in params])
 
 
 def chapter_expansion(d: Doc, ctx: dict):
@@ -485,10 +488,17 @@ def appendices(d: Doc, ctx: dict):
     d.table(pd.DataFrame(rows), {"cluster": "Cluster", "cores": "CPU cores", "capacity": "Deliverable core-hours / year",
                                  "gpus": "GPUs", "home": "Home", "scratch": "Scratch"},
             formats={"cores": n, "capacity": mh, "gpus": lambda x: "to be confirmed" if _isnan(x) else n(x), "home": tb, "scratch": tb})
+    sc = cfg["scenario"]
+    saved = f", saved {esc(sc['saved_at'].replace('T', ' '))}" if sc.get("saved_at") else " (the values in analysis/parameters.json)"
+    d.p(f"<strong>Scenario:</strong> {esc(sc['name'])}{saved}." + (f" Note: {esc(sc['note'])}" if sc.get("note") else ""))
+    d.table(pm.summary_table(cfg), {"group": "Group", "parameter": "Evaluation parameter", "value": "Value"})
+    queues = pm.param(cfg, "candidateQueues")
+    if queues:
+        d.table(pd.DataFrame(queues), {c: c for c in queues[0]}, caption="Candidate queue table")
     cp = {k: v for k, v in cfg["committeeParameters"].items() if not k.startswith("_")}
-    d.table(pd.DataFrame([{"parameter": PARAMETER_LABELS.get(k, k), "value": "not yet set" if v is None else v}
+    d.table(pd.DataFrame([{"parameter": TRIGGER_LABELS.get(k, k), "value": "not yet set" if v is None else v}
                           for k, v in cp.items()]),
-            {"parameter": "Committee parameter (src/config/clusters.json)", "value": "Value"})
+            {"parameter": "Form trigger (src/config/clusters.json)", "value": "Value"})
     d.h2("Appendix C. How missing answers are handled", "missing", first=True)
     d.p("A blank, optional or “don't know” answer is given a neutral meaning: one that neither adds demand nor raises a flag. "
         "The cases are still counted as unknown in each table's basis line.")
@@ -510,7 +520,7 @@ def build(dfs: dict, cfg: dict, records=None) -> str:
     ctx = {"dfs": dfs, "cfg": cfg, "wl": wl, "cov": ha.coverage(dfs), "records": records}
     d = Doc()
     d.add(f"<h1>{esc(TITLE)}</h1><p class='subtitle'>HPC Users' Committee · generated {dt.date.today():%d %B %Y} · "
-          f"{ctx['cov']['groups']} groups responded</p>")
+          f"{ctx['cov']['groups']} groups responded · scenario “{esc(cfg['scenario']['name'])}”</p>")
     d.add("<nav><strong>Contents</strong><ol>"
           "<li><a href='#about'>About this report</a></li>"
           "<li><a href='#patterns'>Usage patterns and issues on the present clusters</a> (a)</li>"
@@ -522,7 +532,7 @@ def build(dfs: dict, cfg: dict, records=None) -> str:
     chapter_about(d, ctx)
     chapter_patterns(d, ctx)
     chapter_pending(
-        d, "3", "Queue design and turnaround", "queues", "Priority (b).",
+        d, ctx, "3", "Queue design and turnaround", "queues", "Priority (b).",
         "How could queues and fair-share be arranged for faster turnaround across the workloads described?",
         ["Each workload's fit under the present queue table and under candidate tables the committee drafts "
          "(share of entries and of core-hours that fit each).",
@@ -531,17 +541,18 @@ def build(dfs: dict, cfg: dict, records=None) -> str:
          "Throughput: wanted concurrency against per-user limits, and how long a year of each workload takes at those limits.",
          "Debug and interactive use against the debug queues.",
          "How usage is spread across groups, for fair-share design."],
-        ["Candidate queue tables from the committee (added to clusters.json).",
+        ["Candidate queue tables from the committee (entered in the parameter form, notebook 07).",
          "Cluster accounting (Slurm) for actual waits and usage per group: the survey can show fit, but not predict waits."])
     chapter_pending(
-        d, "4", "Standard and premium queues and charges", "charging", "Priorities (c) and (d).",
+        d, ctx, "4", "Standard and premium queues and charges", "charging", "Priorities (c) and (d).",
         "What standard and premium charges would meet the annual target, given a free annual allowance for a share of groups?",
         ["Typical annual usage of standard and premium queues, as estimated from the survey.",
          "The standard rate needed to meet the target, for the allowance and premium multiple the committee chooses, "
          "shown as a range (which groups receive the allowance, how far usage falls when charged).",
          "Interest in premium services and the charge multiples groups would accept (Section H).",
          "Totals of the annual budgets groups could plan for (Section H), against estimated charges. Totals only."],
-        ["The annual target, the share of groups receiving the allowance, its size and the premium multiple, from the committee.",
+        ["The annual target, the share of groups receiving the allowance, its size and the premium multiple, "
+         "entered by the committee in the parameter form (notebook 07).",
          "Section H answers (the form's Charging tab).",
          "Cluster accounting and billing records, since the survey overstates yearly usage."])
     chapter_expansion(d, ctx)
@@ -555,9 +566,13 @@ def main() -> int:
     ap.add_argument("data", nargs="?", default=os.path.join(here, "fixtures", "synthetic_v3"),
                     help="folder of <Tab>.csv files, or a Spreadsheet ID (in Colab)")
     ap.add_argument("-o", "--output", default="committee_report.html")
+    ap.add_argument("-s", "--scenario", help="name of a saved scenario (default: the values in parameters.json)")
     args = ap.parse_args()
+    cfg = load_config()
+    if args.scenario:
+        cfg = pm.apply(cfg, pm.load_schema(), pm.scenario_store(args.data).get(args.scenario))
     with open(args.output, "w", encoding="utf-8") as f:
-        f.write(build(load_data(args.data), load_config()))
+        f.write(build(load_data(args.data), cfg))
     print(f"Wrote {args.output}")
     return 0
 

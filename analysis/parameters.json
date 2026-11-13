@@ -1,0 +1,105 @@
+{
+  "_comment": "Evaluation parameters the committee sets at the analysis stage (not seen by respondents). The form in notebook 07 is generated from this file: add, remove or reword a parameter here, not in code. null default = not yet decided; analyses that need such a value say so instead of guessing. Form trigger thresholds stay in src/config/clusters.json, since they decide which questions respondents see.",
+  "version": "1.0.0",
+  "groups": [
+    {
+      "id": "capacity",
+      "title": "Capacity and storage",
+      "parameters": [
+        {
+          "id": "targetUtilisation",
+          "label": "Target utilisation",
+          "type": "number", "unit": "share of core-hours, 0–1", "min": 0.1, "max": 1,
+          "default": 0.8, "required": true,
+          "help": "Share of a cluster's core-hours that can realistically be delivered over a year, after maintenance, fragmentation and scheduling gaps. 0.8 means 80 %.",
+          "chapters": ["about", "patterns", "expansion"]
+        },
+        {
+          "id": "maxScratchPerUserTB",
+          "label": "Largest scratch area per user",
+          "type": "number", "unit": "TB", "min": 0,
+          "default": null,
+          "help": "Scratch is shared and purged; this is the most one user may hold at once.",
+          "chapters": ["expansion"]
+        },
+        {
+          "id": "homeGuidePerGroupTB",
+          "label": "Home-area guide per group",
+          "type": "number", "unit": "TB", "min": 0,
+          "default": null,
+          "help": "A guide value for comparing each group's reported home use, not a quota.",
+          "chapters": ["expansion"]
+        }
+      ]
+    },
+    {
+      "id": "queues",
+      "title": "Queue design",
+      "parameters": [
+        {
+          "id": "candidateQueues",
+          "label": "Candidate queue table",
+          "type": "table",
+          "columns": [
+            { "id": "cluster", "type": "text", "help": "gargi or raman" },
+            { "id": "queue", "type": "text" },
+            { "id": "minNodes", "type": "number" },
+            { "id": "maxNodes", "type": "number" },
+            { "id": "walltimeHours", "type": "number" },
+            { "id": "maxConcurrentJobs", "type": "number" },
+            { "id": "nodeType", "type": "text", "help": "blank for compute nodes; highmem or gpu" }
+          ],
+          "default": null,
+          "help": "One queue per line, values separated by commas, in the column order shown. Leave empty to compare against the present queues only.",
+          "chapters": ["queues"]
+        }
+      ]
+    },
+    {
+      "id": "charging",
+      "title": "Charges and allowance",
+      "parameters": [
+        {
+          "id": "annualTargetINR",
+          "label": "Annual revenue target",
+          "type": "number", "unit": "₹ per year", "min": 0,
+          "default": null,
+          "help": "The amount the facility is asked to recover from usage charges in a year.",
+          "chapters": ["charging"]
+        },
+        {
+          "id": "allowanceGroupSharePct",
+          "label": "Share of groups receiving the free annual allowance",
+          "type": "number", "unit": "% of responding groups", "min": 0, "max": 100,
+          "default": null,
+          "help": "Which groups receive it is decided by the committee and the institute; the analysis uses only this share and never infers it from the answers.",
+          "chapters": ["charging"]
+        },
+        {
+          "id": "allowanceCoreHoursPerGroup",
+          "label": "Free annual allowance per group (CPU)",
+          "type": "number", "unit": "core-hours per year", "min": 0,
+          "default": null,
+          "help": "Standard-queue CPU usage free of charge each year for a group receiving the allowance.",
+          "chapters": ["charging"]
+        },
+        {
+          "id": "allowanceGpuHoursPerGroup",
+          "label": "Free annual allowance per group (GPU)",
+          "type": "number", "unit": "GPU-hours per year", "min": 0,
+          "default": null,
+          "help": "Leave empty if the allowance covers CPU only.",
+          "chapters": ["charging"]
+        },
+        {
+          "id": "premiumMultiple",
+          "label": "Premium charge multiple",
+          "type": "number", "unit": "× the standard rate", "min": 1,
+          "default": null,
+          "help": "Charge for premium queues relative to the standard queue. Compare with the multiples groups reported in Section H.",
+          "chapters": ["charging"]
+        }
+      ]
+    }
+  ]
+}

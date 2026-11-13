@@ -9,6 +9,8 @@ matplotlib>=3.8
 # Reading the response sheet from Google Sheets (also preinstalled in Colab)
 gspread>=6.0
 google-auth>=2.30
+# The evaluation-parameter form in notebook 07 (preinstalled in Colab)
+ipywidgets>=8.1
 
 # Building and test-running the notebooks locally (analysis/_build_notebooks.py, analysis/run_notebooks.py)
 nbformat>=5.10
