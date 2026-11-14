@@ -46,7 +46,7 @@ Long wall-time slots are expensive for everyone. They block backfill, lengthen e
 **P4. Let scalable codes use the parallel hardware.** Current limits allow at most 3 Gargi nodes (384 cores) and 72 h for any multi-node job. A code that keeps getting faster beyond that is being held back by policy, not by hardware. The usual remedy is **capability windows**: scheduled reservations or a large-job partition with limited frequency. These give scalable codes full use of the interconnect without making large jobs a standing claim on the machine.
 
 **P5. Throughput workloads need concurrency and fairness, not long jobs.** Ensembles and parameter sweeps are limited by how many jobs one user may run at once and by turnaround. The levers are:
-- per-user concurrency limits tuned to load
+- per-group concurrency limits tuned to load (limits apply to a group, not to each user)
 - job arrays
 - short jobs that backfill well
 - fair-share scheduling with usage decay instead of fixed caps
@@ -55,7 +55,9 @@ A test that helps: at the current concurrency limit, how long would one year of 
 
 **P6. Turnaround should be proportionate to the request.** The *expansion factor* is (queue wait + run time) / run time. It should be close to 1 for debug and small short jobs, and can be a few for large or long jobs. Debug and interactive work needs near-immediate starts, or development stalls.
 
-**P7. Plan for realistic utilisation.** Above roughly 80 % use, queue waits grow steeply. "Capacity" in this analysis therefore means `cores × 8,760 h × target utilisation` (a committee parameter, 0.8 for now). Demand above that is a deficit, even if it would fit at 100 %.
+**P7. Plan for realistic utilisation.** Not every hour of the year can be delivered. Nodes are down for maintenance, shutdowns and faults (*availability*), and on a shared cluster queue waits grow steeply once it is more than about 80–85 % busy (*usable share of available time*). "Capacity" in this analysis therefore means `cores × 8,760 h × availability × usable share`, both committee parameters (defaults 0.95 and 0.85, about 0.81 together). The hardware check asks for planned downtime, and Slurm accounting can measure both. Demand above that is a deficit, even if it would fit at 100 %.
+
+**P7a. Volume is not the only test.** Work can fail to run for three different reasons, each with its own remedy: its jobs fit no queue (*queue design*); they fit, but the group limits on running jobs or nodes let a group run only part of a year's work (*group limits*); or the cluster is full (*hardware*). Demand is therefore shown in steps: desired → fits a queue → runnable within group limits, next to capacity. Work that cannot start never shows as a core-hour shortfall, so it is also listed on its own. Limits apply to a whole research group (at most two users), not to each user.
 
 **P8. Storage is working space.**
 - **Home** holds what production runs need right now: inputs, checkpoints, parameters, own codes, and outputs awaiting transfer. Keeping research data long-term is the group's responsibility.
@@ -80,13 +82,15 @@ Storage is judged per group against a guide figure, not by adding up wishes.
 | Analysis | Question | Principle | Notebook |
 |---|---|---|---|
 | Problems reported (pie + share of groups), split by where they occurred | What goes wrong, and is it on the present clusters? | P1 | 01 |
-| CPU-hour demand vs capacity: Gargi, Raman, unattributed, combined; used vs unconstrained | Is there a *volume* shortfall? | P2, P7 | 02 |
+| CPU-hour demand vs capacity per cluster (a range where work could go to either) and combined; used vs unconstrained | Is there a *volume* shortfall? | P2, P7 | 02 |
+| Desired demand → cannot start / fits a queue / runnable within group limits, vs capacity | Is the constraint queue design, group limits or hardware? | P5, P7a | 02 |
+| Work that cannot start under the present queues: the limit each job is beyond, checkpoint/restart and scaling answers | Which work does the present design not allow at all? | P3, P4, P7a | 05 |
 | GPU-hour demand vs capacity; latent GPU demand from CPU codes; CPU-viability of GPU workloads | How much GPU, and how much would CPU nodes absorb? | P9 | 02 |
 | Home and scratch demand vs capacity per cluster; per-group outliers; output residence | Is storage short, or held too long? | P8 | 03 |
 | Long-job requirement split by checkpoint status | Genuine long-wall-time need, or awareness gap? | P3 | 04 |
 | Long jobs without checkpoint, split by scaling | Should these run *longer* or *wider*? | P3, P4 | 04 |
 | High-scalers: cores wanted vs policy maximum; estimated wall time at the cap vs at the wanted size | Where does policy hold back the parallel hardware? | P4 | 05 |
-| Low/intermediate scalers: queue fit, concurrency need vs per-user limit, time to finish a year's work, queue waits | Where do queue limits throttle throughput or turnaround? | P5, P6 | 05 |
+| Low/intermediate scalers: queue fit, concurrency need vs the group limit, time to finish a year's work, queue waits | Where do queue limits throttle throughput or turnaround? | P5, P6 | 05 |
 | Debug/interactive demand vs the 30-min debug queues | Is the on-ramp adequate? | P6 | 05 |
 | Clarification and technical-assessment candidates; answers to confirm (internal consistency); data quality | Which submissions need a follow-up? | P1, P12 | 06 |
 
@@ -99,14 +103,15 @@ Storage is judged per group against a guide figure, not by adding up wishes.
 | Throughput tuning (concurrency / fair-share) | At the current concurrency limit, a year of the workload takes more than ~6 months to finish, **or** the expansion factor is persistently > 3 for small jobs. |
 | High memory | Peak memory per node exceeds a standard node and cannot be distributed (Section D, Memory). |
 | Scratch above the per-user cap | Peak concurrent scratch exceeds the cap, the I/O is write-heavy or re-read, and local disk is not an option (Section D, Files and scratch). |
-| GPU expansion | Measured GPU node speed-up ≥ 5× and CPU-only not viable, with enough GPU-hours to keep extra GPUs busy at the target utilisation. |
+| GPU expansion | Measured GPU node speed-up ≥ 5× and CPU-only not viable, with enough GPU-hours to keep extra GPUs busy at the deliverable share (availability × usable share). |
 | Support / training rather than policy | Checkpoint "Not tested" or "Don't know" for a long-job workload; "Not aware" declarations; scaling never tested. |
 
 ## 5. Caveats
 
 - **Coverage:** totals cover responding groups only. Report the response rate next to every total.
 - **"Unconstrained" demand** is self-estimated and tends to be optimistic. Treat it as an upper bound and the "used" figure as the lower bound.
-- **Cluster attribution:** workloads with cluster "Both" are split 50:50. "Not decided" and "Don't know" go into an *unattributed* pool, shown separately and in the combined total.
+- **Cluster attribution:** workloads naming "Both", "Not decided" or "Don't know" could go to either cluster. Each cluster's demand is shown as a range: from the entries naming it alone, to those plus all the work that could go to either. The combined total counts every entry once.
+- **Runnable within group limits** assumes a group keeps its allowed jobs running all year and ignores other groups' jobs; it is the most the limits allow, not what a group would get on a busy cluster. Whether per-queue limits add up across queues is to be confirmed (hardware check).
 - **Averages vs peaks:** scratch and concurrency are reported both as sums of peaks (worst case) and as time-averaged load (Little's law: average running jobs = jobs per year × wall time / 8,760 h).
 - **Only the respondents' data:** the scripts are code-agnostic — no flag depends on which code a workload runs. Checking answers against outside knowledge of a code's performance, or against Slurm accounting, is manual. For checkpoint/restart, `analysis/code_capabilities.json` keeps a reference list with the documented mechanism and official documentation link for each code, and `restart_cross_check()` lists matching workloads on request.
 - **Missing answers are neutral:** blank, optional and "don't know" answers get defaults that neither add demand nor raise a flag (`NEUTRAL_DEFAULTS` in `hpc_analysis.py`); a test whose inputs are unknown is reported as undecided (`<NA>`), not as failed.

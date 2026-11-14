@@ -4,6 +4,7 @@
     "Raman cores per node: the site lists 'Xeon Gold 6126, 12 cores' (a 12-core CPU); 24 per node assumes 2 sockets, consistent with pilot data ('2 x 12-cores Intel Xeon Gold 6126, 96 GB RAM'). TO CONFIRM.",
     "Raman GPU node: model not listed; recalled as a Volta-generation card. Not needed by the form for now.",
     "Storage split: each cluster's usable storage is divided into home and scratch by storage.scratchFraction (committee parameter; usually home:scratch 60:40, set to 50:50 for now). homeTB and scratchTB are computed from it in clusterConfig.ts.",
+    "Scheduler limits apply to a whole research group (at most two users: the faculty member and one group member), not to each user. queues[].maxConcurrentJobs = jobs one group may have running at once in that queue. groupLimits (per cluster, across all its queues): maxRunningJobs = jobs a group may have running at once in all queues together; maxRunningNodes = nodes a group's running jobs may occupy in total; maxQueuedJobs = jobs a group may have waiting; fairShare = whether a fair-share policy balances groups' usage (at present: Raman yes, Gargi no). null = none or not yet confirmed (hardware check).",
     "storage.scratchOnlyOnFastPFS: true when only scratch is on the fast parallel file system (home elsewhere). Jobs should then load their input files from scratch, so the analysis counts read volume (W_input_read) toward scratch as well as written volume. null = to confirm with the convener."
   ],
   "clusters": [
@@ -25,7 +26,8 @@
         { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "priority": 2 },
         { "id": "xlong",  "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "priority": 5 },
         { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "priority": 3, "nodeType": "highmem" }
-      ]
+      ],
+      "groupLimits": { "maxRunningJobs": null, "maxRunningNodes": null, "maxQueuedJobs": null, "fairShare": false }
     },
     {
       "id": "raman",
@@ -46,7 +48,8 @@
         { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "priority": 1 },
         { "id": "gpu",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 24,  "maxConcurrentJobs": 1, "priority": 1, "nodeType": "gpu" },
         { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 72,  "maxConcurrentJobs": 1, "priority": 3, "nodeType": "highmem" }
-      ]
+      ],
+      "groupLimits": { "maxRunningJobs": null, "maxRunningNodes": null, "maxQueuedJobs": null, "fairShare": true }
     }
   ],
   "charges": {
@@ -56,7 +59,7 @@
     "gpuPerCardHour": 1.00
   },
   "committeeParameters": {
-    "_comment": "Set by the HPC Users' Committee; used by the form's follow-up triggers. The evaluation parameters used only at the analysis stage (target utilisation, scratch and home guides, charges, allowance, candidate queues) are in analysis/parameters.json and set through the form in notebook 07.",
+    "_comment": "Set by the HPC Users' Committee; used by the form's follow-up triggers. The evaluation parameters used only at the analysis stage (availability, usable share of available time, scratch and home guides, charges, allowance, candidate queues) are in analysis/parameters.json and set through the form in notebook 07.",
     "scratchPerJobTriggerFraction": 0.01,
     "scratchConcurrentTriggerFraction": 0.05
   },

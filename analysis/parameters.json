@@ -1,18 +1,26 @@
 {
   "_comment": "Evaluation parameters the committee sets at the analysis stage (not seen by respondents). The form in notebook 07 is generated from this file: add, remove or reword a parameter here, not in code. null default = not yet decided; analyses that need such a value say so instead of guessing. Form trigger thresholds stay in src/config/clusters.json, since they decide which questions respondents see.",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "groups": [
     {
       "id": "capacity",
       "title": "Capacity and storage",
       "parameters": [
         {
-          "id": "targetUtilisation",
-          "label": "Target utilisation",
-          "type": "number", "unit": "share of core-hours, 0–1", "min": 0.1, "max": 1,
-          "default": 0.8, "required": true,
-          "help": "Share of a cluster's core-hours that can realistically be delivered over a year, after maintenance, fragmentation and scheduling gaps. 0.8 means 80 %.",
-          "chapters": ["about", "patterns", "expansion"]
+          "id": "availability",
+          "label": "Availability",
+          "type": "number", "unit": "share of the year, 0–1", "min": 0.5, "max": 1,
+          "default": 0.95, "required": true,
+          "help": "Share of the year a cluster's nodes are up and accepting jobs, after planned maintenance, power shutdowns, outages and nodes out of service. 0.95 is about 18 days down a year. The hardware check asks the convener for planned downtime; Slurm accounting (sreport) can measure it.",
+          "chapters": ["about", "patterns", "queues", "expansion"]
+        },
+        {
+          "id": "schedulableUtilisation",
+          "label": "Usable share of available time",
+          "type": "number", "unit": "share of available core-hours, 0–1", "min": 0.1, "max": 1,
+          "default": 0.85, "required": true,
+          "help": "Share of the available core-hours that can be kept busy while queue waits stay reasonable. Jobs never fill the nodes perfectly, and on a shared cluster waits grow steeply once it is more than about 80–85 % busy. 0.85 is a common planning value; the past year's measured utilisation (Slurm accounting) is a check on it. Deliverable capacity = cores × 8,760 h × availability × this share.",
+          "chapters": ["about", "patterns", "queues", "expansion"]
         },
         {
           "id": "maxScratchPerUserTB",

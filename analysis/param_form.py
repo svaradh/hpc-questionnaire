@@ -119,7 +119,7 @@ class ParameterForm:
             self.name.value, self.note.value = "", ""
             return
         sc = self.store.get(name)
-        self._set_values({**pm.defaults(self.schema), **sc["values"]})
+        self._set_values({**pm.defaults(self.schema), **pm.migrate(sc["values"])})
         self.name.value, self.note.value = sc["name"], sc.get("note", "")
 
     def save(self, build: bool = False):

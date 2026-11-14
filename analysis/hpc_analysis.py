@@ -22,9 +22,11 @@ Conventions
 - consistency_checks() compares a respondent's answers with each other, after
   the form is submitted. The form itself does not check consistency.
 - Hours per year = 8,760.
-- Demand on a cluster: W_cluster 'gargi' / 'raman' -> that cluster, 'both' ->
-  split 50:50, anything else -> the 'unattributed' pool. GPU workloads go to
-  Raman (the only GPUs).
+- Demand on a cluster is a range. W_cluster 'gargi' / 'raman' -> that cluster
+  only; 'both', 'not decided' and "don't know" -> work that could go to either
+  (EITHER). Each cluster's low figure counts only the entries naming it; its
+  high figure adds all of the 'either' work. The combined total counts
+  everything once. GPU workloads go to Raman (the only GPUs).
 - "used" demand = jobs in the last 12 months; "desired" = jobs the group would
   run if limits did not bind (falls back to "used" when not given).
 - Each workload entry is one code and kind of job, and describes its heaviest
@@ -59,7 +61,7 @@ from sheets_client import explode_semicolons, split_semicolons
 
 HOURS_PER_YEAR = 8760
 CLUSTERS = ["gargi", "raman"]
-UNATTR = "unattributed"
+EITHER = "either"  # entries naming both clusters, neither, or "don't know"
 
 PROBLEM_LABELS = {
     "wall_time_termination": "Jobs stopped by wall-time limit",
@@ -93,7 +95,7 @@ NEUTRAL_DEFAULTS = {
     "nodes": "estimated from cores and the cluster's node size; if cores are also unknown, "
              "the wall-time limit is the most generous of any job size",
     "mem_node_gb": "fits a standard node (no high-memory queue)",
-    "cluster": "unattributed pool (not added to either cluster)",
+    "cluster": "could run on either cluster: left out of each cluster's low figure, added in full to its high figure",
     "device": "counted with CPU work",
     "input_read_gb": "0 GB added to scratch",
     "residence_after_job": "scratch freed when the job ends",
@@ -318,18 +320,31 @@ def max_cores_per_job(cfg: dict, cid: str) -> int:
 
 
 def max_concurrent_cores(cfg: dict, cid: str) -> int:
-    """Largest number of cores one user can hold at once within a single CPU queue."""
+    """Largest number of cores one group can hold at once within a single CPU queue (and within the
+    cluster's limit on a group's running nodes, where set). Limits apply per group, not per user."""
     cpn = cores_per_node(cfg, cid)
-    return max(q["maxNodes"] * cpn * q["maxConcurrentJobs"] for q in eligible_queues(cfg, cid, "cpu"))
+    most = max(q["maxNodes"] * cpn * q["maxConcurrentJobs"] for q in eligible_queues(cfg, cid, "cpu"))
+    nodes_cap = group_limits(cfg, cid).get("maxRunningNodes")
+    return min(most, nodes_cap * cpn) if nodes_cap else most
+
+
+def available_hours(cfg: dict) -> float:
+    """Hours a year a cluster's nodes are up and accepting jobs: 8,760 h x availability."""
+    return HOURS_PER_YEAR * cfg["parameters"]["availability"]
+
+
+def deliverable_share(cfg: dict) -> float:
+    """Share of all core-hours in a year that can be delivered: availability x usable share of available time."""
+    return cfg["parameters"]["availability"] * cfg["parameters"]["schedulableUtilisation"]
 
 
 def cpu_capacity_hours(cfg: dict) -> dict:
-    u = cfg["parameters"]["targetUtilisation"]
+    u = deliverable_share(cfg)
     return {c["id"]: c["cpuCores"] * HOURS_PER_YEAR * u for c in cfg["clusters"]}
 
 
 def gpu_capacity_hours(cfg: dict) -> dict:
-    u = cfg["parameters"]["targetUtilisation"]
+    u = deliverable_share(cfg)
     return {c["id"]: (c["gpuCount"] * HOURS_PER_YEAR * u if c.get("gpuCount") is not None else None) for c in cfg["clusters"]}
 
 
@@ -404,15 +419,11 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
     # Little's law: time-averaged number of running jobs
     w["avg_running"] = (jobs_des * hpj / HOURS_PER_YEAR)
 
-    # Cluster attribution weights
-    def _weights(r):
-        if r["device"] == "gpu":
-            return pd.Series({"w_gargi": 0.0, "w_raman": 1.0, "w_unattr": 0.0})
-        return pd.Series({"gargi": {"w_gargi": 1.0, "w_raman": 0.0, "w_unattr": 0.0},
-                          "raman": {"w_gargi": 0.0, "w_raman": 1.0, "w_unattr": 0.0},
-                          "both": {"w_gargi": 0.5, "w_raman": 0.5, "w_unattr": 0.0}}
-                         .get(r["cluster"], {"w_gargi": 0.0, "w_raman": 0.0, "w_unattr": 1.0}))
-    w = pd.concat([w, w.apply(_weights, axis=1)], axis=1)
+    # Cluster attribution: the cluster named, or 'either' (both, not decided, don't know)
+    named = np.where(w["device"] == "gpu", "raman", w["cluster"])
+    for cid in CLUSTERS:
+        w[f"on_{cid}"] = (named == cid).astype(float)
+    w[EITHER] = 1.0 - w[[f"on_{cid}" for cid in CLUSTERS]].sum(axis=1)
 
     # Join follow-up panels on (submission, entry)
     key = ["submission_id", "entry_index"]
@@ -461,7 +472,7 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
         return "unknown"
     w["checkpoint_class"] = w.apply(_ckpt, axis=1)
 
-    # Queue fit and throughput under per-user concurrency limits
+    # Queue fit and throughput under the group concurrency limits (limits apply per group, not per user)
     def _fit(r):
         if pd.isna(r["nodes_est"]) or pd.isna(r["walltime_h"]):
             return pd.Series({"queue": "unknown (job size or wall time not given)", "queue_max_concurrent": np.nan})
@@ -533,59 +544,231 @@ def cluster_engagement(dfs: dict) -> pd.DataFrame:
 # 2. CPU-hour and GPU-hour balance
 # ---------------------------------------------------------------------------
 
-def _attributed(wl: pd.DataFrame, col: str) -> dict:
-    vals = wl[col]
-    return {"gargi": (vals * wl["w_gargi"]).sum(), "raman": (vals * wl["w_raman"]).sum(), UNATTR: (vals * wl["w_unattr"]).sum()}
-
-
-def cpu_balance(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
-    """CPU core-hours per year: used and desired demand vs deliverable capacity, per cluster and combined."""
-    cap = cpu_capacity_hours(cfg)
-    cpu = wl[wl["device"] != "gpu"]
-    used, des = _attributed(cpu, "cpu_h_used"), _attributed(cpu, "cpu_h_desired")
-    unknown = int(cpu["cpu_h_desired"].isna().sum())
+def cluster_ranges(frame: pd.DataFrame, measures: dict, capacity: dict | None = None) -> pd.DataFrame:
+    """
+    Per cluster, each measure as a range: `<m>_low` counts only the entries naming
+    the cluster, `<m>_high` adds all the work that could go to either. A
+    'combined' row counts everything once (low = high). `measures` maps a
+    name to a column of `frame` (or a Series aligned with it); the weights are
+    frame's on_<cluster> and EITHER columns. attrs['either'] = the 'either'
+    total of each measure.
+    """
+    vals = {m: (frame[c] if isinstance(c, str) else c) for m, c in measures.items()}
+    either = {m: float((v * frame[EITHER]).sum()) for m, v in vals.items()}
     rows = []
-    for cid in CLUSTERS + [UNATTR]:
-        rows.append({"cluster": cid, "capacity": cap.get(cid, np.nan), "used": used[cid], "desired": des[cid]})
-    rows.append({"cluster": "combined", "capacity": sum(cap.values()), "used": sum(used.values()), "desired": sum(des.values())})
+    for cid in CLUSTERS:
+        r = {"cluster": cid, "capacity": (capacity or {}).get(cid, np.nan)}
+        for m, v in vals.items():
+            lo = float((v * frame[f"on_{cid}"]).sum())
+            r[f"{m}_low"], r[f"{m}_high"] = lo, lo + either[m]
+        rows.append(r)
+    caps = [c for c in (capacity or {}).values() if c is not None and not pd.isna(c)]
+    r = {"cluster": "combined",
+         "capacity": sum(caps) if capacity and len(caps) == len(CLUSTERS) else np.nan}
+    for m, v in vals.items():
+        r[f"{m}_low"] = r[f"{m}_high"] = float(v.sum())
+    rows.append(r)
     out = pd.DataFrame(rows)
-    out["deficit_used"] = out["used"] - out["capacity"]
-    out["deficit_desired"] = out["desired"] - out["capacity"]
-    out.attrs["workloads_with_unknown_inputs"] = unknown
+    out["capacity"] = pd.to_numeric(out["capacity"], errors="coerce")
+    out.attrs["either"] = either
     return out
 
 
+def cpu_balance(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """CPU core-hours per year: used and desired demand (as ranges) vs deliverable capacity, per cluster and combined."""
+    cpu = wl[wl["device"] != "gpu"]
+    out = cluster_ranges(cpu, {"used": "cpu_h_used", "desired": "cpu_h_desired"}, cpu_capacity_hours(cfg))
+    out.attrs["workloads_with_unknown_inputs"] = int(cpu["cpu_h_desired"].isna().sum())
+    out.attrs["entries_either"] = int((cpu[EITHER] > 0).sum())
+    return out
+
+
+def range_text(lo: float, hi: float, unit: str = "", digits: int = 1) -> str:
+    return fmt(lo, unit, digits) if pd.isna(hi) or abs(hi - lo) < 1e-9 else f"{fmt(lo, '', digits)}–{fmt(hi, unit, digits)}"
+
+
 def deficit_summary(df: pd.DataFrame, demand: str, capacity: str, unit: str, label: str) -> str:
-    """One sentence per cluster: demand vs capacity, as a shortfall or headroom."""
+    """One sentence per cluster: demand (a range where some work could go to either cluster) vs capacity."""
     lines = []
     for _, r in df.iterrows():
-        d, c = r[demand], pd.to_numeric(r[capacity], errors="coerce")
-        if r["cluster"] == UNATTR:
-            if d and not pd.isna(d):
-                lines.append(f"Unattributed ({label}): {fmt(d, unit, 1)} — not tied to a cluster; included in 'combined'.")
-            continue
-        if pd.isna(c):
-            lines.append(f"{r['cluster'].title()} ({label}): demand {fmt(d, unit, 1)}; capacity not set in clusters.json.")
-            continue
-        gap = d - c
-        word = "SHORTFALL" if gap > 0 else "headroom"
-        lines.append(f"{r['cluster'].title()} ({label}): demand {fmt(d, unit, 1)} vs capacity {fmt(c, unit, 1)} "
-                     f"-> {word} of {fmt(abs(gap), unit, 1)} ({abs(gap) / c:.0%} of capacity)" if c else
-                     f"{r['cluster'].title()} ({label}): demand {fmt(d, unit, 1)}; no capacity.")
+        lo, hi = (r[f"{demand}_low"], r[f"{demand}_high"]) if f"{demand}_low" in r else (r[demand], r[demand])
+        c = pd.to_numeric(r[capacity], errors="coerce")
+        name = r["cluster"].title()
+        d = range_text(lo, hi, unit)
+        if pd.isna(c) or not c:
+            lines.append(f"{name} ({label}): demand {d}; capacity not set in clusters.json.")
+        elif hi <= c:
+            lines.append(f"{name} ({label}): demand {d} vs capacity {fmt(c, unit, 1)} -> headroom of {range_text(c - hi, c - lo, unit)}")
+        elif lo > c:
+            lines.append(f"{name} ({label}): demand {d} vs capacity {fmt(c, unit, 1)} -> SHORTFALL of "
+                         f"{range_text(lo - c, hi - c, unit)} ({(lo - c) / c:.0%}–{(hi - c) / c:.0%} of capacity)"
+                         if hi > lo else
+                         f"{name} ({label}): demand {d} vs capacity {fmt(c, unit, 1)} -> SHORTFALL of {fmt(lo - c, unit, 1)} ({(lo - c) / c:.0%} of capacity)")
+        else:
+            lines.append(f"{name} ({label}): demand {d} vs capacity {fmt(c, unit, 1)} -> headroom of {fmt(c - lo, unit, 1)} "
+                         f"if none of the 'either' work comes here, SHORTFALL of {fmt(hi - c, unit, 1)} if all of it does")
     return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# 2b. Demand under the present queues and group limits
+# ---------------------------------------------------------------------------
+# Limits apply to a whole group (at most two users), not to each user:
+# queues[].maxConcurrentJobs and, where set, clusters[].groupLimits.
+
+CHECKPOINT_LABELS = {"yes": "yes", "no": "no", "not_tested": "not tested", "dont_know": "don't know", "": "not asked"}
+
+
+def group_limits(cfg: dict, cid: str) -> dict:
+    """A cluster's limits on one group across all its queues (None = none, or not yet confirmed)."""
+    return cluster(cfg, cid).get("groupLimits") or {}
+
+
+def _share_allowed(need: pd.Series, cap) -> pd.Series:
+    """Share of the needed hours a limit allows: 1 when it does not bind or is not set."""
+    cap = pd.Series(cap, index=need.index, dtype=float) if not isinstance(cap, pd.Series) else cap.astype(float)
+    return pd.Series(np.where((need > 0) & cap.notna(), np.minimum(1.0, cap / need.where(need > 0)), 1.0), index=need.index)
+
+
+def service_table(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """
+    Per entry, its desired demand (core-hours for CPU, GPU-hours for GPU) taken
+    through the present queues and group limits:
+      fit_status     'fits' / 'cannot start' (no present queue allows the heaviest job) /
+                     'unknown' (job size or wall time not given)
+      cannot_start_h demand of entries that cannot start
+      fits_h         demand of entries that fit a queue
+      runnable_h     fits_h x the tightest group limit, where the group's entries share each limit:
+                       queue job limit   jobs x hours per job, summed over the group's entries in that queue,
+                                         vs maxConcurrentJobs x available hours
+                       groupLimits       maxRunningJobs (all queues of the cluster) and maxRunningNodes
+                                         (node-hours), where set
+      binding_limit  the limit that sets runnable_h ('' when none binds)
+    Other groups' jobs are not counted here (that is what capacity is for), so runnable_h is
+    the most the limits allow a group to run, not what it would get on a busy cluster.
+    """
+    t = wl.copy()
+    gpu = t["device"] == "gpu"
+    t["demand_h"] = np.where(gpu, t["gpu_h_desired"], t["cpu_h_desired"])
+    t["fit_status"] = np.select([t["queue"] == "none fits", t["queue"].str.startswith("unknown")],
+                                ["cannot start", "unknown"], "fits")
+    t["cannot_start_h"] = t["demand_h"].where(t["fit_status"] == "cannot start", 0.0)
+    t["fits_h"] = t["demand_h"].where(t["fit_status"] == "fits", 0.0)
+    fits = t["fit_status"] == "fits"
+    t["queue_cluster"] = np.where(fits, t["queue"].str.split(".").str[0], "")
+    jobs_des = t["jobs_year_unconstrained"].fillna(t["jobs_year"])
+    t["job_h_year"] = (jobs_des * t["hours_per_job"]).where(fits)
+    t["node_h_year"] = t["job_h_year"] * t["nodes_est"]
+    H = available_hours(cfg)
+
+    shares = {}
+    need_q = t.groupby(["submission_id", "queue"])["job_h_year"].transform("sum")
+    shares["queue job limit"] = _share_allowed(need_q, t["queue_max_concurrent"] * H)
+    need_c = t.groupby(["submission_id", "queue_cluster"])["job_h_year"].transform("sum")
+    need_n = t.groupby(["submission_id", "queue_cluster"])["node_h_year"].transform("sum")
+    lim = t["queue_cluster"].map(lambda c: group_limits(cfg, c) if c in CLUSTERS else {})
+    shares["group running-job limit"] = _share_allowed(need_c, lim.map(lambda g: g.get("maxRunningJobs")) * H)
+    shares["group node limit"] = _share_allowed(need_n, lim.map(lambda g: g.get("maxRunningNodes")) * H)
+    sh = pd.DataFrame(shares)
+    t["limit_share"] = sh.min(axis=1).where(fits)
+    t["binding_limit"] = np.where(fits & (t["limit_share"] < 1), sh.idxmin(axis=1), "")
+    t["runnable_h"] = t["fits_h"] * t["limit_share"].fillna(1.0)
+    return t
+
+
+def service_balance(wl: pd.DataFrame, cfg: dict, device: str = "cpu") -> pd.DataFrame:
+    """
+    Per cluster (ranges, as cluster_ranges): desired demand, the part that cannot
+    start under the present queues, the part that fits a queue, the part the group
+    limits let run, and deliverable capacity. The gaps between the columns point to
+    different remedies: desired -> fits = queue design; fits -> runnable = group
+    limits; runnable -> capacity = hardware.
+    """
+    t = service_table(wl, cfg)
+    t = t[t["device"] == "gpu"] if device == "gpu" else t[t["device"] != "gpu"]
+    cap = gpu_capacity_hours(cfg) if device == "gpu" else cpu_capacity_hours(cfg)
+    out = cluster_ranges(t, {"desired": "demand_h", "cannot_start": "cannot_start_h", "fits": "fits_h",
+                             "runnable": "runnable_h"}, cap)
+    known = t["demand_h"].notna()
+    out.attrs.update({
+        "entries": len(t), "groups": t["submission_id"].nunique(),
+        "entries_unknown": int((~known).sum()),
+        "entries_cannot_start": int((t["fit_status"] == "cannot start").sum()),
+        "entries_limited": int((t["binding_limit"] != "").sum()),
+        "entries_either": int((t[EITHER] > 0).sum()),
+        "limits_by_kind": t.loc[t["binding_limit"] != "", "binding_limit"].value_counts().to_dict(),
+    })
+    return out
+
+
+def _why_cannot_start(r: pd.Series, cfg: dict) -> str:
+    """Which present limit the heaviest job, as described, is beyond."""
+    dev = "gpu" if r["device"] == "gpu" else "cpu"
+    mem = r["mem_node_gb"]
+    cands = candidate_clusters(r["cluster"], dev)
+    qs = [q for cid in cands for q in eligible_queues(cfg, cid, dev, mem)]
+    if not qs:
+        biggest = max(n["memoryGB"] for cid in cands for n in cluster(cfg, cid)["nodeTypes"])
+        if dev == "cpu" and pd.notna(mem) and mem > biggest:
+            return f"memory per node ({mem:,.0f} GB) above the largest node ({biggest:,.0f} GB)"
+        return "no present queue for this kind of node"
+    reasons = []
+    nodes, wt = r["nodes_est"], r["walltime_h"]
+    max_nodes = max(q["maxNodes"] for q in qs)
+    if nodes > max_nodes:
+        reasons.append(f"{nodes:g} nodes; the queues allow at most {max_nodes:g}")
+    at_size = [q["walltimeHours"] for q in qs if q["minNodes"] <= nodes <= q["maxNodes"]]
+    if at_size and wt > max(at_size):
+        reasons.append(f"wall time {wt:,.0f} h; at {nodes:g} node{'s' if nodes != 1 else ''} the longest queue allows {max(at_size):g} h")
+    elif not at_size and wt > max(q["walltimeHours"] for q in qs):
+        reasons.append(f"wall time {wt:,.0f} h; the longest queue allows {max(q['walltimeHours'] for q in qs):g} h")
+    if not reasons and dev == "cpu" and pd.notna(mem) and mem > standard_memory_gb(cfg, cands[0]):
+        reasons.append("needs a high-memory node, and no high-memory queue allows this size or wall time")
+    return "; ".join(reasons) or "no queue allows this combination of nodes and wall time"
+
+
+def cannot_start(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """
+    Entries whose heaviest job, as described, no present queue allows to start:
+    the job's shape, the limit it is beyond, the checkpoint/restart answer
+    (asked in the long-runs panel; 'not asked' where the panel did not open)
+    and the scaling class, so the committee can see which could run in parts
+    or on fewer nodes. Facts only: nothing here decides what the job needs.
+    """
+    t = service_table(wl, cfg)
+    t = t[t["fit_status"] == "cannot start"].copy()
+    if t.empty:
+        return t.assign(reason=pd.Series(dtype=str))
+    t["reason"] = t.apply(lambda r: _why_cannot_start(r, cfg), axis=1)
+    t["checkpoint_answer"] = t["checkpoint"].map(lambda c: CHECKPOINT_LABELS.get(c, c))
+    cols = ["submission_id", "pi_name", "entry", "cluster", "device", "nodes_est", "cores", "gpus", "walltime_h",
+            "mem_node_gb", "reason", "checkpoint_answer", "scaling_class", "demand_h"]
+    return t[[c for c in cols if c in t]].sort_values("demand_h", ascending=False)
+
+
+def cannot_start_summary(wl: pd.DataFrame, cfg: dict) -> dict:
+    """Counts behind the red-flag list: entries and groups with work that cannot start, and groups with none that can."""
+    t = service_table(wl, cfg)
+    k = t[t["fit_status"] != "unknown"]
+    g = k.groupby("submission_id")["fit_status"].agg(lambda s: (s == "cannot start").sum())
+    n_known = k.groupby("submission_id").size()
+    cpu = t["device"] != "gpu"
+    return {
+        "entries": int((t["fit_status"] == "cannot start").sum()),
+        "entries_known": len(k),
+        "groups_any": int((g > 0).sum()),
+        "groups_all": int(((g == n_known) & (g > 0)).sum()),
+        "groups_known": int(len(n_known)),
+        "cpu_h": float(t.loc[cpu, "cannot_start_h"].sum()), "cpu_h_desired": float(t.loc[cpu, "demand_h"].sum()),
+        "gpu_h": float(t.loc[~cpu, "cannot_start_h"].sum()), "gpu_h_desired": float(t.loc[~cpu, "demand_h"].sum()),
+        "by_checkpoint": t.loc[t["fit_status"] == "cannot start", "checkpoint"].map(lambda c: CHECKPOINT_LABELS.get(c, c)).value_counts().to_dict(),
+    }
 
 
 def gpu_balance(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     """GPU-hours per year: demand vs capacity (capacity n/a while GPU counts are not set)."""
-    cap = gpu_capacity_hours(cfg)
     g = wl[wl["device"] == "gpu"]
-    used, des = _attributed(g, "gpu_h_used"), _attributed(g, "gpu_h_desired")
-    rows = [{"cluster": cid, "capacity": cap.get(cid), "used": used[cid], "desired": des[cid]} for cid in CLUSTERS + [UNATTR]]
-    caps_known = [v for v in cap.values() if v is not None]
-    rows.append({"cluster": "combined", "capacity": sum(caps_known) if len(caps_known) == len(cap) else None,
-                 "used": sum(used.values()), "desired": sum(des.values())})
-    out = pd.DataFrame(rows)
-    out["deficit_desired"] = out["desired"] - pd.to_numeric(out["capacity"], errors="coerce")
+    out = cluster_ranges(g, {"used": "gpu_h_used", "desired": "gpu_h_desired"}, gpu_capacity_hours(cfg))
     out.attrs["workloads_with_unknown_inputs"] = int(g["gpu_h_desired"].isna().sum())
     return out
 
@@ -624,7 +807,8 @@ def gpu_version_availability(wl: pd.DataFrame) -> pd.Series:
 
 def _group_weights(wl: pd.DataFrame) -> pd.DataFrame:
     """Each group's cluster split for group-level home storage: its workloads' attributions, averaged."""
-    g = wl.groupby("submission_id")[["w_gargi", "w_raman", "w_unattr"]].sum()
+    cols = [f"on_{cid}" for cid in CLUSTERS] + [EITHER]
+    g = wl.groupby("submission_id")[cols].sum()
     return g.div(g.sum(axis=1), axis=0)
 
 
@@ -639,19 +823,12 @@ def home_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFrame, 
     st["home_3y_gb"] = num(_col(st, "home_3y_gb"))
     wts = _group_weights(wl) if not wl.empty else pd.DataFrame()
     st = st.merge(wts, left_on="submission_id", right_index=True, how="left")
-    st[["w_gargi", "w_raman"]] = st[["w_gargi", "w_raman"]].fillna(0)
-    st["w_unattr"] = st["w_unattr"].fillna(1)
-    rows = []
-    for cid, wcol in (("gargi", "w_gargi"), ("raman", "w_raman"), (UNATTR, "w_unattr")):
-        cap = cluster(cfg, cid)["storage"]["homeTB"] if cid in CLUSTERS else np.nan
-        rows.append({"cluster": cid, "capacity_tb": cap,
-                     "demand_now_tb": (st["home_now_gb"] * st[wcol]).sum() / 1024,
-                     "demand_3y_tb": (st["home_3y_gb"] * st[wcol]).sum() / 1024})
-    out = pd.DataFrame(rows)
-    out.loc[len(out)] = {"cluster": "combined", "capacity_tb": out["capacity_tb"].sum(),
-                         "demand_now_tb": out["demand_now_tb"].sum(), "demand_3y_tb": out["demand_3y_tb"].sum()}
-    out["deficit_now_tb"] = out["demand_now_tb"] - out["capacity_tb"]
-    out["deficit_3y_tb"] = out["demand_3y_tb"] - out["capacity_tb"]
+    for cid in CLUSTERS:
+        st[f"on_{cid}"] = st[f"on_{cid}"].fillna(0)
+    st[EITHER] = st[EITHER].fillna(1)
+    out = cluster_ranges(st, {"demand_now_tb": st["home_now_gb"] / 1024, "demand_3y_tb": st["home_3y_gb"] / 1024},
+                         {cid: cluster(cfg, cid)["storage"]["homeTB"] for cid in CLUSTERS})
+    out = out.rename(columns={"capacity": "capacity_tb"})
     out.attrs["groups_unknown"] = int(st["home_now_gb"].isna().sum())
 
     guide = cfg["parameters"]["homeGuidePerGroupTB"]
@@ -690,18 +867,26 @@ def scratch_balance(dfs: dict, wl: pd.DataFrame, cfg: dict) -> tuple[pd.DataFram
     def per_job(with_inputs: bool) -> pd.Series:
         return t["scratch_write_gb"] + (t["input_read_gb"].fillna(0) if with_inputs else 0)
 
+    # Scratch per job depends on the cluster (inputs counted where only scratch is on the fast file system)
     rows = []
-    for cid, wcol in (("gargi", "w_gargi"), ("raman", "w_raman"), (UNATTR, "w_unattr")):
-        cap = cluster(cfg, cid)["storage"]["scratchTB"] if cid in CLUSTERS else np.nan
+    either = {}
+    for cid in CLUSTERS:
         pj = per_job(scratch_on_fast_pfs_only(cfg, cid))
-        rows.append({"cluster": cid, "capacity_tb": cap, "inputs_counted": scratch_on_fast_pfs_only(cfg, cid),
-                     "peak_sum_tb": (pj * t["concurrent"] * t[wcol]).sum() / 1024,
-                     "average_tb": (pj * conc * t[wcol]).sum() / 1024})
+        peak, avg = pj * t["concurrent"], pj * conc
+        named, eith = t[f"on_{cid}"], t[EITHER]
+        lo_p, lo_a = (peak * named).sum() / 1024, (avg * named).sum() / 1024
+        either[cid] = ((peak * eith).sum() / 1024, (avg * eith).sum() / 1024)
+        rows.append({"cluster": cid, "capacity_tb": cluster(cfg, cid)["storage"]["scratchTB"],
+                     "inputs_counted": scratch_on_fast_pfs_only(cfg, cid),
+                     "peak_sum_tb_low": lo_p, "peak_sum_tb_high": lo_p + either[cid][0],
+                     "average_tb_low": lo_a, "average_tb_high": lo_a + either[cid][1]})
     out = pd.DataFrame(rows)
+    # Combined: each entry once, with inputs counted if they would be on the cluster it may run on
+    # (for 'either' work, the larger of the two)
+    tot_p = sum(out[f"peak_sum_tb_low"]) + max(e[0] for e in either.values())
+    tot_a = sum(out[f"average_tb_low"]) + max(e[1] for e in either.values())
     out.loc[len(out)] = {"cluster": "combined", "capacity_tb": out["capacity_tb"].sum(), "inputs_counted": out["inputs_counted"].any(),
-                         "peak_sum_tb": out["peak_sum_tb"].sum(), "average_tb": out["average_tb"].sum()}
-    out["deficit_peak_tb"] = out["peak_sum_tb"] - out["capacity_tb"]
-    out["deficit_average_tb"] = out["average_tb"] - out["capacity_tb"]
+                         "peak_sum_tb_low": tot_p, "peak_sum_tb_high": tot_p, "average_tb_low": tot_a, "average_tb_high": tot_a}
 
     # Per workload: written volume, and with inputs added (the two cases above)
     t["scratch_peak_gb"] = t["scratch_write_gb"] * t["concurrent"]
@@ -752,7 +937,7 @@ def high_scalers(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     """
     CPU workloads that scale (wall time <= 0.8x per doubling): cores wanted vs
     the largest job policy allows, and the estimated wall time at each size,
-    plus campaign cores vs what one user can hold at once.
+    plus campaign cores vs what one group can hold at once.
     """
     h = wl[(wl["device"] != "gpu") & (wl["scaling_class"] == "high")].copy()
     if h.empty:
@@ -766,18 +951,18 @@ def high_scalers(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     h["walltime_at_wanted_h"] = h.apply(lambda r: _t_at(r, r["wanted_cores"]), axis=1)
     h["multi_node_limit_h"] = h.apply(lambda r: walltime_limit(cfg, r["cluster"], "cpu", 2, r["mem_node_gb"]), axis=1)
     h["held_back_by_job_size"] = known(h["wanted_cores"] > h["policy_max_cores"], h["wanted_cores"])
-    h["user_concurrent_core_ceiling"] = h["cluster"].map(
+    h["group_concurrent_core_ceiling"] = h["cluster"].map(
         lambda c: max(max_concurrent_cores(cfg, cid) for cid in candidate_clusters(c, "cpu")))
-    h["campaign_over_ceiling"] = known(h["campaign_cores"] > h["user_concurrent_core_ceiling"], h["campaign_cores"])
+    h["campaign_over_ceiling"] = known(h["campaign_cores"] > h["group_concurrent_core_ceiling"], h["campaign_cores"])
     return h[["submission_id", "pi_name", "entry", "cluster", "cores", "walltime_h", "doubling_ratio", "scaling_source",
               "wanted_cores", "policy_max_cores", "walltime_at_policy_max_h", "walltime_at_wanted_h", "multi_node_limit_h",
-              "held_back_by_job_size", "campaign_cores", "user_concurrent_core_ceiling", "campaign_over_ceiling"]]
+              "held_back_by_job_size", "campaign_cores", "group_concurrent_core_ceiling", "campaign_over_ceiling"]]
 
 
 def throughput(wl: pd.DataFrame) -> pd.DataFrame:
     """
     Low/intermediate scalers (and workloads with unknown scaling): which queue
-    the typical job fits, wanted concurrency vs the per-user limit, and how long
+    the typical job fits, wanted concurrency vs the group limit, and how long
     a year of the workload would take at that limit.
     """
     t = wl[wl["scaling_class"] != "high"].copy()
@@ -989,8 +1174,14 @@ def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
             if r["workload"] and (r["submission_id"], r["workload"]) not in names:
                 add(r["submission_id"], 2, f"Queue entry refers to '{r['workload']}', not in the workload list")
 
+    blocked = cannot_start(wl, cfg).set_index(["submission_id", "entry"]) if not wl.empty else pd.DataFrame()
     for _, r in wl.iterrows():
         sid, code = r["submission_id"], r["entry"]
+        if (sid, code) in blocked.index:
+            b = blocked.loc[(sid, code)]
+            b = b.iloc[0] if isinstance(b, pd.DataFrame) else b
+            add(sid, 3, f"{code}: cannot start under the present queues ({b['reason']}); "
+                        f"checkpoint/restart: {b['checkpoint_answer']}, scaling: {b['scaling_class']}")
         missing = [c for c in ("cores", "walltime_h", "jobs_year") + (("gpus",) if r["device"] == "gpu" else ()) if pd.isna(r[c])]
         if missing:
             add(sid, 2, f"{code}: unknown {', '.join(m.replace('_h', '') for m in missing)}")
@@ -999,7 +1190,7 @@ def triage(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         if r["long_job"] and r["scaling_class"] == "unknown" and r["checkpoint_class"] != "checkpoint available":
             add(sid, 2, f"{code}: long jobs, scaling never tested")
         if (r["long_job"] and r["checkpoint_class"] == "no checkpoint" and r["scaling_class"] != "high"
-                and pd.notna(r["walltime_limit_h"]) and r["time_needed_h"] > r["walltime_limit_h"]):
+                and (sid, code) not in blocked.index and pd.notna(r["walltime_limit_h"]) and r["time_needed_h"] > r["walltime_limit_h"]):
             add(sid, 3, f"{code}: long-wall-time candidate ({fmt(r['time_needed_h'])} h needed vs {fmt(r['walltime_limit_h'])} h)")
         if r["device"] != "gpu" and r["scaling_class"] == "high" and r["wanted_cores"] > r["policy_max_cores"]:
             add(sid, 3, f"{code}: capability candidate ({fmt(r['wanted_cores'])} cores useful vs {fmt(r['policy_max_cores'])} allowed)")
@@ -1232,19 +1423,15 @@ def cpu_outlook(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     cpu["used_iiser"] = cpu["cpu_h_used"] * share
     cpu["in_3y_low"] = cpu["cpu_h_used"] * growth
     cpu["in_3y_high"] = cpu["cpu_h_desired"] * growth
-    cap = cpu_capacity_hours(cfg)
     measures = {"used_iiser": "used_iiser", "used_any": "cpu_h_used", "desired": "cpu_h_desired",
                 "in_3y_low": "in_3y_low", "in_3y_high": "in_3y_high"}
-    att = {k: _attributed(cpu, col) for k, col in measures.items()}
-    rows = [{"cluster": cid, "capacity": cap.get(cid, np.nan), **{k: att[k][cid] for k in measures}}
-            for cid in CLUSTERS + [UNATTR]]
-    rows.append({"cluster": "combined", "capacity": sum(cap.values()), **{k: sum(att[k].values()) for k in measures}})
-    out = pd.DataFrame(rows)
+    out = cluster_ranges(cpu, measures, cpu_capacity_hours(cfg))
     groups = cpu["submission_id"].unique()
     out.attrs.update({"entries": len(cpu), "entries_unknown": int(cpu["cpu_h_used"].isna().sum()),
                       "groups": len(groups),
                       "groups_share_unknown": int((~f.reindex(groups)["share_known"].fillna(False)).sum()),
-                      "groups_growth_unknown": int((~f.reindex(groups)["growth_known"].fillna(False)).sum())})
+                      "groups_growth_unknown": int((~f.reindex(groups)["growth_known"].fillna(False)).sum()),
+                      "entries_either": int((cpu[EITHER] > 0).sum())})
     return out
 
 

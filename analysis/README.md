@@ -28,12 +28,12 @@ the branch or tag: `main` normally, or `progressive-disclosure-v2` until v3 is m
 |---|---|
 | `00_setup` | Is the data loaded? What cluster sizes and committee parameters are in use? |
 | `01_overview` | Who responded, what problems they report (pie and share of groups), on which systems; workload mix |
-| `02_compute_capacity` | CPU-hour and GPU-hour demand vs deliverable capacity: Gargi, Raman, unattributed, combined; latent GPU demand; GPU:CPU balance |
+| `02_compute_capacity` | CPU-hour and GPU-hour demand vs deliverable capacity per cluster (ranges) and combined; how much can run under the present queues and group limits; latent GPU demand; GPU:CPU balance |
 | `03_storage` | Home and scratch demand vs capacity per cluster; per-group and per-workload outliers |
 | `04_long_jobs` | Long-job requirements split by checkpointing (genuine need vs awareness gap) and by scaling (run wider vs run longer) |
-| `05_parallel_and_throughput` | High scalers: useful job size vs policy maximum. Low/intermediate scalers: queue fit, concurrency limits, time to finish a year's work, queue waits, debug use |
+| `05_parallel_and_throughput` | High scalers: useful job size vs policy maximum. Low/intermediate scalers: queue fit, group concurrency limits, time to finish a year's work, queue waits, debug use. Work that cannot start under the present queues |
 | `06_triage` | Suggested clarification (2) and technical-assessment (3) candidates; data quality |
-| `07_committee_report` | The committee report: one HTML file organised by the committee's priorities, totals only (no group named). Chapters for usage patterns (a) and expansion (e) are written; queues (b) and charges (c, d) are in preparation |
+| `07_committee_report` | The committee report: one HTML file organised by the committee's priorities, totals only (no group named). Chapters for usage patterns (a) and expansion (e) are written, and queues (b) in part (what can run under the present queues and limits, and the work that cannot start); charges (c, d) are in preparation |
 
 ## Committee report
 
@@ -52,10 +52,17 @@ also be used for other questions.
 
 - **Demand** per workload = cores × wall time × jobs per year. *Used* = last 12 months; *desired* = what the group would run
   if limits did not bind (an upper bound). GPU-hours likewise with GPUs.
-- **Capacity** = cores (or GPUs) × 8,760 h × `committeeParameters.targetUtilisation`. **Deficit = demand − capacity**
-  (positive = shortfall).
-- **Cluster attribution:** the cluster each workload names. "Both" is split 50:50; "Not decided" / "Don't know" go to
-  *unattributed* (shown separately and in *combined*). GPU work goes to Raman.
+- **Capacity** = cores (or GPUs) × 8,760 h × availability × usable share of available time (both evaluation parameters,
+  defaults 0.95 and 0.85). **Deficit = demand − capacity** (positive = shortfall).
+- **Cluster attribution:** the cluster each workload names. Work naming "Both", "Not decided" or "Don't know" could go to
+  *either* cluster, so each cluster's demand is a range (`<measure>_low`: only entries naming it; `<measure>_high`: plus
+  all the *either* work); *combined* counts every entry once. GPU work goes to Raman.
+- **Through the present queues and limits** (`ha.service_balance`): desired demand split into *cannot start* (the
+  heaviest job fits no present queue), *fits a queue*, and *runnable within group limits*, next to capacity. The gaps
+  separate queue design, group limits and hardware. Limits apply to a whole group (at most two users), not to each user:
+  each queue's `maxConcurrentJobs`, shared by a group's entries in that queue, and each cluster's `groupLimits` where
+  set. `ha.cannot_start` lists the entries that cannot start, with the limit they are beyond, the checkpoint/restart
+  answer and the scaling class.
 - **Storage:** home and scratch capacities come from each cluster's usable storage and the committee's
   `scratchFraction`. Scratch demand is reported as a sum of peaks (worst case) and as a time-averaged load.
 - **"Don't know" is never zero.** Workloads with unknown inputs are left out of totals, and their count is printed.
@@ -63,9 +70,15 @@ also be used for other questions.
 
 ## Committee parameters
 
-Set in [`src/config/clusters.json`](../src/config/clusters.json) under `committeeParameters` (and each cluster's
-`storage.scratchFraction`): target utilisation, home:scratch split, largest scratch area per user, home guide per group,
-and scratch trigger fractions. The form's follow-up triggers and these notebooks read the same file.
+*Evaluation parameters* (availability, usable share of available time, scratch and home guides, candidate queues,
+charges and allowance) are listed in [`parameters.json`](parameters.json) and set by the convener in the form in
+notebook 07, as named scenarios. A scenario saved under an earlier list is read through `parameters.LEGACY` (a single
+target utilisation *u* becomes availability 1 × usable share *u*), so it gives the same figures as when it was saved.
+
+*Facts about the clusters* are in [`src/config/clusters.json`](../src/config/clusters.json): hardware, queues, each
+cluster's `groupLimits` (running jobs and nodes per group across queues, queued jobs, fair-share; null = none or not yet
+confirmed), `storage.scratchFraction`, and the form's trigger fractions under `committeeParameters`. The convener
+confirms them through the hardware check (`docs/hardware-check/`).
 
 ## Only the respondents' data
 

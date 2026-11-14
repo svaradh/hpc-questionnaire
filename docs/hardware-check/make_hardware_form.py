@@ -175,7 +175,21 @@ class Form:
 
 def queue_text(q):
     nodes = f"{q['minNodes']}" if q['minNodes'] == q['maxNodes'] else f"{q['minNodes']}–{q['maxNodes']}"
-    return f"{nodes} node(s), {v(q['walltimeHours'])} h, {q['maxConcurrentJobs']} job(s) at once"
+    return f"{nodes} node(s), {v(q['walltimeHours'])} h, {q['maxConcurrentJobs']} job(s) at once per group"
+
+
+def group_limits(f, c, highmem_note):
+    """Limits on one research group across a cluster's queues (clusters.json: groupLimits)."""
+    gl = c.get('groupLimits') or {}
+    yn = {True: 'Yes', False: 'No', None: 'not known'}
+    f.row('Limits apply to', 'Each research group (faculty member and one group member), not each user')
+    f.ask('Do the per-queue job limits add up across queues?',
+          'E.g. can a group run 3 jobs in short and 3 in medium at the same time? Yes / No / Not known.')
+    f.row('Jobs one group may have running at once, all queues together', v(gl.get('maxRunningJobs')), 'Or "none".')
+    f.row('Nodes one group\'s running jobs may occupy in total', v(gl.get('maxRunningNodes')), 'Or "none".')
+    f.row('Jobs one group may have waiting in the queue', v(gl.get('maxQueuedJobs')), 'Or "none".')
+    f.row('Fair-share policy in use', yn[gl.get('fairShare')], 'If yes, briefly: the share per group and the decay period, if known.')
+    f.ask(highmem_note, 'Yes / No / Not known.')
 
 
 def main():
@@ -224,7 +238,7 @@ def main():
     f.heading('2. Gargi queues')
     for q in g['queues']:
         f.row(f"Queue: {q['id']}" + (' (high-memory nodes)' if q.get('nodeType') == 'highmem' else ''), queue_text(q))
-    f.ask('Limits across all queues', 'e.g. max running jobs or cores per user or per group; fair-share in use?')
+    group_limits(f, g, 'Can jobs from other queues run on the high-memory nodes when they are free?')
 
     # ---- Raman -----------------------------------------------------------
     rc, rh = node(r, 'compute'), node(r, 'highmem')
@@ -257,14 +271,14 @@ def main():
     for q in r['queues']:
         tag = {'highmem': ' (high-memory node)', 'gpu': ' (GPU node)'}.get(q.get('nodeType'), '')
         f.row(f"Queue: {q['id']}{tag}", queue_text(q))
-    f.ask('Limits across all queues', 'e.g. max running jobs or cores per user or per group; fair-share in use?')
+    group_limits(f, r, 'Can jobs from other queues run on the high-memory and GPU nodes when they are free?')
 
     # ---- Both ------------------------------------------------------------
     ch = CFG['charges']
     f.heading('5. Both clusters')
     f.row('Usage charges', f"CPU INR {ch['cpuPerCoreHour']:.2f}/core-h (7-day queue {ch['cpuPerCoreHourSevenDayQueue']:.2f}); "
           f"GPU INR {ch['gpuPerCardHour']:.2f}/card-h")
-    f.ask('Planned downtime per year (days), each cluster', 'Maintenance, power shutdowns. Helps set how many core-hours can really be delivered.')
+    f.ask('Planned downtime per year (days), each cluster', 'Maintenance, power shutdowns, nodes out of service. Sets the committee\'s availability figure (0.95 assumed, about 18 days).')
     f.ask('Average utilisation over the last 12 months (%), each cluster', 'From Slurm accounting, if available; otherwise not known.')
     f.ask('Can a Slurm accounting export be shared (per group, last 12 months)?',
           'Core-hours, GPU-hours, job sizes and waits per group. Used only to check reported figures against records.')

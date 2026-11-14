@@ -4,7 +4,7 @@ parameters.py
 Evaluation parameters and named scenarios.
 
 The committee's evaluation parameters (annual target, allowance, premium
-multiple, target utilisation, candidate queues, ...) are listed in
+multiple, availability, candidate queues, ...) are listed in
 parameters.json. A *scenario* is one named set of values for them. Scenarios
 are saved, never overwritten: saving under an existing name adds a newer
 version, and reports record which version they used.
@@ -18,7 +18,10 @@ Where scenarios are kept
     sc = store.get('Target 10 lakh, 60 % allowance')      # latest version
     cfg = apply(cfg, schema, sc)                           # cfg['parameters'], cfg['scenario']
 
-Code reads a value with param(cfg, 'targetUtilisation'); None means not set.
+Code reads a value with param(cfg, 'availability'); None means not set.
+Scenarios saved under an earlier parameter list are read through LEGACY
+(e.g. a single 'targetUtilisation' u becomes availability 1 and usable share u),
+so an old scenario gives the same figures as when it was saved.
 """
 
 from __future__ import annotations
@@ -38,6 +41,22 @@ REPO_RAW = "https://raw.githubusercontent.com/svaradh/hpc-questionnaire"
 TAB = "Scenarios"
 COLUMNS = ["name", "saved_at", "parameters_version", "note", "values_json"]
 DEFAULTS_NAME = "Defaults"
+
+# Parameters replaced in later versions of parameters.json: old id -> function(old value) -> new values.
+LEGACY = {
+    # 1.0.0 had one target utilisation; 1.1.0 splits it into availability x usable share.
+    "targetUtilisation": lambda u: {"availability": 1.0, "schedulableUtilisation": u},
+}
+
+
+def migrate(values: dict) -> dict:
+    """Values saved under an earlier parameter list, in the current parameters (new ids win if both are present)."""
+    out = {k: v for k, v in values.items() if k not in LEGACY}
+    for old, conv in LEGACY.items():
+        if values.get(old) is not None:
+            for k, v in conv(values[old]).items():
+                out.setdefault(k, v)
+    return out
 
 
 # ---------------------------------------------------------------------------
@@ -141,7 +160,7 @@ def apply(cfg: dict, schema: dict, scenario: dict | None = None) -> dict:
     out = copy.deepcopy(cfg)
     if scenario is None:
         scenario = {"name": DEFAULTS_NAME, "saved_at": None, "note": "", "values": defaults(schema)}
-    vals, errors = check(schema, {**defaults(schema), **scenario["values"]})
+    vals, errors = check(schema, {**defaults(schema), **migrate(scenario["values"])})
     if errors:
         raise ValueError(f"Scenario “{scenario['name']}”: " + " ".join(errors))
     out["parameters"] = vals

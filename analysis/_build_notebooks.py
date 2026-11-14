@@ -125,8 +125,11 @@ ha.num(dfs['Closing']['growth_3y_factor']).describe()"""),
     "02_compute_capacity.ipynb": [
         intro("02 — Compute capacity: CPU-hour and GPU-hour balance",
               """Is there a *volume* shortfall? Demand is computed per workload as cores × wall time × jobs per year,
-attributed to the cluster the group named ("Both" splits 50:50; "Not decided"/"Don't know" go to *unattributed*).
-Capacity = cores × 8,760 h × the committee's target utilisation. **Deficit = demand − capacity** (positive = shortfall).
+attributed to the cluster the group named. Work naming "Both", "Not decided" or "Don't know" could go to *either*
+cluster, so each cluster's demand is a range: `_low` counts only the entries naming it, `_high` adds all the *either*
+work (hatched in the charts); *combined* counts everything once.
+Capacity = cores × 8,760 h × availability × usable share of available time (both committee parameters).
+**Deficit = demand − capacity** (positive = shortfall).
 *Used* = last 12 months; *desired* = what groups would run if limits did not bind (an upper bound).""",
               "P2, P7, P9, P12"),
         code(SETUP),
@@ -138,6 +141,20 @@ print(ha.deficit_summary(cpu, 'used', 'capacity', ' core-h', 'used'))
 print(ha.deficit_summary(cpu, 'desired', 'capacity', ' core-h', 'desired'))
 print(f"Workloads with unknown inputs (not in the totals): {cpu.attrs['workloads_with_unknown_inputs']}")
 cpu.round(0)"""),
+        md("""## How much of it can run under the present queues and group limits
+
+*Cannot start*: the heaviest job, as described, fits no present queue. *Fits a queue*: the rest. *Runnable*: what the
+group limits (each queue's running-job limit, shared by a group's entries in that queue; cluster-wide `groupLimits`
+where set) let a group run in a year. Gaps: desired → fits = queue design; fits → runnable = group limits;
+runnable → capacity = hardware. Limits apply per group (at most two users), not per user."""),
+        code("""svc = ha.service_balance(wl, cfg)
+hp.balance(svc, 'CPU core-hours per year through the present queues and limits',
+           {'desired': 'Desired', 'fits': 'Fits a queue', 'runnable': 'Runnable within group limits'},
+           ylabel='Million core-hours', scale=1e6)
+print(svc.attrs)
+display((svc.set_index('cluster') / 1e6).round(2))
+st = ha.service_table(wl, cfg)
+st.loc[st['device'] != 'gpu', ['pi_name', 'entry', 'queue', 'fit_status', 'demand_h', 'fits_h', 'limit_share', 'binding_limit', 'runnable_h']].round(2)"""),
         md("Largest contributors to desired CPU demand (to see whether a deficit is broad or concentrated):"),
         code("wl[wl['device'] != 'gpu'].nlargest(10, 'cpu_h_desired')[['pi_name', 'entry', 'cluster', 'cores', 'walltime_h', 'jobs_year', 'jobs_year_unconstrained', 'cpu_h_used', 'cpu_h_desired']]"),
         md("""## GPU-hours per year
@@ -146,7 +163,8 @@ GPU capacity stays *n/a* until the Raman GPU node's GPU count is entered in `clu
         code("""gpu = ha.gpu_balance(wl, cfg)
 hp.balance(gpu, 'GPU-hours per year: demand vs capacity', {'used': 'Used (12 months)', 'desired': 'Desired (unconstrained)'}, ylabel='GPU-hours')
 print(ha.deficit_summary(gpu, 'desired', 'capacity', ' GPU-h', 'desired'))
-gpu"""),
+display(gpu)
+ha.service_balance(wl, cfg, 'gpu')"""),
         md("""## GPU:CPU balance
 
 - **Latent GPU demand**: CPU workloads whose code has a *tested* GPU version. If moved to GPUs they would need roughly the GPU node-hours shown (a range from the reported speed-up bin), freeing their CPU core-hours.
@@ -231,8 +249,8 @@ lj[lj['long_walltime_test'].isna()]"""),
 the most benefit. Here, *requirement vs reality* means the cores they can usefully use against the largest job the
 queues allow, and the estimated wall time at each size.
 
-**Low and intermediate scalers** are limited by turnaround, per-user concurrency and queue limits. Here, *requirement
-vs reality* means the queue their typical job fits, the concurrency they want against the per-user limit, and how long a
+**Low and intermediate scalers** are limited by turnaround, per-group concurrency and queue limits. Here, *requirement
+vs reality* means the queue their typical job fits, the concurrency they want against the per-group limit, and how long a
 year of their work would take at that limit.""",
               "P4, P5, P6"),
         code(SETUP),
@@ -244,16 +262,26 @@ if len(hs):
 hs.round(1)"""),
         md("""`walltime_at_policy_max_h` estimates the wall time if the job is capped at the largest allowed size (from the measured or
 reported scaling); compare it with `multi_node_limit_h` (72 h for multi-node jobs). `campaign_over_ceiling` marks
-coordinated campaigns needing more cores at once than one user can hold in any single queue."""),
+coordinated campaigns needing more cores at once than one group can hold in any single queue."""),
         md("## Low and intermediate scalers: queue fit, concurrency and time to finish a year's work"),
         code("""tp = ha.throughput(wl)
 hp.counts(tp['queue'], 'Typical job: the queue it fits ("none fits" = no queue allows this shape; "unknown" = size or wall time not given)')
 tp.round(2)"""),
-        md("""`years_to_finish` = (jobs per year × wall time) / (per-user job limit of that queue × 8,760 h): above ~0.5, the
-per-user limit, not the hardware, paces the work. `concurrency_gap` = jobs wanted at once − jobs allowed at once."""),
+        md("""`years_to_finish` = (jobs per year × wall time) / (the group's job limit in that queue × 8,760 h), for each entry
+on its own: above ~0.5, the group limit, not the hardware, paces the work. Limits apply per group (at most two users).
+Where a group has several entries in one queue they share the limit; `ha.service_table` accounts for that (`limit_share`).
+`concurrency_gap` = jobs wanted at once − jobs allowed at once."""),
         code("""thr = tp.dropna(subset=['years_to_finish']).sort_values('years_to_finish', ascending=False)
 if len(thr):
-    hp.barh(thr['pi_name'] + ' · ' + thr['entry'], thr['years_to_finish'].round(2), 'Years to finish one year of work at the per-user job limit', 'Years')"""),
+    hp.barh(thr['pi_name'] + ' · ' + thr['entry'], thr['years_to_finish'].round(2), 'Years to finish one year of work at the group job limit', 'Years')"""),
+        md("""## Work that cannot start under the present queues
+
+Entries whose heaviest job, as described, no present queue allows to start, with the limit it is beyond and the
+checkpoint/restart and scaling answers (so the committee can see which could run in parts, or on fewer nodes).
+These do not appear as a core-hour shortfall: free capacity does not let them run. The committee report lists them
+without names; this list is for the convener."""),
+        code("""print(ha.cannot_start_summary(wl, cfg))
+ha.cannot_start(wl, cfg)"""),
         md("""## Queue waits
 
 Each entry records the queue and the resources requested. *Expansion factor* = (typical wait + requested wall time) /
@@ -308,7 +336,7 @@ on the present clusters (a), queue design and turnaround (b), standard and premi
 and requirements that may call for expansion (e). Chapters for (b) and (c, d) are in preparation.
 
 The report is built for a **scenario**: one named set of evaluation parameters (annual target, allowance, premium
-multiple, target utilisation, candidate queues, ...), entered in the form below. Values not yet decided can be
+multiple, availability and usable share, candidate queues, ...), entered in the form below. Values not yet decided can be
 left empty. Scenarios are saved in a `Scenarios` tab of the response sheet and never overwritten, and each report
 names the scenario it used, so several options can be built and compared.
 

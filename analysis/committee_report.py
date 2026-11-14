@@ -12,7 +12,7 @@ browser's Print -> Save as PDF to circulate it.
 Chapters
     1  About this report (sources, coverage, how to read the numbers)
     2  Usage patterns and issues on the present clusters        priority (a)
-    3  Queue design and turnaround                              priority (b)  in preparation
+    3  Queue design and turnaround                              priority (b)  in part
     4  Standard and premium queues and charges                  priorities (c), (d)  in preparation
     5  Requirements that may call for expansion                 priority (e)
     Appendices: terms, settings used, how missing answers are handled
@@ -65,7 +65,7 @@ DEFAULT_LABELS = {
     "share_iiserb_pct": "Share of computing done on IISER Bhopal clusters",
     "growth_3y_factor": "Expected demand in 3 years",
 }
-CLUSTER_NAMES = {"gargi": "Gargi", "raman": "Raman", ha.UNATTR: "Not tied to a cluster", "combined": "Combined"}
+CLUSTER_NAMES = {"gargi": "Gargi", "raman": "Raman", "combined": "Both clusters together"}
 
 
 # ---------------------------------------------------------------------------
@@ -100,6 +100,15 @@ def ratio(x) -> str:
     return "–" if _isnan(x) else f"{x:,.1f}×"
 
 
+def ranged(df: pd.DataFrame, measures: list[str], f) -> pd.DataFrame:
+    """Columns <m>_low / <m>_high (hpc_analysis.cluster_ranges) as one text column <m>: a value, or 'low – high'."""
+    out = df.copy()
+    for m in measures:
+        out[m] = [f(lo) if _isnan(hi) or f(lo) == f(hi) else f"{f(lo)} – {f(hi)}"
+                  for lo, hi in zip(df[f"{m}_low"], df[f"{m}_high"])]
+    return out
+
+
 def tb(x) -> str:
     return "–" if _isnan(x) else f"{x:,.1f} TB"
 
@@ -125,6 +134,7 @@ h3 { font-size: 1.05rem; margin-top: 1.8rem; }
 .subtitle { color: #52514e; margin-top: 0; }
 .question { background: #f2f6fb; border-left: 4px solid #1d4f91; padding: 0.6rem 0.9rem; margin: 1rem 0; }
 .limits { background: #faf8f2; border-left: 4px solid #b8b6ad; padding: 0.6rem 0.9rem; margin: 1rem 0; }
+.flag { background: #fbeeee; border-left: 4px solid #a33a3a; padding: 0.6rem 0.9rem; margin: 1rem 0; }
 .pending { background: #fdf6e3; border: 1px dashed #c9a227; padding: 0.8rem 1rem; margin: 1rem 0; }
 .basis { color: #52514e; font-size: 0.85rem; margin-top: 0.3rem; }
 table { border-collapse: collapse; margin: 0.6rem 0; font-size: 0.88rem; }
@@ -139,7 +149,7 @@ nav ol { padding-left: 1.4rem; }
   body { margin: 0; max-width: none; font-size: 11pt; }
   h2 { page-break-before: always; }
   h2.first { page-break-before: avoid; }
-  table, figure, .question, .limits, .pending { page-break-inside: avoid; }
+  table, figure, .question, .limits, .pending, .flag { page-break-inside: avoid; }
 }
 """
 
@@ -207,15 +217,25 @@ class Doc:
                 f"<style>{CSS}</style></head><body>{''.join(self.parts)}</body></html>")
 
 
-def _capacity_sentence(cl: str, demand: float, capacity: float, what: str) -> str:
-    """Neutral comparison of a demand figure with deliverable capacity."""
+def _capacity_sentence(cl: str, lo: float, hi: float, capacity: float, what: str, f=mh, unit: str = " core-hours") -> str:
+    """Neutral comparison of a demand figure (or range) with deliverable capacity."""
+    name = CLUSTER_NAMES.get(cl, cl)
+    same = _isnan(hi) or f(lo) == f(hi)
+    dem = f(lo) if same else f"{f(lo)} to {f(hi)}"
     if _isnan(capacity) or not capacity:
-        return f"{CLUSTER_NAMES.get(cl, cl)}: {what} {mh(demand)} core-hours; capacity not set."
-    gap = demand - capacity
-    rel = f"{demand / capacity:.0%} of deliverable capacity"
-    if gap > 0:
-        return f"{CLUSTER_NAMES.get(cl, cl)}: {what} {mh(demand)} core-hours, {rel}, above it by {mh(gap)}."
-    return f"{CLUSTER_NAMES.get(cl, cl)}: {what} {mh(demand)} core-hours, {rel}."
+        return f"{name}: {what} {dem}{unit}; capacity not set."
+    rel = f"{lo / capacity:.0%}" if same else f"{lo / capacity:.0%} to {hi / capacity:.0%}"
+    s = f"{name}: {what} {dem}{unit}, {rel} of deliverable capacity"
+    if lo > capacity:
+        return s + f", above it by {f(lo - capacity) if same else f(lo - capacity) + ' to ' + f(hi - capacity)}."
+    if hi > capacity:
+        return s + f": within it if none of the work that could go to either cluster comes here, above it by {f(hi - capacity)} if all of it does."
+    return s + "."
+
+
+EITHER_NOTE = ("Where a range is shown, the first figure counts only the entries naming this cluster and the second adds "
+               "all the work that could go to either cluster (entries naming both, not decided or don't know); "
+               "“Both clusters together” counts every entry once.")
 
 
 # ---------------------------------------------------------------------------
@@ -231,7 +251,7 @@ def chapter_about(d: Doc, ctx: dict):
         "queue design and turnaround, standard and premium queues with their charges, and requirements that may "
         "call for expansion. It presents evidence; the committee draws the conclusions.")
     d.h3("How to read the numbers")
-    u = pm.param(cfg, "targetUtilisation")
+    av, us = pm.param(cfg, "availability"), pm.param(cfg, "schedulableUtilisation")
     d.ul([
         "<strong>Totals only.</strong> No group is named. Tables count groups and job entries.",
         "<strong>Nothing is scored or ranked.</strong> No figure here assigns a queue or judges a group's work.",
@@ -241,8 +261,10 @@ def chapter_about(d: Doc, ctx: dict):
         "Each entry describes its <em>heaviest</em> job, so yearly totals built from it are upper bounds.",
         "<strong>Reported</strong> figures come from the questionnaire. <strong>Recorded</strong> figures will come "
         "from the clusters' accounting (Slurm) when available; the two will be shown side by side.",
-        f"<strong>Deliverable capacity</strong> = cores × 8,760 h × target utilisation ({u:.0%}, a committee parameter). "
-        "Above roughly 80 % use, queue waits grow steeply, so demand above this line is a real pressure even if it "
+        f"<strong>Deliverable capacity</strong> = cores × 8,760 h × availability ({av:.0%}) × usable share of available "
+        f"time ({us:.0%}), that is {av * us:.0%} of all core-hours. Both are committee parameters. Availability allows for "
+        "maintenance, shutdowns and nodes out of service; the usable share for the gaps that remain between jobs, since "
+        "queue waits grow steeply when a cluster is nearly full. Demand above this line is a real pressure even if it "
         "would fit at 100 %.",
         "<strong>Coverage.</strong> Only responding groups are counted, so every total is a lower bound for the institute.",
     ])
@@ -335,8 +357,7 @@ def chapter_patterns(d: Doc, ctx: dict):
     qf = ha.queue_fit_summary(wl)
     d.table(qf, {"cluster": "Cluster named", **{c: c for c in qf.columns}}, index=True)
     d.basis("Entries, by whether the heaviest job (its nodes, wall time and memory) fits the limits of any present queue "
-            "on the cluster named. A job that fits no queue may still be run in parts, by restarting from checkpoints; "
-            "Chapter 3 will look at this.")
+            "on the cluster named. Chapter 3 gives the core-hours involved and lists the jobs that fit no queue.")
 
     tw = ha.turnaround_summary(dfs, wl, cfg)
     if not tw.empty:
@@ -358,7 +379,11 @@ def chapter_pending(d: Doc, ctx: dict, number: str, title: str, anchor: str, pri
                     contents: list[str], inputs: list[str]):
     d.h2(f"{number}. {title}", anchor)
     d.box("question", priority, question)
-    d.box("pending", "In preparation.", "This chapter is not yet written. It will contain:")
+    _pending_body(d, ctx, anchor, "This chapter is not yet written. It will contain:", contents, inputs)
+
+
+def _pending_body(d: Doc, ctx: dict, anchor: str, lead: str, contents: list[str], inputs: list[str]):
+    d.box("pending", "In preparation.", lead)
     d.ul(contents)
     d.p("<strong>It will need:</strong>")
     d.ul(inputs)
@@ -367,6 +392,135 @@ def chapter_pending(d: Doc, ctx: dict, number: str, title: str, anchor: str, pri
         missing = {p["id"] for p in pm.missing_for(ctx["cfg"], anchor)}
         d.p(f"<strong>Evaluation parameters for this chapter</strong> in scenario “{esc(ctx['cfg']['scenario']['name'])}”:")
         d.ul([f"{esc(pm.label(p))}: " + ("<em>not yet set</em>" if p["id"] in missing else "set") for p in params])
+
+
+def _range(lo, hi, f=mh) -> str:
+    return f(lo) if _isnan(hi) or f(lo) == f(hi) else f"{f(lo)} to {f(hi)}"
+
+
+def _service_sentence(r: pd.Series, f=mh, unit: str = "core-hours") -> str:
+    """Where the gap between desired demand and capacity lies, for one cluster (neutral wording)."""
+    name = CLUSTER_NAMES.get(r["cluster"], r["cluster"])
+    if not (r["desired_high"] > 0):
+        return f"{name}: no {unit} reported."
+    parts = [f"{name}: desired {_range(r['desired_low'], r['desired_high'], f)} {unit}"]
+    if r["cannot_start_high"] > 0:
+        parts.append(f"{_range(r['cannot_start_low'], r['cannot_start_high'], f)} of it cannot start under the present queues")
+    lim_lo, lim_hi = r["fits_low"] - r["runnable_low"], r["fits_high"] - r["runnable_high"]
+    if max(lim_lo, lim_hi) > 0:
+        parts.append(f"{_range(min(lim_lo, lim_hi), max(lim_lo, lim_hi), f)} more fits a queue but is beyond the group job limits")
+    cap = r["capacity"]
+    if _isnan(cap):
+        tail = "capacity is not yet set, so it cannot be compared."
+    elif r["runnable_low"] > cap:
+        tail = f"what the limits allow is above deliverable capacity ({f(cap)}): here the hardware is the constraint."
+    elif r["runnable_high"] > cap:
+        tail = (f"what the limits allow is within deliverable capacity ({f(cap)}) unless all the work that could go to "
+                "either cluster comes here.")
+    else:
+        blocked = r["cannot_start_high"] > 0 or max(lim_lo, lim_hi) > 0
+        if r["desired_high"] > cap:
+            tail = (f"what the limits allow is within deliverable capacity ({f(cap)}): here the queues and limits, "
+                    "not the hardware, set how much can run.")
+        elif blocked:
+            tail = (f"desired demand is within deliverable capacity ({f(cap)}), so the queues and limits, "
+                    "not the hardware, keep part of it from running.")
+        else:
+            tail = f"all of it is within deliverable capacity ({f(cap)})."
+    return "; ".join(parts) + "; " + tail
+
+
+def _limits_note(cfg: dict) -> str:
+    fs = {c["name"]: (c.get("groupLimits") or {}).get("fairShare") for c in cfg["clusters"]}
+    set_ = [f"{c['name']}: " + ", ".join(f"{k} {v:g}" for k, v in (c.get("groupLimits") or {}).items()
+                                         if k in ("maxRunningJobs", "maxRunningNodes") and v is not None)
+            for c in cfg["clusters"] if any((c.get("groupLimits") or {}).get(k) is not None for k in ("maxRunningJobs", "maxRunningNodes"))]
+    fair = ", ".join(f"{k} {'yes' if v else 'no' if v is False else 'not known'}" for k, v in fs.items())
+    return ("Limits apply to a whole group (at most two users), not to each user. Each queue's limit on running jobs is "
+            "applied to the group's entries in that queue together; whether these limits also add up across queues is "
+            "to be confirmed. " + (("Cluster-wide group limits applied: " + "; ".join(set_) + ". ") if set_ else
+            "No cluster-wide limit on a group's running jobs or nodes is set yet, so none is applied. ") +
+            f"Fair-share in use: {fair}. Other groups' jobs are not counted here; that is what capacity is for.")
+
+
+def chapter_queues(d: Doc, ctx: dict):
+    dfs, cfg, wl = ctx["dfs"], ctx["cfg"], ctx["wl"]
+    d.h2("3. Queue design and turnaround", "queues")
+    d.box("question", "Priority (b).",
+          "How could queues and fair-share be arranged for faster turnaround across the workloads described?")
+
+    d.h3("3.1 How much of the work described can run under the present queues and limits")
+    d.p("Desired demand is taken through three steps. <strong>Cannot start</strong>: work whose heaviest job, as "
+        "described, no present queue allows (too many nodes, too long a wall time, or too much memory for its size). "
+        "<strong>Fits a queue</strong>: the rest. <strong>Runnable within group limits</strong>: the part of that the "
+        "limits on a group's running jobs let it run in a year. The gaps point to different remedies: "
+        "desired to fits a queue is a question of queue design; fits a queue to runnable, of group limits; "
+        "runnable against deliverable capacity, of hardware.")
+    sb = ha.service_balance(wl, cfg, "cpu")
+    meas = ["desired", "cannot_start", "fits", "runnable"]
+    show = ranged(sb, meas, mh)
+    show["cluster"] = show["cluster"].map(CLUSTER_NAMES)
+    cols = {"cluster": "Cluster", "desired": "Desired", "cannot_start": "Cannot start", "fits": "Fits a queue",
+            "runnable": "Runnable within group limits", "capacity": "Deliverable capacity"}
+    d.table(show, cols, caption="CPU core-hours per year", formats={"capacity": mh})
+    d.ul([_service_sentence(r) for _, r in sb.iterrows()])
+    a = sb.attrs
+    d.basis(f"{a['entries']} CPU entries from {a['groups']} groups; {plural(a['entries_unknown'], 'entry', 'entries')} left out "
+            f"for unknown inputs; {plural(a['entries_cannot_start'], 'entry', 'entries')} cannot start; "
+            f"{plural(a['entries_limited'], 'entry', 'entries')} limited by a group limit. " + _limits_note(cfg) + " " + EITHER_NOTE)
+    gb = ha.service_balance(wl, cfg, "gpu")
+    if gb.attrs["entries"]:
+        gs = ranged(gb, meas, n)
+        gs["cluster"] = gs["cluster"].map(CLUSTER_NAMES)
+        gs = gs[gs["cluster"] != "Gargi"] if not (gb.set_index("cluster").loc["gargi", "desired_high"] > 0) else gs
+        d.table(gs, cols, caption="GPU-hours per year", formats={"capacity": lambda x: "not yet set" if _isnan(x) else n(x)})
+        d.basis(f"{gb.attrs['entries']} GPU entries; GPU work is counted on Raman, the only cluster with GPUs.")
+
+    d.h3("3.2 Work that cannot start under the present queues")
+    cs = ha.cannot_start_summary(wl, cfg)
+    if not cs["entries"]:
+        d.p("Every entry whose job size and wall time are known fits at least one present queue.")
+    else:
+        d.box("flag", "Not possible to start as described.",
+              f"{plural(cs['entries'], 'entry', 'entries')} from {plural(cs['groups_any'], 'group')} describe jobs that no present "
+              f"queue allows to start. For {plural(cs['groups_all'], 'group')}, this is all of the work they described. "
+              f"Together this is {mh(cs['cpu_h'])} core-hours a year ({pct(cs['cpu_h'] / cs['cpu_h_desired']) if cs['cpu_h_desired'] else '–'} "
+              f"of desired CPU demand)" + (f" and {n(cs['gpu_h'])} GPU-hours ({pct(cs['gpu_h'] / cs['gpu_h_desired'])} of desired GPU demand)"
+                                            if cs['gpu_h'] else "") +
+              ". No amount of free capacity lets this work run under the present queue limits, so it does not appear as a "
+              "shortfall of core-hours. It is a mismatch between the present queue design and the work described, "
+              "not a judgement on the work.")
+        cl = ha.cannot_start(wl, cfg).copy()
+        cpu = cl["device"] != "gpu"
+        cl["job"] = [f"{x:g} node{'s' if x != 1 else ''}, " + (f"{g:g} GPU{'s' if g != 1 else ''}" if dv == "gpu" else f"{c:,.0f} cores")
+                     + f", {hours(w)}" + ("" if _isnan(m) else f", {m:,.0f} GB/node")
+                     for x, c, g, w, m, dv in zip(cl["nodes_est"], cl["cores"], cl["gpus"], cl["walltime_h"], cl["mem_node_gb"], cl["device"])]
+        cl["cluster"] = cl["cluster"].map(lambda c: CLUSTER_NAMES.get(c, "Either"))
+        cl["scaling"] = cl["scaling_class"].map({"high": "scales well", "low": "scales little", "unknown": "not known"})
+        cl["demand"] = [f"{mh(v)} core-h" if dv != "gpu" else f"{n(v)} GPU-h" for v, dv in zip(cl["demand_h"], cl["device"])]
+        d.table(cl, {"cluster": "Cluster named", "job": "Heaviest job, as described", "reason": "Beyond which present limit",
+                     "checkpoint_answer": "Checkpoint/restart reported", "scaling": "Scaling reported", "demand": "Desired per year"})
+        by = ", ".join(f"{v} {k}" for k, v in cs["by_checkpoint"].items())
+        d.basis(f"{cs['entries_known']} entries with known job size and wall time, from {cs['groups_known']} groups. "
+                f"Checkpoint/restart answers: {by}. A job that cannot start as described may still run in parts if it can "
+                "restart from checkpoints, at the cost of a queue wait between parts, or on fewer nodes if it scales; "
+                "the last columns give what was reported, so the committee can see which applies. "
+                "No entry or group is named; the convener's notebook (05) lists them.")
+
+    _pending_body(d, ctx, "queues", "The rest of this chapter is not yet written. It will contain:",
+                  ["The same tables under candidate queue tables the committee drafts.",
+                   "Long jobs by checkpoint/restart and by how they scale: whether they could run in parts, or wider, "
+                   "instead of longer.",
+                   "Debug and interactive use against the debug queues.",
+                   "How usage is spread across groups, for fair-share design."],
+                  ["Candidate queue tables from the committee (entered in the parameter form, notebook 07).",
+                   "The convener's answers to the hardware check on group limits (running jobs, nodes, across queues).",
+                   "Cluster accounting (Slurm) for actual waits and usage per group: the survey can show fit, but not predict waits."])
+
+    d.box("limits", "What these data cannot show.",
+          "Runnable figures assume each group could keep its allowed jobs running all year; on a busy cluster other "
+          "groups' jobs reduce this, which only accounting records or a scheduler simulation can show. Each entry describes "
+          "its heaviest job, so an entry counted as unable to start may include lighter jobs that could.")
 
 
 def chapter_expansion(d: Doc, ctx: dict):
@@ -383,9 +537,10 @@ def chapter_expansion(d: Doc, ctx: dict):
 
     d.h3("5.1 CPU core-hours per year")
     co = ha.cpu_outlook(dfs, wl, cfg)
-    show = co[(co["cluster"] != ha.UNATTR) | (co["used_any"] > 0)].copy()
+    meas = ["used_iiser", "used_any", "desired", "in_3y_low", "in_3y_high"]
+    show = ranged(co, meas, mh)
     show["cluster"] = show["cluster"].map(CLUSTER_NAMES)
-    d.figure(hp.balance(show.assign(cluster=show["cluster"]), "CPU core-hours per year",
+    d.figure(hp.balance(co.assign(cluster=show["cluster"]), "CPU core-hours per year",
                         {"used_iiser": "Used, IISER share", "used_any": "Used, any system",
                          "desired": "Desired", "in_3y_high": "In 3 years (from desired)"},
                         ylabel="million core-hours", scale=1e6),
@@ -393,12 +548,12 @@ def chapter_expansion(d: Doc, ctx: dict):
     d.table(show, {"cluster": "Cluster", "capacity": "Deliverable capacity", "used_iiser": "Used, IISER share",
                    "used_any": "Used, any system", "desired": "Desired", "in_3y_low": "In 3 years, low",
                    "in_3y_high": "In 3 years, high"},
-            formats={c: mh for c in ["capacity", "used_iiser", "used_any", "desired", "in_3y_low", "in_3y_high"]})
+            formats={"capacity": mh})
     comb = co.set_index("cluster").loc["combined"]
-    d.ul([_capacity_sentence("combined", comb["used_any"], comb["capacity"], "used in the last 12 months (any system),"),
-          _capacity_sentence("combined", comb["desired"], comb["capacity"], "desired,"),
-          _capacity_sentence("combined", comb["in_3y_high"], comb["capacity"], "in 3 years (high),")]
-         + [_capacity_sentence(r["cluster"], r["desired"], r["capacity"], "desired,")
+    d.ul([_capacity_sentence("combined", comb["used_any_low"], comb["used_any_high"], comb["capacity"], "used in the last 12 months (any system),"),
+          _capacity_sentence("combined", comb["desired_low"], comb["desired_high"], comb["capacity"], "desired,"),
+          _capacity_sentence("combined", comb["in_3y_high_low"], comb["in_3y_high_high"], comb["capacity"], "in 3 years (high),")]
+         + [_capacity_sentence(r["cluster"], r["desired_low"], r["desired_high"], r["capacity"], "desired,")
             for _, r in co[co["cluster"].isin(ha.CLUSTERS)].iterrows()])
     a = co.attrs
     d.basis(f"{a['entries']} CPU entries from {a['groups']} groups; {plural(a['entries_unknown'], 'entry', 'entries')} left out for unknown "
@@ -406,8 +561,8 @@ def chapter_expansion(d: Doc, ctx: dict):
             f"Bhopal clusters ({plural(a['groups_share_unknown'], 'group')} did not give it and {'is' if a['groups_share_unknown'] == 1 else 'are'} not scaled). "
             f"<em>Desired</em> is what groups would run if wall time, queue wait and capacity did not limit them. "
             f"<em>In 3 years</em> multiplies used (low) and desired (high) by each group's expected growth "
-            f"({plural(a['groups_growth_unknown'], 'group')} did not give it: no growth assumed). Entries naming both clusters "
-            f"are split equally; entries naming neither are counted only in the combined total.")
+            f"({plural(a['groups_growth_unknown'], 'group')} did not give it: no growth assumed). "
+            f"{plural(a['entries_either'], 'entry', 'entries')} could go to either cluster. " + EITHER_NOTE)
 
     po = ha.people_outlook(dfs)
     wn = ha.work_not_run(dfs)
@@ -425,8 +580,8 @@ def chapter_expansion(d: Doc, ctx: dict):
     gl = ha.gpu_latent_demand(wl, cfg)
     via = ha.cpu_viability(wl)
     ver = ha.gpu_version_availability(wl)
-    items = [f"GPU entries: {int((wl['device'] == 'gpu').sum())}. Reported GPU-hours per year: {n(g['used'])} used, "
-             f"{n(g['desired'])} desired. GPU capacity is not yet set in the configuration (the Raman GPU count is to be confirmed), "
+    items = [f"GPU entries: {int((wl['device'] == 'gpu').sum())}. Reported GPU-hours per year: {n(g['used_low'])} used, "
+             f"{n(g['desired_low'])} desired. GPU capacity is not yet set in the configuration (the Raman GPU count is to be confirmed), "
              "so no comparison with capacity is made."]
     if not gl.empty:
         items.append(f"CPU entries whose code has a GPU version already tested: {len(gl)}. Moved to GPUs, they would need "
@@ -450,19 +605,21 @@ def chapter_expansion(d: Doc, ctx: dict):
     d.h3("5.5 Storage")
     hb, _ = ha.home_balance(dfs, wl, cfg)
     sb, _ = ha.scratch_balance(dfs, wl, cfg)
+    hb = ranged(hb, ["demand_now_tb", "demand_3y_tb"], tb)
+    sb = ranged(sb, ["peak_sum_tb", "average_tb"], tb)
     hb["cluster"] = hb["cluster"].map(CLUSTER_NAMES)
     sb["cluster"] = sb["cluster"].map(CLUSTER_NAMES)
     d.table(hb, {"cluster": "Cluster", "capacity_tb": "Home capacity", "demand_now_tb": "Needed now",
                  "demand_3y_tb": "Needed in 3 years"},
-            caption="Home area", formats={c: tb for c in ["capacity_tb", "demand_now_tb", "demand_3y_tb"]})
+            caption="Home area", formats={"capacity_tb": tb})
     d.table(sb, {"cluster": "Cluster", "capacity_tb": "Scratch capacity", "peak_sum_tb": "Sum of peaks",
                  "average_tb": "Time-averaged"},
-            caption="Scratch", formats={c: tb for c in ["capacity_tb", "peak_sum_tb", "average_tb"]})
+            caption="Scratch", formats={"capacity_tb": tb})
     frac = {c["name"]: c["storage"]["scratchFraction"] for c in cfg["clusters"]}
     d.basis("Home and scratch capacities split each cluster's usable storage by the committee's home:scratch fraction "
             f"({', '.join(f'{k} {v:.0%} scratch' for k, v in frac.items())}; a placeholder until set). "
             "Sum of peaks assumes every group's largest scratch use at once; time-averaged uses how long jobs run. "
-            "Group home needs are split between clusters by each group's mix of entries.")
+            "Group home needs are split between clusters by each group's mix of entries. " + EITHER_NOTE)
 
     d.box("limits", "What these data cannot show.",
           "Reported and desired figures are self-estimates; desired demand is an upper bound, and charges would lower it. "
@@ -478,7 +635,8 @@ def appendices(d: Doc, ctx: dict):
         "<strong>Core-hours</strong>: CPU cores × hours. A 128-core job running 10 hours uses 1,280 core-hours.",
         "<strong>Entry</strong>: one code and kind of job described in Section C of the form.",
         "<strong>Expansion factor</strong>: (queue wait + wall time) ÷ wall time. 1× means the job started at once.",
-        "<strong>Deliverable capacity</strong>: cores × 8,760 h × target utilisation.",
+        "<strong>Deliverable capacity</strong>: cores × 8,760 h × availability × usable share of available time.",
+        "<strong>Availability</strong>: share of the year the nodes are up and accepting jobs.",
         "<strong>Desired</strong>: what a group would run if wall time, queue wait and capacity did not limit it.",
     ])
     d.h2("Appendix B. Settings used", "settings", first=True)
@@ -503,7 +661,7 @@ def appendices(d: Doc, ctx: dict):
     d.p("A blank, optional or “don't know” answer is given a neutral meaning: one that neither adds demand nor raises a flag. "
         "The cases are still counted as unknown in each table's basis line.")
     plain = lambda s: s.replace("give <NA>, not False", "are shown as unknown, not as no").replace("give <NA>", "are shown as unknown") \
-                      .replace("unattributed pool", "not tied to a cluster").replace(" -> ", " → ")
+                      .replace(" -> ", " → ")
     d.table(pd.DataFrame([{"answer": DEFAULT_LABELS.get(k, k), "meaning": plain(v)} for k, v in ha.NEUTRAL_DEFAULTS.items()]),
             {"answer": "Answer missing", "meaning": "Treated as"})
 
@@ -524,25 +682,14 @@ def build(dfs: dict, cfg: dict, records=None) -> str:
     d.add("<nav><strong>Contents</strong><ol>"
           "<li><a href='#about'>About this report</a></li>"
           "<li><a href='#patterns'>Usage patterns and issues on the present clusters</a> (a)</li>"
-          "<li><a href='#queues'>Queue design and turnaround</a> (b), in preparation</li>"
+          "<li><a href='#queues'>Queue design and turnaround</a> (b), in part</li>"
           "<li><a href='#charging'>Standard and premium queues and charges</a> (c, d), in preparation</li>"
           "<li><a href='#expansion'>Requirements that may call for expansion</a> (e)</li>"
           "</ol><p class='small'>Appendices: <a href='#terms'>terms</a> · <a href='#settings'>settings used</a> · "
           "<a href='#missing'>missing answers</a></p></nav>")
     chapter_about(d, ctx)
     chapter_patterns(d, ctx)
-    chapter_pending(
-        d, ctx, "3", "Queue design and turnaround", "queues", "Priority (b).",
-        "How could queues and fair-share be arranged for faster turnaround across the workloads described?",
-        ["Each workload's fit under the present queue table and under candidate tables the committee drafts "
-         "(share of entries and of core-hours that fit each).",
-         "Long jobs by checkpoint/restart and by how they scale: whether they could run in parts, or wider, "
-         "instead of longer.",
-         "Throughput: wanted concurrency against per-user limits, and how long a year of each workload takes at those limits.",
-         "Debug and interactive use against the debug queues.",
-         "How usage is spread across groups, for fair-share design."],
-        ["Candidate queue tables from the committee (entered in the parameter form, notebook 07).",
-         "Cluster accounting (Slurm) for actual waits and usage per group: the survey can show fit, but not predict waits."])
+    chapter_queues(d, ctx)
     chapter_pending(
         d, ctx, "4", "Standard and premium queues and charges", "charging", "Priorities (c) and (d).",
         "What standard and premium charges would meet the annual target, given a free annual allowance for a share of groups?",

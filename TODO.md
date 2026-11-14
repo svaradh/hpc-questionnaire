@@ -10,7 +10,8 @@
   budget band, on `/v3-draft/`; the backend (`Charging` tab) is committed. The ₹ bands are final form options: the
   annual target is needed only at the analysis stage.
 - **Evaluation parameters.** Set by the convener in the form in notebook 07 (`analysis/param_form.py`, generated from
-  `analysis/parameters.json`): target utilisation, scratch and home guides, candidate queue table, annual target,
+  `analysis/parameters.json`): availability and usable share of available time (replacing the single target
+  utilisation, 2026-11-14; old scenarios are read through `parameters.LEGACY`), scratch and home guides, candidate queue table, annual target,
   allowance share and size, premium multiple. Each set is a named scenario, kept in a `Scenarios` tab of the response
   sheet (never overwritten); each report names its scenario. `clusters.json` keeps only the form's trigger values.
   Until the merge into `main`, set `REPO_REF = 'progressive-disclosure-v2'` in the notebooks, which fetch helper code from `main`.
@@ -34,7 +35,23 @@
   "HPC Questionnaire Response v3", reports folder "HPC Committee Reports/v3". The v1 Apps Script project and the
   Google Cloud sign-in project are kept.
 
-## Where we left off (2026-11-13)
+## Where we left off (2026-11-14)
+
+- **Done today (analysis, synthetic data only; all notebooks pass).**
+  - Capacity = cores × 8,760 h × availability (0.95) × usable share (0.85), both set in the notebook 07 form.
+  - Per-cluster demand is a range: low = only the entries naming the cluster, high = plus the work that could go to
+    either. This replaces the "unattributed" row and the 50:50 split.
+  - `ha.service_balance`: desired → cannot start → fits a queue → runnable within group limits, against capacity.
+  - `ha.cannot_start`: a red-flag list of the work no present queue allows, with checkpoint and scaling answers.
+  - Report chapter 3 now has 3.1 and 3.2. Triage marks entries that cannot start as category-3 candidates.
+  - Limits are per group (at most two users). `clusters.json` now has `groupLimits` per cluster (null until
+    confirmed; fair-share: Raman yes, Gargi no).
+  - The hardware check PDF was rebuilt with questions on group limits: running jobs, nodes and queued jobs per group,
+    whether limits add up across queues, and whether other jobs may use the high-memory and GPU nodes.
+- **Next:** send the hardware check to the convener and enter the answers in `clusters.json` (`groupLimits`, GPU
+  count, downtime for availability). Then continue chapter 3 with the candidate queue tables.
+
+## Earlier (2026-11-13)
 
 - **Done today.** Section H approved; v3 backend updated for 2.7.0 (`Charging` tab); `/v3-preview/` republished at
   2.7.0; one test submission checked end to end (Submissions, Workloads one row per code, Charging, confirmation

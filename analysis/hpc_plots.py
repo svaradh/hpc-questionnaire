@@ -84,7 +84,10 @@ def balance(df: pd.DataFrame, title: str, measures: dict, capacity_col: str = "c
             ylabel: str = "", scale: float = 1.0):
     """
     Grouped bars per cluster: demand measures (series colours) next to
-    capacity (neutral). `measures` maps column -> legend label.
+    capacity (neutral). `measures` maps column -> legend label. A measure given
+    as a range (columns <m>_low and <m>_high, see hpc_analysis.cluster_ranges)
+    is drawn as a solid bar to its low value with a hatched part up to its high
+    value: work that could go to either cluster.
     """
     d = df.set_index("cluster")
     cols = [capacity_col] + list(measures)
@@ -93,17 +96,28 @@ def balance(df: pd.DataFrame, title: str, measures: dict, capacity_col: str = "c
     x = np.arange(len(d))
     width = 0.8 / len(cols)
     fig, ax = plt.subplots(figsize=(8.5, 4))
+    hatched = False
     for i, (c, n, col) in enumerate(zip(cols, names, colors)):
-        vals = pd.to_numeric(d[c], errors="coerce").values / scale
-        ax.bar(x + (i - (len(cols) - 1) / 2) * width, np.nan_to_num(vals), width * 0.92, label=n, color=col)
-        for xi, v in zip(x, vals):
+        xs = x + (i - (len(cols) - 1) / 2) * width
+        if c in d:
+            lo = hi = pd.to_numeric(d[c], errors="coerce").values / scale
+        else:
+            lo = pd.to_numeric(d[f"{c}_low"], errors="coerce").values / scale
+            hi = pd.to_numeric(d[f"{c}_high"], errors="coerce").values / scale
+        ax.bar(xs, np.nan_to_num(lo), width * 0.92, label=n, color=col)
+        extra = np.nan_to_num(hi - lo)
+        if (extra > 0).any():
+            hatched = True
+            ax.bar(xs, extra, width * 0.92, bottom=np.nan_to_num(lo), color=col, alpha=0.35, hatch="///", edgecolor=col, linewidth=0)
+        for xi, v in zip(xs, lo):
             if np.isnan(v):
-                ax.text(xi + (i - (len(cols) - 1) / 2) * width, 0, "n/a", ha="center", va="bottom", color=TEXT_2, fontsize=8)
+                ax.text(xi, 0, "n/a", ha="center", va="bottom", color=TEXT_2, fontsize=8)
+    if hatched:
+        ax.bar([np.nan], [np.nan], color="white", hatch="///", edgecolor=TEXT_2, label="Could go to either cluster")
     ax.set_xticks(x, d.index)
     ax.set_ylabel(ylabel)
-    ax.set_title(title)
-    ax.legend(ncols=len(cols), loc="lower left", bbox_to_anchor=(0, 1.02))
-    ax.set_title(title, pad=28)
+    ax.legend(ncols=min(len(cols) + hatched, 4), loc="lower left", bbox_to_anchor=(0, 1.02))
+    ax.set_title(title, pad=28 if len(cols) + hatched <= 4 else 44)
     _grid(ax, "y")
     plt.tight_layout()
     return _done(fig)
