@@ -175,7 +175,17 @@ class Form:
 
 def queue_text(q):
     nodes = f"{q['minNodes']}" if q['minNodes'] == q['maxNodes'] else f"{q['minNodes']}–{q['maxNodes']}"
-    return f"{nodes} node(s), {v(q['walltimeHours'])} h, {q['maxConcurrentJobs']} job(s) at once per group"
+    tn, tj = q.get('maxTotalNodes'), q.get('maxTotalJobs')
+    total = ('not known' if tn is None and tj is None else
+             f"{v(tn)} nodes, {v(tj)} jobs")
+    return (f"{nodes} node(s), {v(q['walltimeHours'])} h, {q['maxConcurrentJobs']} job(s) at once per group; "
+            f"ceiling for all groups together: {total}")
+
+
+def queue_binding(f):
+    """Asked before the queue rows: whether compute queues have nodes of their own."""
+    f.ask('Apart from the high-memory and GPU queues, are any queues bound to particular nodes?',
+          'Yes / No. We assume No: the other queues share all compute nodes. If Yes, say which nodes each queue can use.')
 
 
 def group_limits(f, c, highmem_note):
@@ -236,6 +246,7 @@ def main():
     f.ask('Local disk on compute nodes (size usable by jobs)', 'e.g. /tmp on SSD, 400 GB; or none.')
 
     f.heading('2. Gargi queues')
+    queue_binding(f)
     for q in g['queues']:
         f.row(f"Queue: {q['id']}" + (' (high-memory nodes)' if q.get('nodeType') == 'highmem' else ''), queue_text(q))
     group_limits(f, g, 'Can jobs from other queues run on the high-memory nodes when they are free?')
@@ -268,6 +279,7 @@ def main():
     f.ask('Expected remaining service life of Raman', 'e.g. warranty end, planned retirement year, or not known.')
 
     f.heading('4. Raman queues')
+    queue_binding(f)
     for q in r['queues']:
         tag = {'highmem': ' (high-memory node)', 'gpu': ' (GPU node)'}.get(q.get('nodeType'), '')
         f.row(f"Queue: {q['id']}{tag}", queue_text(q))

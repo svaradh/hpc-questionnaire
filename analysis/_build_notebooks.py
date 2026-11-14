@@ -274,6 +274,22 @@ Where a group has several entries in one queue they share the limit; `ha.service
         code("""thr = tp.dropna(subset=['years_to_finish']).sort_values('years_to_finish', ascending=False)
 if len(thr):
     hp.barh(thr['pi_name'] + ' · ' + thr['entry'], thr['years_to_finish'].round(2), 'Years to finish one year of work at the group job limit', 'Years')"""),
+        md("""## Queue by queue
+
+Only the high-memory and GPU queues have nodes of their own; the other queues share each cluster's pool of compute
+nodes. A queue is shaped by its limits: per group (`maxConcurrentJobs`) and for all groups together
+(`maxTotalNodes`, `maxTotalJobs` in `clusters.json`; candidate values in the notebook 07 form).
+Derived columns come from the entries (each placed in the shortest queue its heaviest job fits); `groups_want_more_at_once`,
+`problems` and the `f_*` columns are reported. `avg_nodes_busy` counts node-equivalents (cores ÷ cores per node)."""),
+        code("""qb = ha.queue_breakdown(dfs, wl, cfg)
+display(qb.attrs['pools'].round(2))
+qb.round(2)"""),
+        md("""## What different group limits would give and cost
+
+For each queue: the present per-group job limit, and the limits that would let 50 %, 75 % and 100 % of the groups
+placed there finish a year's work, with the work that could run, the nodes busy on average, and the nodes in use if every
+group used its full limit at once (what a queue's total-node ceiling would have to absorb). Averages hide bursts."""),
+        code("""ha.queue_tradeoff(wl, cfg).round(2)"""),
         md("""## Work that cannot start under the present queues
 
 Entries whose heaviest job, as described, no present queue allows to start, with the limit it is beyond and the

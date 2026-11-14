@@ -48,6 +48,16 @@
     confirmed; fair-share: Raman yes, Gargi no).
   - The hardware check PDF was rebuilt with questions on group limits: running jobs, nodes and queued jobs per group,
     whether limits add up across queues, and whether other jobs may use the high-memory and GPU nodes.
+- **Queue by queue (later the same day).**
+  - Only the high-memory and GPU queues have their own nodes; the other queues share each cluster's compute pool.
+  - Each queue in `clusters.json` now has ceilings for all groups together (`maxTotalNodes`, `maxTotalJobs`; null until
+    confirmed), and the candidate queue table has the same two columns (parameters 1.2.0).
+  - `ha.queue_breakdown`: demand per queue against its limits and the nodes it can use, plus reported concurrency,
+    problems and waits.
+  - `ha.queue_tradeoff`: the present group limit and the limits serving 50/75/100 % of groups, with the work served and
+    the nodes taken, on average and in the worst case.
+  - Report 3.3–3.4 and notebook 05. The hardware check asks yes/no whether queues are bound to nodes, and each queue's
+    ceilings.
 - **Next:** send the hardware check to the convener and enter the answers in `clusters.json` (`groupLimits`, GPU
   count, downtime for availability). Then continue chapter 3 with the candidate queue tables.
 

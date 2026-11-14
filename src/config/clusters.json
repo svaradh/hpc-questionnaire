@@ -5,6 +5,7 @@
     "Raman GPU node: model not listed; recalled as a Volta-generation card. Not needed by the form for now.",
     "Storage split: each cluster's usable storage is divided into home and scratch by storage.scratchFraction (committee parameter; usually home:scratch 60:40, set to 50:50 for now). homeTB and scratchTB are computed from it in clusterConfig.ts.",
     "Scheduler limits apply to a whole research group (at most two users: the faculty member and one group member), not to each user. queues[].maxConcurrentJobs = jobs one group may have running at once in that queue. groupLimits (per cluster, across all its queues): maxRunningJobs = jobs a group may have running at once in all queues together; maxRunningNodes = nodes a group's running jobs may occupy in total; maxQueuedJobs = jobs a group may have waiting; fairShare = whether a fair-share policy balances groups' usage (at present: Raman yes, Gargi no). null = none or not yet confirmed (hardware check).",
+    "Nodes and queues: only the high-memory and GPU queues have their own nodes (nodeType). computeQueuesShareNodes = true: all other queues draw from one pool of compute nodes, allocated as jobs start, not bound to a queue. Each queue may limit what all groups together run in it: queues[].maxTotalNodes (nodes in use) and queues[].maxTotalJobs (running jobs). null = none or not yet confirmed (hardware check). With a shared pool these ceilings, with the per-group limits, are what queue design sets.",
     "storage.scratchOnlyOnFastPFS: true when only scratch is on the fast parallel file system (home elsewhere). Jobs should then load their input files from scratch, so the analysis counts read volume (W_input_read) toward scratch as well as written volume. null = to confirm with the convener."
   ],
   "clusters": [
@@ -20,13 +21,14 @@
       "storage": { "system": "DDN EXAScaler 200NVX2", "usableTB": 120, "bandwidthGBs": 15, "scratchFraction": 0.5, "scratchOnlyOnFastPFS": null },
       "interconnect": "200 Gbps Mellanox InfiniBand HDR",
       "queues": [
-        { "id": "debug",  "minNodes": 1, "maxNodes": 2, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 5 },
-        { "id": "short",  "minNodes": 1, "maxNodes": 3, "walltimeHours": 36,  "maxConcurrentJobs": 3, "priority": 4 },
-        { "id": "medium", "minNodes": 1, "maxNodes": 3, "walltimeHours": 72,  "maxConcurrentJobs": 3, "priority": 3 },
-        { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "priority": 2 },
-        { "id": "xlong",  "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "priority": 5 },
-        { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "priority": 3, "nodeType": "highmem" }
+        { "id": "debug",  "minNodes": 1, "maxNodes": 2, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 5 },
+        { "id": "short",  "minNodes": 1, "maxNodes": 3, "walltimeHours": 36,  "maxConcurrentJobs": 3, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 4 },
+        { "id": "medium", "minNodes": 1, "maxNodes": 3, "walltimeHours": 72,  "maxConcurrentJobs": 3, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 3 },
+        { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 2 },
+        { "id": "xlong",  "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 5 },
+        { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 168, "maxConcurrentJobs": 1, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 3, "nodeType": "highmem" }
       ],
+      "computeQueuesShareNodes": true,
       "groupLimits": { "maxRunningJobs": null, "maxRunningNodes": null, "maxQueuedJobs": null, "fairShare": false }
     },
     {
@@ -42,13 +44,14 @@
       "storage": { "system": "NetApp E5700", "usableTB": 104, "bandwidthGBs": 6, "scratchFraction": 0.5, "scratchOnlyOnFastPFS": null },
       "interconnect": "100 Gbps Intel Omni-Path + 1 Gbps Ethernet",
       "queues": [
-        { "id": "debug",  "minNodes": 1, "maxNodes": 4, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "priority": 4 },
-        { "id": "short",  "minNodes": 5, "maxNodes": 8, "walltimeHours": 48,  "maxConcurrentJobs": 8, "priority": 3 },
-        { "id": "medium", "minNodes": 2, "maxNodes": 4, "walltimeHours": 72,  "maxConcurrentJobs": 4, "priority": 2 },
-        { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "priority": 1 },
-        { "id": "gpu",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 24,  "maxConcurrentJobs": 1, "priority": 1, "nodeType": "gpu" },
-        { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 72,  "maxConcurrentJobs": 1, "priority": 3, "nodeType": "highmem" }
+        { "id": "debug",  "minNodes": 1, "maxNodes": 4, "walltimeHours": 0.5, "maxConcurrentJobs": 4, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 4 },
+        { "id": "short",  "minNodes": 5, "maxNodes": 8, "walltimeHours": 48,  "maxConcurrentJobs": 8, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 3 },
+        { "id": "medium", "minNodes": 2, "maxNodes": 4, "walltimeHours": 72,  "maxConcurrentJobs": 4, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 2 },
+        { "id": "long",   "minNodes": 1, "maxNodes": 1, "walltimeHours": 120, "maxConcurrentJobs": 1, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 1 },
+        { "id": "gpu",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 24,  "maxConcurrentJobs": 1, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 1, "nodeType": "gpu" },
+        { "id": "hmq",    "minNodes": 1, "maxNodes": 1, "walltimeHours": 72,  "maxConcurrentJobs": 1, "maxTotalNodes": null, "maxTotalJobs": null, "priority": 3, "nodeType": "highmem" }
       ],
+      "computeQueuesShareNodes": true,
       "groupLimits": { "maxRunningJobs": null, "maxRunningNodes": null, "maxQueuedJobs": null, "fairShare": true }
     }
   ],

@@ -619,6 +619,26 @@ def deficit_summary(df: pd.DataFrame, demand: str, capacity: str, unit: str, lab
 CHECKPOINT_LABELS = {"yes": "yes", "no": "no", "not_tested": "not tested", "dont_know": "don't know", "": "not asked"}
 
 
+def queue_by_name(cfg: dict, name: str) -> dict | None:
+    """A present queue from its 'cluster.queue' name, with its cluster id added."""
+    if not isinstance(name, str) or "." not in name:
+        return None
+    cid, qid = name.split(".", 1)
+    if cid not in CLUSTERS:
+        return None
+    q = next((q for q in cluster(cfg, cid)["queues"] if q["id"] == qid), None)
+    return {**q, "cluster": cid} if q else None
+
+
+def queue_pool_nodes(cfg: dict, q: dict) -> int:
+    """Nodes a queue's jobs can run on: its own nodes (high-memory, GPU) or the cluster's shared compute pool."""
+    c = cluster(cfg, q["cluster"])
+    kind = _queue_kind(q)
+    if kind == "gpu":
+        return sum(g["count"] for g in c.get("gpuNodes", []))
+    return sum(n["count"] for n in c["nodeTypes"] if n["id"] == kind)
+
+
 def group_limits(cfg: dict, cid: str) -> dict:
     """A cluster's limits on one group across all its queues (None = none, or not yet confirmed)."""
     return cluster(cfg, cid).get("groupLimits") or {}
@@ -638,11 +658,13 @@ def service_table(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
                      'unknown' (job size or wall time not given)
       cannot_start_h demand of entries that cannot start
       fits_h         demand of entries that fit a queue
-      runnable_h     fits_h x the tightest group limit, where the group's entries share each limit:
+      runnable_h     fits_h x the tightest limit, where the entries concerned share each limit:
                        queue job limit   jobs x hours per job, summed over the group's entries in that queue,
                                          vs maxConcurrentJobs x available hours
                        groupLimits       maxRunningJobs (all queues of the cluster) and maxRunningNodes
                                          (node-hours), where set
+                       queue ceilings    maxTotalJobs / maxTotalNodes of a queue, shared by all groups'
+                                         entries in it (in proportion to their need), where set
       binding_limit  the limit that sets runnable_h ('' when none binds)
     Other groups' jobs are not counted here (that is what capacity is for), so runnable_h is
     the most the limits allow a group to run, not what it would get on a busy cluster.
@@ -658,7 +680,15 @@ def service_table(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     t["queue_cluster"] = np.where(fits, t["queue"].str.split(".").str[0], "")
     jobs_des = t["jobs_year_unconstrained"].fillna(t["jobs_year"])
     t["job_h_year"] = (jobs_des * t["hours_per_job"]).where(fits)
-    t["node_h_year"] = t["job_h_year"] * t["nodes_est"]
+    t["node_h_year"] = t["job_h_year"] * t["nodes_est"]  # nodes allocated (for limits on a group's nodes)
+    # Load on the nodes: node-equivalents (cores / cores per node), since small jobs share a node
+    def _node_equiv(r):
+        q = queue_by_name(cfg, r["queue"]) if r["fit_status"] == "fits" else None
+        if q is None or r["device"] == "gpu" or pd.isna(r["cores"]):
+            return r["nodes_est"]
+        return min(r["nodes_est"], r["cores"] / cores_per_node(cfg, q["cluster"], _queue_kind(q)))
+    t["node_equiv"] = t.apply(_node_equiv, axis=1) if len(t) else np.nan
+    t["node_equiv_h_year"] = t["job_h_year"] * t["node_equiv"]
     H = available_hours(cfg)
 
     shares = {}
@@ -669,6 +699,11 @@ def service_table(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
     lim = t["queue_cluster"].map(lambda c: group_limits(cfg, c) if c in CLUSTERS else {})
     shares["group running-job limit"] = _share_allowed(need_c, lim.map(lambda g: g.get("maxRunningJobs")) * H)
     shares["group node limit"] = _share_allowed(need_n, lim.map(lambda g: g.get("maxRunningNodes")) * H)
+    qd = t["queue"].map(lambda n: queue_by_name(cfg, n) or {})
+    need_qa = t.groupby("queue")["job_h_year"].transform("sum")
+    need_qn = t.groupby("queue")["node_equiv_h_year"].transform("sum")
+    shares["queue total-job ceiling"] = _share_allowed(need_qa, qd.map(lambda q: q.get("maxTotalJobs")) * H)
+    shares["queue total-node ceiling"] = _share_allowed(need_qn, qd.map(lambda q: q.get("maxTotalNodes")) * H)
     sh = pd.DataFrame(shares)
     t["limit_share"] = sh.min(axis=1).where(fits)
     t["binding_limit"] = np.where(fits & (t["limit_share"] < 1), sh.idxmin(axis=1), "")
@@ -699,6 +734,122 @@ def service_balance(wl: pd.DataFrame, cfg: dict, device: str = "cpu") -> pd.Data
         "limits_by_kind": t.loc[t["binding_limit"] != "", "binding_limit"].value_counts().to_dict(),
     })
     return out
+
+
+QUEUE_PROBLEMS = {"excessive_queue_wait": "queue wait", "wall_time_termination": "wall-time limit",
+                  "insufficient_node_count": "node count", "insufficient_total_capacity": "total capacity",
+                  "insufficient_memory": "memory", "insufficient_gpu_access": "GPU access"}
+
+
+def queue_breakdown(dfs: dict, wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
+    """
+    One row per present queue that some entry's heaviest job lands in (derived), with:
+      limits        per-group job limit; ceilings for all groups together (maxTotalNodes / maxTotalJobs; NaN = none
+                    or not confirmed); the nodes its jobs can use (its own nodes, or the shared compute pool)
+      demand        entries, groups, desired job-hours and node-hours a year; nodes busy on average if all of it ran
+                    (node-hours / available hours) and as a share of the nodes it can use. Node-hours count
+                    node-equivalents (cores / cores per node), since small jobs share a node
+      group limit   groups for whom the per-group job limit binds; share of the queue's work the limits let run
+      concurrency   groups that gave 'jobs at the same time' (optional) and how many of them want more than the limit
+      problems      groups linking each problem to an entry in this queue (reported)
+      Section F     entries and groups naming this queue, median typical wait and expansion factor (reported; asked
+                    only after queue-wait or capacity problems)
+    Placement is inferred from each entry's heaviest job, so lighter jobs that use shorter queues are counted in the
+    longer one.
+    """
+    t = service_table(wl, cfg)
+    t = t[t["fit_status"] == "fits"].copy()
+    H = available_hours(cfg)
+    qw = queue_waits(dfs, wl, cfg)
+    rows = []
+    for name, g in t.groupby("queue", sort=False):
+        q = queue_by_name(cfg, name)
+        if q is None:
+            continue
+        pool = queue_pool_nodes(cfg, q)
+        node_h = g["node_equiv_h_year"].sum()
+        conc = g.dropna(subset=["concurrent"])
+        probs = split_semicolons(_col(g, "affected_by"))
+        prob_groups = {lab: g.loc[probs.apply(lambda ps: p in ps), "submission_id"].nunique() for p, lab in QUEUE_PROBLEMS.items()}
+        f = qw[qw["queue"] == name] if not qw.empty else qw
+        rows.append({
+            "queue": name, "cluster": q["cluster"], "node_type": _queue_kind(q),
+            "nodes_per_job": f"{q['minNodes']}–{q['maxNodes']}" if q["minNodes"] != q["maxNodes"] else f"{q['maxNodes']}",
+            "walltime_limit_h": q["walltimeHours"], "group_job_limit": q["maxConcurrentJobs"],
+            "total_nodes_ceiling": q.get("maxTotalNodes"), "total_jobs_ceiling": q.get("maxTotalJobs"),
+            "nodes_available": pool, "shared_pool": _queue_kind(q) == "compute" and cluster(cfg, q["cluster"]).get("computeQueuesShareNodes", True),
+            "entries": len(g), "groups": g["submission_id"].nunique(),
+            "demand_h": g["demand_h"].sum(), "job_h_year": g["job_h_year"].sum(), "node_equiv_h_year": node_h,
+            "avg_nodes_busy": node_h / H, "share_of_nodes": node_h / H / pool if pool else np.nan,
+            "groups_limited": g.loc[g["binding_limit"] != "", "submission_id"].nunique(),
+            "runnable_share": g["runnable_h"].sum() / g["fits_h"].sum() if g["fits_h"].sum() else np.nan,
+            "groups_gave_concurrency": conc["submission_id"].nunique(),
+            "groups_want_more_at_once": conc.loc[conc["concurrent"] > q["maxConcurrentJobs"], "submission_id"].nunique(),
+            "problems": "; ".join(f"{lab} {k}" for lab, k in prob_groups.items() if k),
+            "f_entries": len(f), "f_groups": f["submission_id"].nunique() if len(f) else 0,
+            "median_typical_wait_h": f["typical_wait_h"].median() if len(f) else np.nan,
+            "median_expansion_factor": f["expansion_factor"].median() if len(f) else np.nan,
+        })
+    out = pd.DataFrame(rows)
+    # The shared compute pool of each cluster: nodes busy on average across its compute queues
+    pools = []
+    for cid in CLUSTERS:
+        c = cluster(cfg, cid)
+        sub = out[(out["cluster"] == cid) & out["shared_pool"]] if not out.empty else out
+        nodes = next(n["count"] for n in c["nodeTypes"] if n["id"] == "compute")
+        busy = float(sub["avg_nodes_busy"].sum()) if len(sub) else 0.0
+        pools.append({"cluster": cid, "compute_nodes": nodes, "avg_nodes_busy": busy,
+                      "share_of_nodes": busy / nodes, "usable_share": cfg["parameters"]["schedulableUtilisation"]})
+    out.attrs["pools"] = pd.DataFrame(pools)
+    return out
+
+
+def queue_tradeoff(wl: pd.DataFrame, cfg: dict, levels=(0.5, 0.75, 1.0)) -> pd.DataFrame:
+    """
+    For each queue, what different per-group job limits would give and cost (derived from the entries landing there).
+    Each group's need = the jobs it must keep running on average to finish a year's work in the queue
+    (job-hours a year / available hours, rounded up). Rows: the present limit, and the limits that would serve
+    50 %, 75 % and 100 % of the groups in the queue fully. For each limit:
+      groups_served         groups whose need is within it
+      work_runnable_share   share of the queue's desired core-hours (GPU-hours) the limit lets run
+      avg_nodes_busy        nodes busy on average from that work, and as a share of the nodes the queue can use
+      nodes_if_all_at_limit nodes in use if every group in the queue ran its full limit at once with its largest
+                            job (the worst case a per-queue node ceiling would have to absorb), and as a share
+    Nodes are node-equivalents (cores / cores per node): small jobs share a node.
+    Averages hide bursts: a group needing many jobs at once for a short time needs more than this, which the
+    optional 'jobs at the same time' answer (queue_breakdown) partly shows.
+    """
+    t = service_table(wl, cfg)
+    t = t[t["fit_status"] == "fits"]
+    H = available_hours(cfg)
+    rows = []
+    for name, g in t.groupby("queue", sort=False):
+        q = queue_by_name(cfg, name)
+        if q is None:
+            continue
+        pool = queue_pool_nodes(cfg, q)
+        per = g.groupby("submission_id").agg(job_h=("job_h_year", "sum"), node_h=("node_equiv_h_year", "sum"),
+                                             demand=("demand_h", "sum"), nodes=("node_equiv", "max"))
+        per = per[per["job_h"] > 0]
+        if per.empty:
+            continue
+        per["need"] = np.ceil(per["job_h"] / H).clip(lower=1)
+        options = [("present limit", q["maxConcurrentJobs"])]
+        options += [(f"serves {lv:.0%} of groups", float(np.quantile(per["need"], lv, method="higher"))) for lv in levels]
+        seen = {}
+        for label, J in options:
+            seen.setdefault(J, []).append(label)
+        for J, labels in sorted(seen.items()):
+            share = np.minimum(1.0, J * H / per["job_h"])
+            busy = float((per["node_h"] * share).sum() / H)
+            worst = float((J * per["nodes"]).sum())
+            rows.append({"queue": name, "cluster": q["cluster"], "limit": " = ".join(labels), "group_job_limit": J,
+                         "groups": len(per), "groups_served": int((per["need"] <= J).sum()),
+                         "work_runnable_share": float((per["demand"] * share).sum() / per["demand"].sum()),
+                         "avg_nodes_busy": busy, "avg_share_of_nodes": busy / pool if pool else np.nan,
+                         "nodes_if_all_at_limit": worst, "worst_share_of_nodes": worst / pool if pool else np.nan,
+                         "nodes_available": pool, "total_nodes_ceiling": q.get("maxTotalNodes")})
+    return pd.DataFrame(rows)
 
 
 def _why_cannot_start(r: pd.Series, cfg: dict) -> str:

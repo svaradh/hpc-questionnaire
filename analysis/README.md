@@ -63,6 +63,13 @@ also be used for other questions.
   each queue's `maxConcurrentJobs`, shared by a group's entries in that queue, and each cluster's `groupLimits` where
   set. `ha.cannot_start` lists the entries that cannot start, with the limit they are beyond, the checkpoint/restart
   answer and the scaling class.
+- **Queue by queue** (`ha.queue_breakdown`, `ha.queue_tradeoff`): only the high-memory and GPU queues have their own
+  nodes; the other queues share each cluster's compute pool, so a queue is shaped by its limits, per group and for all
+  groups together (`maxTotalNodes`, `maxTotalJobs`). Per queue: entries and groups placed there (by the heaviest job),
+  nodes busy on average (node-equivalents) against the nodes it can use, groups the group limit binds for, and the
+  reported concurrency, problems and waits. The trade-off view shows, for the present limit and the limits that would
+  serve 50 / 75 / 100 % of the groups there, the work that could run and the nodes it would take, on average and if every
+  group used its full limit at once.
 - **Storage:** home and scratch capacities come from each cluster's usable storage and the committee's
   `scratchFraction`. Scratch demand is reported as a sum of peaks (worst case) and as a time-averaged load.
 - **"Don't know" is never zero.** Workloads with unknown inputs are left out of totals, and their count is printed.

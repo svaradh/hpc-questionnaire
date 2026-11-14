@@ -443,6 +443,86 @@ def _limits_note(cfg: dict) -> str:
             f"Fair-share in use: {fair}. Other groups' jobs are not counted here; that is what capacity is for.")
 
 
+def _qname(name: str) -> str:
+    cid, qid = name.split(".", 1)
+    return f"{CLUSTER_NAMES.get(cid, cid)} · {qid}"
+
+
+def _ceiling(x) -> str:
+    return "none set" if _isnan(x) else n(x)
+
+
+def _queue_sections(d: Doc, ctx: dict):
+    dfs, cfg, wl = ctx["dfs"], ctx["cfg"], ctx["wl"]
+    qb = ha.queue_breakdown(dfs, wl, cfg)
+    if qb.empty:
+        return
+    d.h3("3.3 Queue by queue")
+    d.p("Only the high-memory and GPU queues have nodes of their own. All other queues draw on one shared pool of "
+        "compute nodes per cluster, allocated as jobs start. What shapes a queue is therefore its limits: on each group's "
+        "running jobs, and on what all groups together may run in it (total nodes, total jobs). Each entry is placed in "
+        "the shortest queue its heaviest job fits.")
+    qb = qb.copy()
+    qb["queue_name"] = qb["queue"].map(_qname)
+    qb["shape"] = [f"{s} node{'s' if s != '1' else ''}, {hours(w)}" for s, w in zip(qb["nodes_per_job"], qb["walltime_limit_h"])]
+    qb["ceilings"] = ["none set" if _isnan(a) and _isnan(b) else f"{_ceiling(a)} nodes / {_ceiling(b)} jobs"
+                      for a, b in zip(qb["total_nodes_ceiling"], qb["total_jobs_ceiling"])]
+    qb["nodes"] = [f"{x:,.1f} of {p} ({pct(sh)})" + ("" if shared else ", own nodes")
+                   for x, p, sh, shared in zip(qb["avg_nodes_busy"], qb["nodes_available"], qb["share_of_nodes"], qb["shared_pool"])]
+    qb["limited"] = [f"{a} of {b}" for a, b in zip(qb["groups_limited"], qb["groups"])]
+    d.table(qb, {"queue_name": "Queue", "shape": "Allows per job", "group_job_limit": "Jobs at once per group",
+                 "ceilings": "Ceiling, all groups", "entries": "Entries", "nodes": "Nodes busy on average, of the nodes it can use",
+                 "limited": "Groups the group limit binds for", "runnable_share": "Work the limits let run"},
+            caption="Derived from the entries: demand and limits", formats={"runnable_share": pct})
+    d.basis("Nodes busy on average = node-hours a year ÷ available hours, counting node-equivalents (cores ÷ cores per node) "
+            "since small jobs share a node, if all the desired work placed in the queue ran. Shared-pool queues are compared "
+            "with the whole pool, since any of them may use any compute node. Placement follows each entry's heaviest job, "
+            "so lighter jobs that would use a shorter queue are counted in the longer one.")
+    qb["conc"] = [f"{a} of {b}" if b else "–" for a, b in zip(qb["groups_want_more_at_once"], qb["groups_gave_concurrency"])]
+    qb["problems"] = qb["problems"].replace("", "–")
+    qb["f"] = [f"{g}: {hours(w)}, {ratio(e)}" if g else "–"
+               for g, w, e in zip(qb["f_groups"], qb["median_typical_wait_h"], qb["median_expansion_factor"])]
+    d.table(qb, {"queue_name": "Queue", "conc": "Groups wanting more jobs at once than allowed",
+                 "problems": "Problems linked to entries here (groups)",
+                 "f": "Groups reporting waits here: middle typical wait, expansion factor"},
+            caption="Reported by the groups")
+    d.basis("“Jobs at the same time” is optional: the count is of the groups that gave it. Problems are those each entry "
+            "was linked to in Section C. Waits come from Section F, asked only after queue-wait or capacity problems, "
+            "for the queue the group named.")
+    pools = qb.attrs.get("pools", pd.DataFrame())
+    if not pools.empty:
+        us = pm.param(cfg, "schedulableUtilisation")
+        d.ul([f"{CLUSTER_NAMES[r['cluster']]} shared compute pool: {r['avg_nodes_busy']:,.1f} of {r['compute_nodes']} nodes busy on "
+              f"average ({pct(r['share_of_nodes'])}) if all the desired work that fits its queues ran; the usable share of "
+              f"available time is {pct(us)}." for _, r in pools.iterrows()])
+
+    to = ha.queue_tradeoff(wl, cfg)
+    if to.empty:
+        return
+    d.h3("3.4 What different group limits would give and cost")
+    d.p("For each queue: the present limit on a group's running jobs, and the limits that would let half, three "
+        "quarters or all of the groups placed there finish a year's work. For each, how much of the work could run, "
+        "and what it would take from the nodes: on average, and at worst, if every group used its full limit at once. "
+        "A queue's ceiling on total nodes is what would absorb that worst case. Seen across queues, this shows which "
+        "services are under pressure and which have room to spare; it does not recommend a limit.")
+    to = to.copy()
+    to["queue_name"] = to["queue"].map(_qname)
+    to["served"] = [f"{a} of {b}" for a, b in zip(to["groups_served"], to["groups"])]
+    to["busy"] = [f"{x:,.1f} ({pct(sh)})" for x, sh in zip(to["avg_nodes_busy"], to["avg_share_of_nodes"])]
+    to["worst"] = [f"{x:,.1f} ({pct(sh)})" for x, sh in zip(to["nodes_if_all_at_limit"], to["worst_share_of_nodes"])]
+    to["limit"] = to["limit"].str.replace(" = ", "; ")
+    d.table(to, {"queue_name": "Queue", "limit": "Limit", "group_job_limit": "Jobs at once per group",
+                 "served": "Groups served fully", "work_runnable_share": "Work that could run",
+                 "busy": "Nodes busy on average (share of its nodes)",
+                 "worst": "Nodes if every group used its full limit (share)"},
+            formats={"group_job_limit": n, "work_runnable_share": pct})
+    d.basis("A group's need = the jobs it must keep running on average to finish a year's desired work in the queue "
+            "(job-hours a year ÷ available hours, rounded up). Averages hide bursts: a group that needs many jobs at once "
+            "for a short time needs more, which the reported “jobs at the same time” in 3.3 partly shows. Little reported "
+            "demand in a queue is not by itself evidence of little need: groups that did not respond, or that past limits "
+            "kept away, are not counted. Accounting records per queue would confirm these figures.")
+
+
 def chapter_queues(d: Doc, ctx: dict):
     dfs, cfg, wl = ctx["dfs"], ctx["cfg"], ctx["wl"]
     d.h2("3. Queue design and turnaround", "queues")
@@ -507,14 +587,17 @@ def chapter_queues(d: Doc, ctx: dict):
                 "the last columns give what was reported, so the committee can see which applies. "
                 "No entry or group is named; the convener's notebook (05) lists them.")
 
+    _queue_sections(d, ctx)
+
     _pending_body(d, ctx, "queues", "The rest of this chapter is not yet written. It will contain:",
-                  ["The same tables under candidate queue tables the committee drafts.",
+                  ["The same tables under candidate queue tables the committee drafts (limits per group, and ceilings "
+                   "on total nodes and jobs per queue).",
                    "Long jobs by checkpoint/restart and by how they scale: whether they could run in parts, or wider, "
                    "instead of longer.",
                    "Debug and interactive use against the debug queues.",
                    "How usage is spread across groups, for fair-share design."],
                   ["Candidate queue tables from the committee (entered in the parameter form, notebook 07).",
-                   "The convener's answers to the hardware check on group limits (running jobs, nodes, across queues).",
+                   "The convener's answers to the hardware check on group limits and queue ceilings.",
                    "Cluster accounting (Slurm) for actual waits and usage per group: the survey can show fit, but not predict waits."])
 
     d.box("limits", "What these data cannot show.",

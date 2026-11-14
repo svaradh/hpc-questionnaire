@@ -1,6 +1,6 @@
 {
   "_comment": "Evaluation parameters the committee sets at the analysis stage (not seen by respondents). The form in notebook 07 is generated from this file: add, remove or reword a parameter here, not in code. null default = not yet decided; analyses that need such a value say so instead of guessing. Form trigger thresholds stay in src/config/clusters.json, since they decide which questions respondents see.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "groups": [
     {
       "id": "capacity",
@@ -54,11 +54,13 @@
             { "id": "minNodes", "type": "number" },
             { "id": "maxNodes", "type": "number" },
             { "id": "walltimeHours", "type": "number" },
-            { "id": "maxConcurrentJobs", "type": "number" },
-            { "id": "nodeType", "type": "text", "help": "blank for compute nodes; highmem or gpu" }
+            { "id": "maxConcurrentJobs", "type": "number", "help": "jobs one group may have running at once in this queue" },
+            { "id": "nodeType", "type": "text", "help": "blank for compute nodes; highmem or gpu" },
+            { "id": "maxTotalNodes", "type": "number", "help": "nodes all groups together may use in this queue; blank = no ceiling" },
+            { "id": "maxTotalJobs", "type": "number", "help": "jobs all groups together may run in this queue; blank = no ceiling" }
           ],
           "default": null,
-          "help": "One queue per line, values separated by commas, in the column order shown. Leave empty to compare against the present queues only.",
+          "help": "One queue per line, values separated by commas, in the column order shown. Compute queues share one pool of nodes, so the two ceilings at the end (all groups together) and the per-group job limit are what a queue design sets. Leave empty to compare against the present queues only.",
           "chapters": ["queues"]
         }
       ]
