@@ -58,6 +58,12 @@
     the nodes taken, on average and in the worst case.
   - Report 3.3–3.4 and notebook 05. The hardware check asks yes/no whether queues are bound to nodes, and each queue's
     ceilings.
+- **Engine run on the real v3 entry (locally, data kept outside the repository).** It found that node counts reported
+  from other systems were applied to Gargi and Raman; `job_on` now works out the nodes on each cluster from the cores
+  (522a3d2). All notebooks and the report pass on the real entry and on the synthetic data.
+- **Still to do before release:**
+  - The Colab run of notebook 07 on the sheet (tests the sign-in path). Delete the trial `Scenarios` row afterwards.
+  - The answers to confirm in the test entry (GPAW chain 3 × 24 h < 96 h; 0 users in 3 years; QE 256 vs 280 cores).
 - **Next:** send the hardware check to the convener and enter the answers in `clusters.json` (`groupLimits`, GPU
   count, downtime for availability). Then continue chapter 3 with the candidate queue tables.
 
