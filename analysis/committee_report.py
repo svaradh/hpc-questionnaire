@@ -274,7 +274,7 @@ def chapter_about(d: Doc, ctx: dict):
     span = f"{dates.min():%d %b %Y} to {dates.max():%d %b %Y}" if dates.notna().any() else "–"
     src = pd.DataFrame([
         {"source": "Reported: questionnaire responses",
-         "status": f"{cov['groups']} groups, {cov['workloads']} job entries; submitted {span}; form version {versions}"},
+         "status": f"{plural(cov['groups'], 'group')}, {plural(cov['workloads'], 'job entry', 'job entries')}; submitted {span}; form version {versions}"},
         {"source": "Recorded: cluster accounting (Slurm)",
          "status": "Not yet available" if ctx.get("records") is None else "Included"},
     ])
@@ -289,10 +289,10 @@ def chapter_about(d: Doc, ctx: dict):
     su = ha.systems_used(dfs)
     d.table(su, {"system": "Systems run on in the last 3 years", "groups": "Groups", "share_of_groups": "Share of groups"},
             formats={"share_of_groups": pct})
-    d.basis(f"{cov['groups']} groups. A group may name several systems.")
+    d.basis(f"{plural(cov['groups'], 'group')}. A group may name several systems.")
     es = ha.evidence_sources(ctx["wl"])
     d.table(es, {"source_label": "Where an entry's numbers come from", "entries": "Entries", "groups": "Groups"})
-    d.basis(f"{cov['workloads']} job entries from {cov['groups_with_workloads']} groups. "
+    d.basis(f"{plural(cov['workloads'], 'job entry', 'job entries')} from {plural(cov['groups_with_workloads'], 'group')}. "
             "Lack of usage on the present clusters is not, by itself, evidence of lack of need: "
             "numbers from other systems, benchmarks and estimates are all valid sources.")
 
@@ -310,7 +310,7 @@ def chapter_patterns(d: Doc, ctx: dict):
                  "median_cores": "Middle job size (cores, CPU)", "median_walltime_h": "Middle wall time",
                  "cpu_h_used": "CPU core-hours, last 12 months", "share_of_cpu_h": "Share of core-hours"},
             formats={"median_cores": n, "median_walltime_h": hours, "cpu_h_used": mh, "share_of_cpu_h": pct})
-    d.basis(f"{cov['workloads']} entries. An entry can follow several patterns and is then counted under each, "
+    d.basis(f"{plural(cov['workloads'], 'entry', 'entries')}. An entry can follow several patterns and is then counted under each, "
             "so shares can add up to more than 100 %. “Middle” is the median. Core-hours count any system "
             "and use the heaviest job of each entry.")
 
@@ -323,7 +323,7 @@ def chapter_patterns(d: Doc, ctx: dict):
     s = ha.size_walltime_table(wl, "share")
     d.table(s, {"size_band": "Cores per job", **{c: c for c in s.columns}},
             caption="Share of reported CPU core-hours (last 12 months)", formats={c: pct for c in s.columns}, index=True)
-    d.basis(f"{int((wl['device'] != 'gpu').sum())} CPU entries; GPU entries are in Chapter 5.")
+    d.basis(f"{plural(int((wl['device'] != 'gpu').sum()), 'CPU entry', 'CPU entries')}; GPU entries are in Chapter 5.")
 
     d.h3("2.3 Problems reported")
     pr = ha.problems(dfs)
@@ -334,7 +334,7 @@ def chapter_patterns(d: Doc, ctx: dict):
         d.table(pr, {"label": "Problem", "groups": "Groups (any system)", "on_gargi": "On Gargi", "on_raman": "On Raman",
                      "elsewhere_only": "Elsewhere only"}, formats={"elsewhere_only": n})
     other = ha.problems(dfs).set_index("problem")["groups"]
-    d.basis(f"{cov['groups']} groups. Also reported: no problems observed ({int(other.get('no_problems_observed', 0))}), "
+    d.basis(f"{plural(cov['groups'], 'group')}. Also reported: no problems observed ({int(other.get('no_problems_observed', 0))}), "
             f"no HPC experience yet ({int(other.get('no_hpc_experience', 0))}), don't know ({int(other.get('dont_know', 0))}). "
             "Gargi and Raman are asked about separately because their queue policies differ.")
     ce = ha.cluster_engagement(dfs)
@@ -477,7 +477,8 @@ def _queue_sections(d: Doc, ctx: dict):
     d.basis("Nodes busy on average = node-hours a year ÷ available hours, counting node-equivalents (cores ÷ cores per node) "
             "since small jobs share a node, if all the desired work placed in the queue ran. Shared-pool queues are compared "
             "with the whole pool, since any of them may use any compute node. Placement follows each entry's heaviest job, "
-            "so lighter jobs that would use a shorter queue are counted in the longer one.")
+            "so lighter jobs that would use a shorter queue are counted in the longer one. An entry that could run on either "
+            "cluster is placed in the shortest queue that takes it on either, with the nodes it would need there.")
     qb["conc"] = [f"{a} of {b}" if b else "–" for a, b in zip(qb["groups_want_more_at_once"], qb["groups_gave_concurrency"])]
     qb["problems"] = qb["problems"].replace("", "–")
     qb["f"] = [f"{g}: {hours(w)}, {ratio(e)}" if g else "–"
@@ -545,7 +546,7 @@ def chapter_queues(d: Doc, ctx: dict):
     d.table(show, cols, caption="CPU core-hours per year", formats={"capacity": mh})
     d.ul([_service_sentence(r) for _, r in sb.iterrows()])
     a = sb.attrs
-    d.basis(f"{a['entries']} CPU entries from {a['groups']} groups; {plural(a['entries_unknown'], 'entry', 'entries')} left out "
+    d.basis(f"{plural(a['entries'], 'CPU entry', 'CPU entries')} from {plural(a['groups'], 'group')}; {plural(a['entries_unknown'], 'entry', 'entries')} left out "
             f"for unknown inputs; {plural(a['entries_cannot_start'], 'entry', 'entries')} cannot start; "
             f"{plural(a['entries_limited'], 'entry', 'entries')} limited by a group limit. " + _limits_note(cfg) + " " + EITHER_NOTE)
     gb = ha.service_balance(wl, cfg, "gpu")
@@ -554,7 +555,7 @@ def chapter_queues(d: Doc, ctx: dict):
         gs["cluster"] = gs["cluster"].map(CLUSTER_NAMES)
         gs = gs[gs["cluster"] != "Gargi"] if not (gb.set_index("cluster").loc["gargi", "desired_high"] > 0) else gs
         d.table(gs, cols, caption="GPU-hours per year", formats={"capacity": lambda x: "not yet set" if _isnan(x) else n(x)})
-        d.basis(f"{gb.attrs['entries']} GPU entries; GPU work is counted on Raman, the only cluster with GPUs.")
+        d.basis(f"{plural(gb.attrs['entries'], 'GPU entry', 'GPU entries')}; GPU work is counted on Raman, the only cluster with GPUs.")
 
     d.h3("3.2 Work that cannot start under the present queues")
     cs = ha.cannot_start_summary(wl, cfg)
@@ -572,19 +573,25 @@ def chapter_queues(d: Doc, ctx: dict):
               "not a judgement on the work.")
         cl = ha.cannot_start(wl, cfg).copy()
         cpu = cl["device"] != "gpu"
-        cl["job"] = [f"{x:g} node{'s' if x != 1 else ''}, " + (f"{g:g} GPU{'s' if g != 1 else ''}" if dv == "gpu" else f"{c:,.0f} cores")
-                     + f", {hours(w)}" + ("" if _isnan(m) else f", {m:,.0f} GB/node")
-                     for x, c, g, w, m, dv in zip(cl["nodes_est"], cl["cores"], cl["gpus"], cl["walltime_h"], cl["mem_node_gb"], cl["device"])]
+        def _job(r):
+            if r["device"] == "gpu":
+                size = f"{r['nodes_est']:g} node{'s' if r['nodes_est'] != 1 else ''}, {r['gpus']:g} GPU{'s' if r['gpus'] != 1 else ''}"
+            else:
+                on = [f"{CLUSTER_NAMES[c]} {r[f'nodes_{c}']:g}" for c in ha.candidate_clusters(r["cluster"], "cpu")]
+                size = f"{r['cores']:,.0f} cores (nodes: {', '.join(on)})"
+            return size + f", {hours(r['walltime_h'])}"
+        cl["job"] = cl.apply(_job, axis=1)
         cl["cluster"] = cl["cluster"].map(lambda c: CLUSTER_NAMES.get(c, "Either"))
         cl["scaling"] = cl["scaling_class"].map({"high": "scales well", "low": "scales little", "unknown": "not known"})
         cl["demand"] = [f"{mh(v)} core-h" if dv != "gpu" else f"{n(v)} GPU-h" for v, dv in zip(cl["demand_h"], cl["device"])]
         d.table(cl, {"cluster": "Cluster named", "job": "Heaviest job, as described", "reason": "Beyond which present limit",
                      "checkpoint_answer": "Checkpoint/restart reported", "scaling": "Scaling reported", "demand": "Desired per year"})
         by = ", ".join(f"{v} {k}" for k, v in cs["by_checkpoint"].items())
-        d.basis(f"{cs['entries_known']} entries with known job size and wall time, from {cs['groups_known']} groups. "
+        d.basis(f"{plural(cs['entries_known'], 'entry', 'entries')} with known job size and wall time, from {plural(cs['groups_known'], 'group')}. "
                 f"Checkpoint/restart answers: {by}. A job that cannot start as described may still run in parts if it can "
                 "restart from checkpoints, at the cost of a queue wait between parts, or on fewer nodes if it scales; "
                 "the last columns give what was reported, so the committee can see which applies. "
+                "Nodes are worked out for each cluster from the cores, since numbers from another system describe its nodes. "
                 "No entry or group is named; the convener's notebook (05) lists them.")
 
     _queue_sections(d, ctx)
@@ -639,7 +646,7 @@ def chapter_expansion(d: Doc, ctx: dict):
          + [_capacity_sentence(r["cluster"], r["desired_low"], r["desired_high"], r["capacity"], "desired,")
             for _, r in co[co["cluster"].isin(ha.CLUSTERS)].iterrows()])
     a = co.attrs
-    d.basis(f"{a['entries']} CPU entries from {a['groups']} groups; {plural(a['entries_unknown'], 'entry', 'entries')} left out for unknown "
+    d.basis(f"{plural(a['entries'], 'CPU entry', 'CPU entries')} from {plural(a['groups'], 'group')}; {plural(a['entries_unknown'], 'entry', 'entries')} left out for unknown "
             f"inputs. <em>Used, IISER share</em> scales each group's figures by the share of its computing done on IISER "
             f"Bhopal clusters ({plural(a['groups_share_unknown'], 'group')} did not give it and {'is' if a['groups_share_unknown'] == 1 else 'are'} not scaled). "
             f"<em>Desired</em> is what groups would run if wall time, queue wait and capacity did not limit them. "
@@ -651,9 +658,9 @@ def chapter_expansion(d: Doc, ctx: dict):
     wn = ha.work_not_run(dfs)
     d.h3("5.2 People and unmet work")
     d.ul([f"Group members submitting HPC jobs: {n(po['now'])} now, {n(po['in_3y'])} expected in 3 years "
-          f"({po['groups']} groups gave both figures).",
+          f"({plural(po['groups'], 'group')} gave both figures).",
           f"Planned calculations not run in the last 12 months because of queue wait or capacity: "
-          f"{wn['groups']} groups gave a share; the middle answer is {n(wn['median_pct'])} %, "
+          f"{plural(wn['groups'], 'group')} gave a share; the middle answer is {n(wn['median_pct'])} %, "
           f"and {wn['groups_over_25pct']} groups put it above 25 %." if wn["groups"] else
           "No group gave a share of planned calculations not run (asked only after queue-wait or capacity problems)."])
 
@@ -761,7 +768,7 @@ def build(dfs: dict, cfg: dict, records=None) -> str:
     ctx = {"dfs": dfs, "cfg": cfg, "wl": wl, "cov": ha.coverage(dfs), "records": records}
     d = Doc()
     d.add(f"<h1>{esc(TITLE)}</h1><p class='subtitle'>HPC Users' Committee · generated {dt.date.today():%d %B %Y} · "
-          f"{ctx['cov']['groups']} groups responded · scenario “{esc(cfg['scenario']['name'])}”</p>")
+          f"{plural(ctx['cov']['groups'], 'group')} responded · scenario “{esc(cfg['scenario']['name'])}”</p>")
     d.add("<nav><strong>Contents</strong><ol>"
           "<li><a href='#about'>About this report</a></li>"
           "<li><a href='#patterns'>Usage patterns and issues on the present clusters</a> (a)</li>"

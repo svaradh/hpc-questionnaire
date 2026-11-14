@@ -33,7 +33,7 @@ dfs = load_data(SPREADSHEET_ID)
 cfg = load_config(ref=REPO_REF)
 wl = ha.workloads(dfs, cfg)
 cov = ha.coverage(dfs)
-print(f"{cov['groups']} groups responded; {cov['workloads']} workloads described "
+print(f"Groups responded: {cov['groups']}; workloads described: {cov['workloads']} "
       f"({cov['groups_with_workloads']} groups with at least one).")'''
 
 

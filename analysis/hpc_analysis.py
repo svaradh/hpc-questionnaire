@@ -292,24 +292,50 @@ def candidate_clusters(cluster_raw: str, device: str) -> list[str]:
     return list(CLUSTERS)
 
 
-def fit_queue(cfg: dict, cluster_raw: str, device: str, nodes: float, walltime_h: float, mem_gb: float | None) -> dict | None:
-    """The shortest-wall-time queue the job fits in (nodes and wall time), or None."""
-    if pd.isna(nodes) or pd.isna(walltime_h):
+def job_on(cfg: dict, cid: str, r) -> tuple[float, float]:
+    """
+    (nodes, peak memory per node) the job would use on cluster `cid`.
+    The reported node count belongs to the system the numbers come from (W_source), whose nodes may be of another
+    size. So for CPU jobs the nodes on `cid` are cores / its cores per node (rounded up), and memory per node is
+    rescaled to keep memory per core: mem x reported nodes / nodes on cid. Where the numbers come from `cid` itself,
+    the reported nodes and memory are kept as they are. GPU jobs keep the reported nodes (GPUs per node not known).
+    """
+    nodes, cores, mem = r.get("nodes"), r.get("cores"), r.get("mem_node_gb")
+    if r.get("device") == "gpu" or pd.isna(cores) or (r.get("source") == cid and pd.notna(nodes)):
+        return (nodes if pd.notna(nodes) else (1.0 if r.get("device") == "gpu" else np.nan)), mem
+    n = float(math.ceil(cores / cores_per_node(cfg, cid)))
+    if pd.notna(mem) and pd.notna(nodes) and nodes > 0:
+        mem = mem * nodes / n
+    return n, mem
+
+
+def fit_queue(cfg: dict, r) -> dict | None:
+    """The shortest-wall-time queue the job fits in (nodes, memory and wall time on each candidate cluster), or None.
+    The queue dict carries the cluster and the job's nodes there ('job_nodes')."""
+    wt = r.get("walltime_h")
+    if pd.isna(wt):
         return None
     fits = []
-    for cid in candidate_clusters(cluster_raw, device):
-        for q in eligible_queues(cfg, cid, device, mem_gb, include_debug=walltime_h <= 0.5):
-            if q["minNodes"] <= nodes <= q["maxNodes"] and walltime_h <= q["walltimeHours"]:
-                fits.append(q)
+    for cid in candidate_clusters(r.get("cluster"), r.get("device")):
+        nodes, mem = job_on(cfg, cid, r)
+        if pd.isna(nodes):
+            continue
+        for q in eligible_queues(cfg, cid, r.get("device"), mem, include_debug=wt <= 0.5):
+            if q["minNodes"] <= nodes <= q["maxNodes"] and wt <= q["walltimeHours"]:
+                fits.append({**q, "job_nodes": nodes})
     return min(fits, key=lambda q: q["walltimeHours"]) if fits else None
 
 
-def walltime_limit(cfg: dict, cluster_raw: str, device: str, nodes: float, mem_gb: float | None) -> float | None:
-    """Longest wall time any queue allows for this node count (most generous candidate cluster).
-    Unknown node count -> the most generous limit of any job size."""
-    lims = [q["walltimeHours"] for cid in candidate_clusters(cluster_raw, device)
-            for q in eligible_queues(cfg, cid, device, mem_gb)
-            if pd.isna(nodes) or q["minNodes"] <= nodes <= q["maxNodes"]]
+def walltime_limit(cfg: dict, r, nodes_override: float | None = None) -> float | None:
+    """Longest wall time any queue allows for the job's size (most generous candidate cluster).
+    Unknown size -> the most generous limit of any job size. `nodes_override` fixes the node count."""
+    lims = []
+    for cid in candidate_clusters(r.get("cluster"), r.get("device")):
+        nodes, mem = job_on(cfg, cid, r)
+        if nodes_override is not None:
+            nodes = nodes_override
+        lims += [q["walltimeHours"] for q in eligible_queues(cfg, cid, r.get("device"), mem)
+                 if pd.isna(nodes) or q["minNodes"] <= nodes <= q["maxNodes"]]
     return max(lims) if lims else None
 
 
@@ -387,15 +413,12 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
     w["org"] = split_semicolons(_col(w, "organisation"))
     w["entry"] = [entry_name(c, k) for c, k in zip(_col(w, "code"), _col(w, "job_kind"))]
 
-    # Nodes: given, else estimated from cores and the cluster's node size
-    def _nodes(r):
-        if pd.notna(r["nodes"]):
-            return r["nodes"]
-        if pd.isna(r["cores"]):
-            return np.nan
-        cid = candidate_clusters(r["cluster"], r["device"])[0]
-        return math.ceil(r["cores"] / cores_per_node(cfg, cid, "gpu" if r["device"] == "gpu" else "compute"))
-    w["nodes_est"] = w.apply(_nodes, axis=1)
+    w["source"] = _col(w, "source")
+    # Nodes on each cluster (job_on): reported nodes belong to the system the numbers come from
+    for cid in CLUSTERS:
+        w[f"nodes_{cid}"] = w.apply(lambda r: job_on(cfg, cid, r)[0], axis=1)
+    # nodes_est: on the first cluster the entry could run on; replaced below by the cluster of the queue it fits
+    w["nodes_est"] = w.apply(lambda r: job_on(cfg, candidate_clusters(r["cluster"], r["device"])[0], r)[0], axis=1)
 
     # Hours per job (upper bound): the heaviest job's wall time, or for a sequence its mean running time per job
     is_seq = w["org"].apply(lambda o: "chain" in o or "long_calc" in o)
@@ -459,7 +482,7 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
     # A split calculation would need its whole running time in one job; a chain's steps can still run separately
     w["long_total_h"] = w["seq_run_h"].where(w["org"].apply(lambda o: "long_calc" in o))
     w["time_needed_h"] = w[["walltime_h", "long_total_h", "longest_run_h"]].max(axis=1)
-    w["walltime_limit_h"] = w.apply(lambda r: walltime_limit(cfg, r["cluster"], r["device"], r["nodes_est"], r["mem_node_gb"]), axis=1)
+    w["walltime_limit_h"] = w.apply(lambda r: walltime_limit(cfg, r), axis=1)
     over = w["time_needed_h"] > w["walltime_limit_h"].astype(float)
     w["long_job"] = over.fillna(False) | w["org"].apply(lambda o: "long_calc" in o) | w["longest_run_h"].notna()
 
@@ -475,11 +498,15 @@ def workloads(dfs: dict, cfg: dict) -> pd.DataFrame:
     # Queue fit and throughput under the group concurrency limits (limits apply per group, not per user)
     def _fit(r):
         if pd.isna(r["nodes_est"]) or pd.isna(r["walltime_h"]):
-            return pd.Series({"queue": "unknown (job size or wall time not given)", "queue_max_concurrent": np.nan})
-        q = fit_queue(cfg, r["cluster"], r["device"], r["nodes_est"], r["walltime_h"], r["mem_node_gb"])
+            return pd.Series({"queue": "unknown (job size or wall time not given)", "queue_max_concurrent": np.nan,
+                              "nodes_est": r["nodes_est"]})
+        q = fit_queue(cfg, r)
         return pd.Series({"queue": f"{q['cluster']}.{q['id']}" if q else "none fits",
-                          "queue_max_concurrent": q["maxConcurrentJobs"] if q else np.nan})
-    w = pd.concat([w, w.apply(_fit, axis=1)], axis=1)
+                          "queue_max_concurrent": q["maxConcurrentJobs"] if q else np.nan,
+                          "nodes_est": q["job_nodes"] if q else r["nodes_est"]})
+    fit = w.apply(_fit, axis=1)
+    w["nodes_est"] = fit.pop("nodes_est")
+    w = pd.concat([w, fit], axis=1)
     w["years_to_finish"] = (jobs_des * w["hours_per_job"]) / (w["queue_max_concurrent"] * HOURS_PER_YEAR)
 
     # Policy comparison for CPU jobs: largest job allowed vs wanted
@@ -852,30 +879,39 @@ def queue_tradeoff(wl: pd.DataFrame, cfg: dict, levels=(0.5, 0.75, 1.0)) -> pd.D
     return pd.DataFrame(rows)
 
 
-def _why_cannot_start(r: pd.Series, cfg: dict) -> str:
-    """Which present limit the heaviest job, as described, is beyond."""
+def _why_not_on(r: pd.Series, cfg: dict, cid: str) -> str:
+    """Which present limit on cluster `cid` the heaviest job, as described, is beyond."""
     dev = "gpu" if r["device"] == "gpu" else "cpu"
-    mem = r["mem_node_gb"]
-    cands = candidate_clusters(r["cluster"], dev)
-    qs = [q for cid in cands for q in eligible_queues(cfg, cid, dev, mem)]
+    nodes, mem = job_on(cfg, cid, r)
+    qs = eligible_queues(cfg, cid, dev, mem)
     if not qs:
-        biggest = max(n["memoryGB"] for cid in cands for n in cluster(cfg, cid)["nodeTypes"])
+        biggest = max(n["memoryGB"] for n in cluster(cfg, cid)["nodeTypes"])
         if dev == "cpu" and pd.notna(mem) and mem > biggest:
             return f"memory per node ({mem:,.0f} GB) above the largest node ({biggest:,.0f} GB)"
-        return "no present queue for this kind of node"
+        return "no queue for this kind of node"
+    wt = r["walltime_h"]
     reasons = []
-    nodes, wt = r["nodes_est"], r["walltime_h"]
     max_nodes = max(q["maxNodes"] for q in qs)
     if nodes > max_nodes:
         reasons.append(f"{nodes:g} nodes; the queues allow at most {max_nodes:g}")
     at_size = [q["walltimeHours"] for q in qs if q["minNodes"] <= nodes <= q["maxNodes"]]
     if at_size and wt > max(at_size):
         reasons.append(f"wall time {wt:,.0f} h; at {nodes:g} node{'s' if nodes != 1 else ''} the longest queue allows {max(at_size):g} h")
+    elif not at_size and nodes <= max_nodes:
+        reasons.append(f"no queue takes {nodes:g} nodes")
     elif not at_size and wt > max(q["walltimeHours"] for q in qs):
         reasons.append(f"wall time {wt:,.0f} h; the longest queue allows {max(q['walltimeHours'] for q in qs):g} h")
-    if not reasons and dev == "cpu" and pd.notna(mem) and mem > standard_memory_gb(cfg, cands[0]):
-        reasons.append("needs a high-memory node, and no high-memory queue allows this size or wall time")
+    if not reasons and dev == "cpu" and pd.notna(mem) and mem > standard_memory_gb(cfg, cid):
+        reasons.append(f"{mem:,.0f} GB per node needs a high-memory node, and no high-memory queue allows this size or wall time")
     return "; ".join(reasons) or "no queue allows this combination of nodes and wall time"
+
+
+def _why_cannot_start(r: pd.Series, cfg: dict) -> str:
+    """The limit the job is beyond on each cluster it could run on (named per cluster when there are several)."""
+    cands = candidate_clusters(r["cluster"], "gpu" if r["device"] == "gpu" else "cpu")
+    if len(cands) == 1:
+        return _why_not_on(r, cfg, cands[0])
+    return "; ".join(f"{cluster(cfg, cid)['name']}: {_why_not_on(r, cfg, cid)}" for cid in cands)
 
 
 def cannot_start(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
@@ -892,7 +928,7 @@ def cannot_start(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         return t.assign(reason=pd.Series(dtype=str))
     t["reason"] = t.apply(lambda r: _why_cannot_start(r, cfg), axis=1)
     t["checkpoint_answer"] = t["checkpoint"].map(lambda c: CHECKPOINT_LABELS.get(c, c))
-    cols = ["submission_id", "pi_name", "entry", "cluster", "device", "nodes_est", "cores", "gpus", "walltime_h",
+    cols = ["submission_id", "pi_name", "entry", "cluster", "source", "device", "nodes_est"] + [f"nodes_{c}" for c in CLUSTERS] + ["cores", "gpus", "walltime_h",
             "mem_node_gb", "reason", "checkpoint_answer", "scaling_class", "demand_h"]
     return t[[c for c in cols if c in t]].sort_values("demand_h", ascending=False)
 
@@ -1100,7 +1136,7 @@ def high_scalers(wl: pd.DataFrame, cfg: dict) -> pd.DataFrame:
         return r["walltime_h"] * r["doubling_ratio"] ** math.log2(cores / r["cores"])
     h["walltime_at_policy_max_h"] = h.apply(lambda r: _t_at(r, r["policy_max_cores"]), axis=1)
     h["walltime_at_wanted_h"] = h.apply(lambda r: _t_at(r, r["wanted_cores"]), axis=1)
-    h["multi_node_limit_h"] = h.apply(lambda r: walltime_limit(cfg, r["cluster"], "cpu", 2, r["mem_node_gb"]), axis=1)
+    h["multi_node_limit_h"] = h.apply(lambda r: walltime_limit(cfg, r, nodes_override=2), axis=1)
     h["held_back_by_job_size"] = known(h["wanted_cores"] > h["policy_max_cores"], h["wanted_cores"])
     h["group_concurrent_core_ceiling"] = h["cluster"].map(
         lambda c: max(max_concurrent_cores(cfg, cid) for cid in candidate_clusters(c, "cpu")))
