@@ -35,6 +35,17 @@
   "HPC Questionnaire Response v3", reports folder "HPC Committee Reports/v3". The v1 Apps Script project and the
   Google Cloud sign-in project are kept.
 
+## Where we left off (2026-11-15)
+
+- **Colab run of notebook 07 passed** on "HPC Questionnaire Response v3" (one real entry, two codes): sign-in,
+  loading the sheet, saving a scenario to `Scenarios` and building the report all work. The report has every chapter,
+  no errors and no identifiers. Delete the trial row `trial-2026-11-15` from `Scenarios` if not done yet.
+- **Run Colab from a Drive copy.** A notebook opened from GitHub saves *back to GitHub* on Command+S (after asking
+  for GitHub authorisation). That happened once (2098036, which put the sheet ID into the public repository;
+  undone in 2289898; the sheet is Restricted, so the ID in history gives no access). Open the notebook from GitHub,
+  then *File → Save a copy in Drive* at once, and work only in the copy (title starts with "Copy of").
+- `ha.num()` no longer uses `replace`, which silences the pandas FutureWarning seen in Colab.
+
 ## Where we left off (2026-11-14)
 
 - **Done today (analysis, synthetic data only; all notebooks pass).**
@@ -62,7 +73,6 @@
   from other systems were applied to Gargi and Raman; `job_on` now works out the nodes on each cluster from the cores
   (522a3d2). All notebooks and the report pass on the real entry and on the synthetic data.
 - **Still to do before release:**
-  - The Colab run of notebook 07 on the sheet (tests the sign-in path). Delete the trial `Scenarios` row afterwards.
   - The answers to confirm in the test entry (GPAW chain 3 × 24 h < 96 h; 0 users in 3 years; QE 256 vs 280 cores).
 - **Next:** send the hardware check to the convener and enter the answers in `clusters.json` (`groupLimits`, GPU
   count, downtime for availability). Then continue chapter 3 with the candidate queue tables.
