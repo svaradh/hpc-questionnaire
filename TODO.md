@@ -45,6 +45,9 @@
   undone in 2289898; the sheet is Restricted, so the ID in history gives no access). Open the notebook from GitHub,
   then *File → Save a copy in Drive* at once, and work only in the copy (title starts with "Copy of").
 - `ha.num()` no longer uses `replace`, which silences the pandas FutureWarning seen in Colab.
+- **Real entry corrected in the sheet** (as the respondent confirmed): GPAW chain running time 72 h (was 96), users in
+  3 years 3 (was 0), QE cores 256 (was 280). The derived columns were recomputed by hand with the SheetWriter
+  formulas (QE core-hours 98,304 / 294,912, peak cores 768; GPAW queue overhead 264 h).
 
 ## Where we left off (2026-11-14)
 
@@ -72,8 +75,6 @@
 - **Engine run on the real v3 entry (locally, data kept outside the repository).** It found that node counts reported
   from other systems were applied to Gargi and Raman; `job_on` now works out the nodes on each cluster from the cores
   (522a3d2). All notebooks and the report pass on the real entry and on the synthetic data.
-- **Still to do before release:**
-  - The answers to confirm in the test entry (GPAW chain 3 × 24 h < 96 h; 0 users in 3 years; QE 256 vs 280 cores).
 - **Next:** send the hardware check to the convener and enter the answers in `clusters.json` (`groupLimits`, GPU
   count, downtime for availability). Then continue chapter 3 with the candidate queue tables.
 
