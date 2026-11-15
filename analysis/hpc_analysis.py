@@ -115,7 +115,7 @@ NEUTRAL_DEFAULTS = {
 
 def num(s: pd.Series) -> pd.Series:
     """Numbers from a column; 'dont_know', blanks and text -> NaN."""
-    return pd.to_numeric(s.replace({"dont_know": np.nan, "": np.nan}), errors="coerce")
+    return pd.to_numeric(s, errors="coerce")
 
 
 def is_unknown(s: pd.Series) -> pd.Series:
