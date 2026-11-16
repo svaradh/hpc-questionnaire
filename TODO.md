@@ -1,5 +1,15 @@
 # TODO
 
+## Released (2026-11-16)
+
+- **v3 (schema 2.7.0) is live** at <https://svaradh.github.io/hpc-questionnaire/> (v3 backend). `progressive-disclosure-v2`
+  was fast-forwarded into `main`. `/v3-preview/` and `/v3-draft/` now redirect to the main address.
+- **v1 closed**: `SUBMISSION_DEADLINE` set in the v1 Apps Script project ("HPC Questionnaire Response").
+- Test rows cleared and the dry run done before release. The response sheet is private to the owner. **Share it with
+  the convener** before they need the responses.
+- From now on, redeploy with `npm run deploy` from `main`. It replaces the whole site; the two redirect pages live in `public/`, so
+  every build includes them. Don't use `deploy:preview` / `deploy:layout` any more (they would overwrite the redirects). The notebooks can use `REPO_REF = 'main'`.
+
 ## Status (2026-11-13)
 
 - **Branches.** `progressive-disclosure-v2` (pushed) carries v3 at schema 2.6.0, form and backend. Published at the
