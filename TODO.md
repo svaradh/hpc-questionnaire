@@ -9,6 +9,13 @@
   the convener** before they need the responses.
 - From now on, redeploy with `npm run deploy` from `main`. It replaces the whole site; the two redirect pages live in `public/`, so
   every build includes them. Don't use `deploy:preview` / `deploy:layout` any more (they would overwrite the redirects). The notebooks can use `REPO_REF = 'main'`.
+- **Work on `main` from now on.** `progressive-disclosure-v2` is kept but no longer needed.
+- **Next session: fix the analysis engine.** The user will bring more suggestions. Known open items: Generate Report
+  (no HPC Committee menu on the standalone v3 project); hardware-check values in `clusters.json` (group limits, queue
+  ceilings, Raman GPU count, `scratchOnlyOnFastPFS`, downtime); report chapter 3 candidate queue tables and chapters
+  (c, d) on charging.
+- **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
+  v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 
 ## Status (2026-11-13)
 
