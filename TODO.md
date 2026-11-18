@@ -10,8 +10,17 @@
 - From now on, redeploy with `npm run deploy` from `main`. It replaces the whole site; the two redirect pages live in `public/`, so
   every build includes them. Don't use `deploy:preview` / `deploy:layout` any more (they would overwrite the redirects). The notebooks can use `REPO_REF = 'main'`.
 - **Work on `main` from now on.** `progressive-disclosure-v2` is kept but no longer needed.
-- **Next session: fix the analysis engine.** The user will bring more suggestions. Known open items: Generate Report
-  (no HPC Committee menu on the standalone v3 project); hardware-check values in `clusters.json` (group limits, queue
+- **Backend fixes (2026-11-18), deployed and tested.** Only the submitter or the PI may edit a submission (anyone
+  signed in could overwrite one by its ID, and the duplicate message gave the ID away); sign-ins issued for other
+  apps are refused; one submission at a time (script lock); typed answers can no longer become formulas in the
+  sheet; edits no longer add blank `CommitteeAssessment` rows; a failed confirmation email no longer reports the
+  submission as failed; the follow-up email uses the group name (was the department). Pasted into the v3 project
+  (new version, same URL); submit, edit and Generate Report checked on the live form. Not yet checked: the
+  duplicate message from a second account. Redeploy the site (`npm run deploy`) for the form's own duplicate
+  message (the live form already shows the backend's).
+- **HPC Committee menu works** (2026-11-18): a script bound to the response sheet uses the v3 project as a library
+  (`apps-script/sheet-menu/`). Delete the test rows and the two test reports in "HPC Committee Reports/v3".
+- **Next session: fix the analysis engine.** The user will bring more suggestions. Known open items: hardware-check values in `clusters.json` (group limits, queue
   ceilings, Raman GPU count, `scratchOnlyOnFastPFS`, downtime); report chapter 3 candidate queue tables and chapters
   (c, d) on charging.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,

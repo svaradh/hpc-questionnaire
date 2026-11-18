@@ -163,12 +163,6 @@ export function FormShell({
       setEditingSubmissionId(result.submissionId)
       setSubmissionResult({ submissionId: result.submissionId, isEdit })
       onClearAll()
-    } else if (result.duplicate && result.existingSubmissionId) {
-      setSubmitError(
-        `A submission already exists for this PI (${String(answers['A_pi_email'] ?? '')}).` +
-        ` Existing submission ID: ${result.existingSubmissionId}.` +
-        ` If you want to update it, use the "Edit your response" option.`
-      )
     } else if (result.windowClosed) {
       setWindowOpen(false)
       setWindowDeadline(result.deadline ?? null)

@@ -9,9 +9,8 @@ export interface SubmitResult {
   success: boolean
   submissionId?: string
   error?: string
-  /** Set when the PI email already has a submission. */
+  /** Set when the PI email already has a submission (the message in `error` says how to edit it). */
   duplicate?: boolean
-  existingSubmissionId?: string
   /** Set when the submission window is closed. */
   windowClosed?: boolean
   deadline?: string | null

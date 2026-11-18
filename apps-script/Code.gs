@@ -15,6 +15,9 @@
 var SPREADSHEET_ID      = PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID');
 var COMMITTEE_FOLDER_ID = PropertiesService.getScriptProperties().getProperty('COMMITTEE_FOLDER_ID');
 var ALLOWED_DOMAIN      = 'iiserb.ac.in';
+// The form's Google sign-in client ID (public: it is in the form's page). Sign-ins issued
+// for any other app are refused. Must match VITE_GOOGLE_CLIENT_ID.
+var GOOGLE_CLIENT_ID    = '310271046836-gfpnna8k72orhppi4ip7p7tcp0p9061m.apps.googleusercontent.com';
 
 // ---------------------------------------------------------------------------
 // Submission window helpers
@@ -55,6 +58,39 @@ function findExistingSubmissionByPiEmail(piEmail) {
     }
   }
   return null;
+}
+
+/**
+ * Returns { submitterEmail, piEmail } of a submission (lower case), or null if
+ * there is no such submission.
+ */
+function findSubmission(submissionId) {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sheet = ss.getSheetByName('Submissions');
+  if (!sheet || sheet.getLastRow() < 2) return null;
+
+  var data = sheet.getDataRange().getValues();
+  var headers = data[0];
+  var idCol = headers.indexOf('submission_id');
+  var submitterCol = headers.indexOf('submitter_email');
+  var piEmailCol = headers.indexOf('pi_email');
+  if (idCol === -1) return null;
+
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][idCol]) === String(submissionId)) {
+      return {
+        submitterEmail: String(data[i][submitterCol] || '').toLowerCase(),
+        piEmail:        String(data[i][piEmailCol] || '').toLowerCase()
+      };
+    }
+  }
+  return null;
+}
+
+/** Only the person who submitted, or the PI named in the submission, may replace it. */
+function mayEdit(original, email) {
+  var e = String(email || '').toLowerCase();
+  return !!e && (e === original.submitterEmail || e === original.piEmail);
 }
 
 // ---------------------------------------------------------------------------
@@ -100,7 +136,7 @@ function deleteAllRowsForSubmission(submissionId) {
  * Returns:
  *   { success: true, submissionId: string }
  *   { success: false, error: string }
- *   { success: false, duplicate: true, existingSubmissionId: string }
+ *   { success: false, duplicate: true, error: string }
  *   { success: false, windowClosed: true, deadline: string|null }
  */
 function doPost(e) {
@@ -122,16 +158,17 @@ function doPost(e) {
     }
 
     // --- Verify Google ID token ---
+    var invalidCredential = { success: false, error: 'Invalid Google credential. Please sign in again and resubmit.' };
+    if (!credential) return jsonResponse(invalidCredential);
     var tokenResponse = UrlFetchApp.fetch(
-      'https://oauth2.googleapis.com/tokeninfo?id_token=' + credential,
+      'https://oauth2.googleapis.com/tokeninfo?id_token=' + encodeURIComponent(credential),
       { muteHttpExceptions: true }
     );
-    if (tokenResponse.getResponseCode() !== 200) {
-      return jsonResponse({ success: false, error: 'Invalid Google credential. Please sign in again and resubmit.' });
-    }
+    if (tokenResponse.getResponseCode() !== 200) return jsonResponse(invalidCredential);
 
     var tokenInfo = JSON.parse(tokenResponse.getContentText());
-    if (tokenInfo.hd !== ALLOWED_DOMAIN) {
+    if (tokenInfo.aud !== GOOGLE_CLIENT_ID) return jsonResponse(invalidCredential);
+    if (tokenInfo.hd !== ALLOWED_DOMAIN || String(tokenInfo.email_verified) !== 'true') {
       return jsonResponse({
         success: false,
         error: 'Access restricted to @' + ALLOWED_DOMAIN + ' accounts.'
@@ -142,36 +179,65 @@ function doPost(e) {
     var submitterName  = tokenInfo.name || submitterEmail;
     var piEmail        = answers['A_pi_email'] || '';
 
-    // --- Duplicate check ---
-    var existingId = findExistingSubmissionByPiEmail(piEmail);
-
-    if (existingId && existingId !== editingSubmissionId) {
-      // A submission already exists for this PI and this is not an edit of it
-      return jsonResponse({
-        success: false,
-        duplicate: true,
-        existingSubmissionId: existingId,
-        error: 'A submission already exists for this PI (' + piEmail + '). Submission ID: ' + existingId
-      });
+    // One submission at a time, so two cannot pass the duplicate check together
+    // and an edit's delete-and-rewrite is not interleaved with another write.
+    var lock = LockService.getScriptLock();
+    if (!lock.tryLock(30000)) {
+      return jsonResponse({ success: false, error: 'The server is busy. Please try again in a minute.' });
     }
-
-    // --- Determine submission ID ---
     var submissionId;
-    if (editingSubmissionId) {
-      // Edit mode: delete existing rows and rewrite under the same ID
-      submissionId = editingSubmissionId;
-      deleteAllRowsForSubmission(submissionId);
-    } else {
-      var year = new Date().getFullYear();
-      var uid  = Utilities.getUuid().substring(0, 8).toUpperCase();
-      submissionId = 'HPC-' + year + '-' + uid;
+    try {
+      // --- Edit: only the submitter or the PI may replace a submission ---
+      if (editingSubmissionId) {
+        var original = findSubmission(editingSubmissionId);
+        if (!original) {
+          return jsonResponse({ success: false, error: 'Submission ' + editingSubmissionId + ' was not found. Please contact the HPC Users\' Committee.' });
+        }
+        if (!mayEdit(original, submitterEmail)) {
+          return jsonResponse({
+            success: false,
+            error: 'A submission can be updated only by the person who submitted it or by its PI. ' +
+                   'Please sign in with that account, or contact the HPC Users\' Committee.'
+          });
+        }
+      }
+
+      // --- Duplicate check (the existing ID is not returned: only its submitter or PI may edit it) ---
+      var existingId = findExistingSubmissionByPiEmail(piEmail);
+      if (existingId && existingId !== editingSubmissionId) {
+        return jsonResponse({
+          success: false,
+          duplicate: true,
+          error: 'A submission for this PI (' + piEmail + ') has already been received. To change it, use ' +
+                 '"Edit your response" on the device it was submitted from, or ask the PI or the person who ' +
+                 'submitted it. The confirmation email has the submission ID.'
+        });
+      }
+
+      // --- Determine submission ID ---
+      if (editingSubmissionId) {
+        // Edit mode: delete existing rows and rewrite under the same ID
+        submissionId = editingSubmissionId;
+        deleteAllRowsForSubmission(submissionId);
+      } else {
+        var year = new Date().getFullYear();
+        var uid  = Utilities.getUuid().substring(0, 8).toUpperCase();
+        submissionId = 'HPC-' + year + '-' + uid;
+      }
+
+      // --- Write to sheets ---
+      writeToSheets(submissionId, submitterEmail, submitterName, answers, questionnaireVersion);
+      SpreadsheetApp.flush();
+    } finally {
+      lock.releaseLock();
     }
 
-    // --- Write to sheets ---
-    writeToSheets(submissionId, submitterEmail, submitterName, answers, questionnaireVersion);
-
-    // --- Send confirmation email ---
-    sendConfirmationEmail(submissionId, submitterEmail, submitterName, answers, !!editingSubmissionId);
+    // --- Send confirmation email (the submission is saved even if this fails) ---
+    try {
+      sendConfirmationEmail(submissionId, submitterEmail, submitterName, answers, !!editingSubmissionId);
+    } catch (mailErr) {
+      Logger.log('Confirmation email failed for ' + submissionId + ': ' + mailErr.message);
+    }
 
     return jsonResponse({ success: true, submissionId: submissionId });
 
@@ -196,16 +262,9 @@ function doGet(e) {
 // ---------------------------------------------------------------------------
 // Custom menu
 // ---------------------------------------------------------------------------
-
-function onOpen() {
-  SpreadsheetApp.getUi()
-    .createMenu('HPC Committee')
-    .addItem('📋 Generate Report for Selected Row', 'generateReportForSelected')
-    .addItem('⚙️ Initialize Sheets', 'initializeSheets')
-    .addSeparator()
-    .addItem('📧 Send Follow-up to Selected', 'sendFollowUpEmail')
-    .addToUi();
-}
+// This project is standalone (not bound to the response sheet), so it cannot add a
+// menu to the sheet itself. The HPC Committee menu comes from a small script bound
+// to the sheet that uses this project as a library: see apps-script/sheet-menu/.
 
 // ---------------------------------------------------------------------------
 // Email functions
@@ -274,11 +333,13 @@ function sendFollowUpEmail() {
   var row = sheet.getActiveRange().getRow();
   if (row < 2) { SpreadsheetApp.getUi().alert('Please select a data row (not the header).'); return; }
 
+  var headers        = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
   var rowData        = sheet.getRange(row, 1, 1, sheet.getLastColumn()).getValues()[0];
-  var submissionId   = rowData[0];
-  var submitterEmail = rowData[3];
-  var submitterName  = rowData[4];
-  var groupName      = rowData[7] || 'your research group';
+  var field          = function(name) { var c = headers.indexOf(name); return c === -1 ? '' : rowData[c]; };
+  var submissionId   = field('submission_id');
+  var submitterEmail = field('submitter_email');
+  var submitterName  = field('submitter_name');
+  var groupName      = field('group_name') || 'your research group';
 
   if (!submitterEmail) { SpreadsheetApp.getUi().alert('No submitter email found.'); return; }
 

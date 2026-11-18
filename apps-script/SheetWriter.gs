@@ -332,7 +332,26 @@ function headersFor(def) {
 function appendRow(sheetName, rowData) {
   var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
   var sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
-  sheet.appendRow(rowData);
+  sheet.appendRow(rowData.map(asText));
+}
+
+/**
+ * Text that Sheets would read as a formula ("=…", "+…", "@…", "-…") is written
+ * with a leading apostrophe, so it is stored as text. A typed answer must never
+ * become a live formula (e.g. =IMPORTXML could send the sheet's contents elsewhere).
+ * Numbers such as "-3" are left as numbers.
+ */
+function asText(v) {
+  if (typeof v !== 'string' || !/^[=+\-@]/.test(v)) return v;
+  return v.trim() !== '' && !isNaN(Number(v)) ? v : "'" + v;
+}
+
+/** True when a tab already has a row for the submission (column A). */
+function hasRowFor(sheetName, submissionId) {
+  var sheet = SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(sheetName);
+  if (!sheet || sheet.getLastRow() < 2) return false;
+  var ids = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  return ids.some(function(r) { return String(r[0]) === String(submissionId); });
 }
 
 function val(answers, key) {
@@ -401,5 +420,8 @@ function writeToSheets(submissionId, email, name, answers, questionnaireVersion)
     });
   });
 
-  appendRow('CommitteeAssessment', [submissionId, piName, '', '', '', '', '', '', '']);
+  // Kept across edits (not in dataSheetNames), so add the committee's row only once.
+  if (!hasRowFor('CommitteeAssessment', submissionId)) {
+    appendRow('CommitteeAssessment', [submissionId, piName, '', '', '', '', '', '', '']);
+  }
 }

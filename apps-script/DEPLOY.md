@@ -190,9 +190,8 @@ When you are ready to share the form publicly:
 - Make sure SPREADSHEET_ID is set correctly in Script Properties.
 
 **"HPC Committee" menu does not appear in the spreadsheet**
-- Refresh the spreadsheet.
-- If it still does not appear, open the Apps Script editor, select `Code.gs`,
-  and run the `onOpen` function manually (Run → Run function → onOpen).
+- The web-app project is standalone, so the menu comes from a small script bound to the sheet that uses it as a
+  library. Set it up once as described in `apps-script/sheet-menu/README.md`, then refresh the spreadsheet.
 
 **Google Sign-In button does not appear**
 - Check the browser console for errors related to `accounts.google.com/gsi/client`.
