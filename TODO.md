@@ -15,9 +15,10 @@
   apps are refused; one submission at a time (script lock); typed answers can no longer become formulas in the
   sheet; edits no longer add blank `CommitteeAssessment` rows; a failed confirmation email no longer reports the
   submission as failed; the follow-up email uses the group name (was the department). Pasted into the v3 project
-  (new version, same URL); submit, edit and Generate Report checked on the live form. Not yet checked: the
-  duplicate message from a second account. Redeploy the site (`npm run deploy`) for the form's own duplicate
-  message (the live form already shows the backend's).
+  (new version, same URL); submit, edit and Generate Report checked on the live form. The duplicate
+  ("this group already submitted") message from a second account was verified on 2026-11-20. Site redeployed the same day, so the form shows its own duplicate message.
+  (`npm run deploy` built fine but `gh-pages` hung before pushing, twice; published by hand from the
+  `node_modules/.cache/gh-pages/...` clone: `git rm -r .`, copy `dist/`, commit, push.)
 - **HPC Committee menu works** (2026-11-18): a script bound to the response sheet uses the v3 project as a library
   (`apps-script/sheet-menu/`). Delete the test rows and the two test reports in "HPC Committee Reports/v3".
 - **Next session: fix the analysis engine.** The user will bring more suggestions. Known open items: hardware-check values in `clusters.json` (group limits, queue
