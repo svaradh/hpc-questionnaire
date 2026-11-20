@@ -60,7 +60,7 @@
             { "id": "maxTotalJobs", "type": "number", "help": "jobs all groups together may run in this queue; blank = no ceiling" }
           ],
           "default": null,
-          "help": "One queue per line, values separated by commas, in the column order shown. Compute queues share one pool of nodes, so the two ceilings at the end (all groups together) and the per-group job limit are what a queue design sets. Leave empty to compare against the present queues only.",
+          "help": "One queue per line, values separated by commas, in the column order shown (a header line is allowed). The lines for a cluster replace all of its present queues; a cluster with no lines keeps its present queues. minNodes may be left blank (= 1). A queue named debug, or with a wall time of 0.5 h or less, is treated as a debug queue. Compute queues share one pool of nodes, so the two ceilings at the end (all groups together) and the per-group job limit are what a queue design sets. Lines that cannot be used are listed in the report. Leave empty to compare against the present queues only.",
           "chapters": ["queues"]
         }
       ]

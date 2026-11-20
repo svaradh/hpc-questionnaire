@@ -131,6 +131,7 @@ body { font-family: -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-se
 h1 { font-size: 1.7rem; margin-bottom: 0.2rem; }
 h2 { font-size: 1.3rem; margin-top: 2.6rem; border-bottom: 2px solid #1d4f91; padding-bottom: 0.25rem; }
 h3 { font-size: 1.05rem; margin-top: 1.8rem; }
+h4 { font-size: 0.95rem; margin-top: 1.2rem; }
 .subtitle { color: #52514e; margin-top: 0; }
 .question { background: #f2f6fb; border-left: 4px solid #1d4f91; padding: 0.6rem 0.9rem; margin: 1rem 0; }
 .limits { background: #faf8f2; border-left: 4px solid #b8b6ad; padding: 0.6rem 0.9rem; margin: 1rem 0; }
@@ -171,6 +172,9 @@ class Doc:
 
     def h3(self, text: str):
         self.add(f"<h3>{esc(text)}</h3>")
+
+    def h4(self, text: str):
+        self.add(f"<h4>{esc(text)}</h4>")
 
     def p(self, text: str):
         self.add(f"<p>{text}</p>")
@@ -398,14 +402,14 @@ def _range(lo, hi, f=mh) -> str:
     return f(lo) if _isnan(hi) or f(lo) == f(hi) else f"{f(lo)} to {f(hi)}"
 
 
-def _service_sentence(r: pd.Series, f=mh, unit: str = "core-hours") -> str:
+def _service_sentence(r: pd.Series, f=mh, unit: str = "core-hours", under: str = "the present queues") -> str:
     """Where the gap between desired demand and capacity lies, for one cluster (neutral wording)."""
     name = CLUSTER_NAMES.get(r["cluster"], r["cluster"])
     if not (r["desired_high"] > 0):
         return f"{name}: no {unit} reported."
     parts = [f"{name}: desired {_range(r['desired_low'], r['desired_high'], f)} {unit}"]
     if r["cannot_start_high"] > 0:
-        parts.append(f"{_range(r['cannot_start_low'], r['cannot_start_high'], f)} of it cannot start under the present queues")
+        parts.append(f"{_range(r['cannot_start_low'], r['cannot_start_high'], f)} of it cannot start under {under}")
     lim_lo, lim_hi = r["fits_low"] - r["runnable_low"], r["fits_high"] - r["runnable_high"]
     if max(lim_lo, lim_hi) > 0:
         parts.append(f"{_range(min(lim_lo, lim_hi), max(lim_lo, lim_hi), f)} more fits a queue but is beyond the group job limits")
@@ -448,16 +452,15 @@ def _qname(name: str) -> str:
     return f"{CLUSTER_NAMES.get(cid, cid)} · {qid}"
 
 
-def _ceiling(x) -> str:
-    return "none set" if _isnan(x) else n(x)
-
-
-def _queue_sections(d: Doc, ctx: dict):
-    dfs, cfg, wl = ctx["dfs"], ctx["cfg"], ctx["wl"]
+def _queue_sections(d: Doc, ctx: dict, cfg: dict, wl: pd.DataFrame, num: tuple[str, str], label: str = "",
+                    waits: bool = True):
+    """3.3 / 3.4 (present queues) or 3.5 / 3.6 (candidate queues): queue by queue, and what group limits give and cost.
+    `waits`: show the Section F waits, which are reported for the present queues only."""
+    dfs = ctx["dfs"]
     qb = ha.queue_breakdown(dfs, wl, cfg)
     if qb.empty:
         return
-    d.h3("3.3 Queue by queue")
+    d.h3(f"{num[0]} {label}queue by queue" if label else f"{num[0]} Queue by queue")
     d.p("Only the high-memory and GPU queues have nodes of their own. All other queues draw on one shared pool of "
         "compute nodes per cluster, allocated as jobs start. What shapes a queue is therefore its limits: on each group's "
         "running jobs, and on what all groups together may run in it (total nodes, total jobs). Each entry is placed in "
@@ -465,7 +468,7 @@ def _queue_sections(d: Doc, ctx: dict):
     qb = qb.copy()
     qb["queue_name"] = qb["queue"].map(_qname)
     qb["shape"] = [f"{s} node{'s' if s != '1' else ''}, {hours(w)}" for s, w in zip(qb["nodes_per_job"], qb["walltime_limit_h"])]
-    qb["ceilings"] = ["none set" if _isnan(a) and _isnan(b) else f"{_ceiling(a)} nodes / {_ceiling(b)} jobs"
+    qb["ceilings"] = [" / ".join([f"{n(a)} nodes"] * (not _isnan(a)) + [f"{n(b)} jobs"] * (not _isnan(b))) or "none set"
                       for a, b in zip(qb["total_nodes_ceiling"], qb["total_jobs_ceiling"])]
     qb["nodes"] = [f"{x:,.1f} of {p} ({pct(sh)})" + ("" if shared else ", own nodes")
                    for x, p, sh, shared in zip(qb["avg_nodes_busy"], qb["nodes_available"], qb["share_of_nodes"], qb["shared_pool"])]
@@ -473,7 +476,7 @@ def _queue_sections(d: Doc, ctx: dict):
     d.table(qb, {"queue_name": "Queue", "shape": "Allows per job", "group_job_limit": "Jobs at once per group",
                  "ceilings": "Ceiling, all groups", "entries": "Entries", "nodes": "Nodes busy on average, of the nodes it can use",
                  "limited": "Groups the group limit binds for", "runnable_share": "Work the limits let run"},
-            caption="Derived from the entries: demand and limits", formats={"runnable_share": pct})
+            caption="Derived from the entries: demand and limits", formats={"group_job_limit": n, "runnable_share": pct})
     d.basis("Nodes busy on average = node-hours a year ÷ available hours, counting node-equivalents (cores ÷ cores per node) "
             "since small jobs share a node, if all the desired work placed in the queue ran. Shared-pool queues are compared "
             "with the whole pool, since any of them may use any compute node. Placement follows each entry's heaviest job, "
@@ -481,15 +484,18 @@ def _queue_sections(d: Doc, ctx: dict):
             "cluster is placed in the shortest queue that takes it on either, with the nodes it would need there.")
     qb["conc"] = [f"{a} of {b}" if b else "–" for a, b in zip(qb["groups_want_more_at_once"], qb["groups_gave_concurrency"])]
     qb["problems"] = qb["problems"].replace("", "–")
-    qb["f"] = [f"{g}: {hours(w)}, {ratio(e)}" if g else "–"
-               for g, w, e in zip(qb["f_groups"], qb["median_typical_wait_h"], qb["median_expansion_factor"])]
-    d.table(qb, {"queue_name": "Queue", "conc": "Groups wanting more jobs at once than allowed",
-                 "problems": "Problems linked to entries here (groups)",
-                 "f": "Groups reporting waits here: middle typical wait, expansion factor"},
-            caption="Reported by the groups")
+    cols = {"queue_name": "Queue", "conc": "Groups wanting more jobs at once than allowed",
+            "problems": "Problems linked to entries here (groups)"}
+    if waits:
+        qb["f"] = [f"{g}: {hours(w)}, {ratio(e)}" if g else "–"
+                   for g, w, e in zip(qb["f_groups"], qb["median_typical_wait_h"], qb["median_expansion_factor"])]
+        cols["f"] = "Groups reporting waits here: middle typical wait, expansion factor"
+    d.table(qb, cols, caption="Reported by the groups")
     d.basis("“Jobs at the same time” is optional: the count is of the groups that gave it. Problems are those each entry "
-            "was linked to in Section C. Waits come from Section F, asked only after queue-wait or capacity problems, "
-            "for the queue the group named.")
+            "was linked to in Section C." + (" Waits come from Section F, asked only after queue-wait or capacity problems, "
+                                              "for the queue the group named." if waits else
+                                              " Waits reported in Section F refer to the present queues, so they are not "
+                                              "repeated here (see 3.3)."))
     pools = qb.attrs.get("pools", pd.DataFrame())
     if not pools.empty:
         us = pm.param(cfg, "schedulableUtilisation")
@@ -500,18 +506,24 @@ def _queue_sections(d: Doc, ctx: dict):
     to = ha.queue_tradeoff(wl, cfg)
     if to.empty:
         return
-    d.h3("3.4 What different group limits would give and cost")
+    d.h3(f"{num[1]} {label}what different group limits would give and cost" if label else
+         f"{num[1]} What different group limits would give and cost")
     d.p("For each queue: the present limit on a group's running jobs, and the limits that would let half, three "
         "quarters or all of the groups placed there finish a year's work. For each, how much of the work could run, "
         "and what it would take from the nodes: on average, and at worst, if every group used its full limit at once. "
         "A queue's ceiling on total nodes is what would absorb that worst case. Seen across queues, this shows which "
-        "services are under pressure and which have room to spare; it does not recommend a limit.")
+        "services are under pressure and which have room to spare; it does not recommend a limit."
+        if not label else
+        "As 3.4, for the candidate queues. “Limit set in the table” is the limit on a group's running jobs that the "
+        "candidate table gives each queue.")
     to = to.copy()
     to["queue_name"] = to["queue"].map(_qname)
     to["served"] = [f"{a} of {b}" for a, b in zip(to["groups_served"], to["groups"])]
     to["busy"] = [f"{x:,.1f} ({pct(sh)})" for x, sh in zip(to["avg_nodes_busy"], to["avg_share_of_nodes"])]
     to["worst"] = [f"{x:,.1f} ({pct(sh)})" for x, sh in zip(to["nodes_if_all_at_limit"], to["worst_share_of_nodes"])]
     to["limit"] = to["limit"].str.replace(" = ", "; ")
+    if label:
+        to["limit"] = to["limit"].str.replace("present limit", "limit set in the table")
     d.table(to, {"queue_name": "Queue", "limit": "Limit", "group_job_limit": "Jobs at once per group",
                  "served": "Groups served fully", "work_runnable_share": "Work that could run",
                  "busy": "Nodes busy on average (share of its nodes)",
@@ -519,13 +531,65 @@ def _queue_sections(d: Doc, ctx: dict):
             formats={"group_job_limit": n, "work_runnable_share": pct})
     d.basis("A group's need = the jobs it must keep running on average to finish a year's desired work in the queue "
             "(job-hours a year ÷ available hours, rounded up). Averages hide bursts: a group that needs many jobs at once "
-            "for a short time needs more, which the reported “jobs at the same time” in 3.3 partly shows. Little reported "
+            "for a short time needs more, which the reported “jobs at the same time” partly shows. Little reported "
             "demand in a queue is not by itself evidence of little need: groups that did not respond, or that past limits "
             "kept away, are not counted. Accounting records per queue would confirm these figures.")
 
 
+def _cannot_start_table(d: Doc, cfg: dict, cl: pd.DataFrame):
+    """The entries that cannot start (ha.cannot_start), unnamed: job shape, the limit it is beyond, checkpoint, scaling."""
+    cl = cl.copy()
+    def _job(r):
+        if r["device"] == "gpu":
+            size = f"{r['nodes_est']:g} node{'s' if r['nodes_est'] != 1 else ''}, {r['gpus']:g} GPU{'s' if r['gpus'] != 1 else ''}"
+        else:
+            on = [f"{CLUSTER_NAMES[c]} {r[f'nodes_{c}']:g}" for c in ha.candidate_clusters(r["cluster"], "cpu")]
+            size = f"{r['cores']:,.0f} cores (nodes: {', '.join(on)})"
+        return size + f", {hours(r['walltime_h'])}"
+    cl["job"] = cl.apply(_job, axis=1)
+    cl["cluster"] = cl["cluster"].map(lambda c: CLUSTER_NAMES.get(c, "Either"))
+    cl["scaling"] = cl["scaling_class"].map({"high": "scales well", "low": "scales little", "unknown": "not known"})
+    cl["demand"] = [f"{mh(v)} core-h" if dv != "gpu" else f"{n(v)} GPU-h" for v, dv in zip(cl["demand_h"], cl["device"])]
+    d.table(cl, {"cluster": "Cluster named", "job": "Heaviest job, as described", "reason": "Beyond which limit",
+                 "checkpoint_answer": "Checkpoint/restart reported", "scaling": "Scaling reported", "demand": "Desired per year"})
+
+
+def _candidate_note(cand: dict) -> str:
+    clusters = ", ".join(CLUSTER_NAMES[c] for c in cand["cfg"]["candidate"])
+    keep = [CLUSTER_NAMES[c] for c in ha.CLUSTERS if c not in cand["cfg"]["candidate"]]
+    return (f"The candidate queue table replaces all the present queues on {clusters}"
+            + (f"; {', '.join(keep)} keeps its present queues" if keep else "") +
+            ". The table is listed in Appendix B. Cluster-wide group limits, node counts and capacity are the same "
+            "in both columns; only the queues differ.")
+
+
+def _balance_compare(d: Doc, ctx: dict, device: str, f, caption: str):
+    """Present and candidate queues side by side: cannot start, fits a queue, runnable within group limits."""
+    cand = ctx["cand"]
+    a = ha.service_balance(ctx["wl"], ctx["cfg"], device)
+    b = ha.service_balance(cand["wl"], cand["cfg"], device)
+    if not a.attrs["entries"]:
+        return
+    meas = ["cannot_start", "fits", "runnable"]
+    ra, rb = ranged(a, ["desired"] + meas, f), ranged(b, meas, f)
+    show = ra[["cluster", "desired", "capacity"]].copy()
+    for m in meas:
+        show[m] = [x if x == y else f"{x} → {y}" for x, y in zip(ra[m], rb[m])]
+    if device == "gpu":
+        show = show[show["cluster"] != "gargi"] if not (a.set_index("cluster").loc["gargi", "desired_high"] > 0) else show
+    show["cluster"] = show["cluster"].map(CLUSTER_NAMES)
+    d.table(show, {"cluster": "Cluster", "desired": "Desired", "cannot_start": "Cannot start",
+                   "fits": "Fits a queue", "runnable": "Runnable within group limits", "capacity": "Deliverable capacity"},
+            caption=caption + ": present queues → candidate queues",
+            formats={"capacity": (lambda x: "not yet set" if _isnan(x) else f(x))})
+    if device != "gpu":
+        d.ul([_service_sentence(r, under="the candidate queues").replace(": desired", ", candidate queues: desired", 1)
+              for _, r in b.iterrows()])
+
+
 def chapter_queues(d: Doc, ctx: dict):
-    dfs, cfg, wl = ctx["dfs"], ctx["cfg"], ctx["wl"]
+    dfs, cfg, wl, cand = ctx["dfs"], ctx["cfg"], ctx["wl"], ctx["cand"]
+    has_cand = cand["cfg"] is not None
     d.h2("3. Queue design and turnaround", "queues")
     d.box("question", "Priority (b).",
           "How could queues and fair-share be arranged for faster turnaround across the workloads described?")
@@ -557,6 +621,20 @@ def chapter_queues(d: Doc, ctx: dict):
         d.table(gs, cols, caption="GPU-hours per year", formats={"capacity": lambda x: "not yet set" if _isnan(x) else n(x)})
         d.basis(f"{plural(gb.attrs['entries'], 'GPU entry', 'GPU entries')}; GPU work is counted on Raman, the only cluster with GPUs.")
 
+    if has_cand:
+        d.h4("Under the candidate queues")
+        d.p("The same steps, with each entry placed again under the candidate queue table of this scenario "
+            f"(“{esc(cfg['scenario']['name'])}”). Where a figure changes, it is shown as present → candidate.")
+        _balance_compare(d, ctx, "cpu", mh, "CPU core-hours per year")
+        if gb.attrs["entries"]:
+            _balance_compare(d, ctx, "gpu", n, "GPU-hours per year")
+        d.basis(_candidate_note(cand) + " " + EITHER_NOTE)
+    else:
+        d.p("<em>No candidate queue table is set in this scenario.</em> A table entered in the parameter form "
+            "(notebook 07) is compared here with the present queues, step by step.")
+    if cand["problems"]:
+        d.box("limits", "Candidate queue table: rows not used.", "<br>".join(esc(p) for p in cand["problems"]))
+
     d.h3("3.2 Work that cannot start under the present queues")
     cs = ha.cannot_start_summary(wl, cfg)
     if not cs["entries"]:
@@ -571,21 +649,7 @@ def chapter_queues(d: Doc, ctx: dict):
               ". No amount of free capacity lets this work run under the present queue limits, so it does not appear as a "
               "shortfall of core-hours. It is a mismatch between the present queue design and the work described, "
               "not a judgement on the work.")
-        cl = ha.cannot_start(wl, cfg).copy()
-        cpu = cl["device"] != "gpu"
-        def _job(r):
-            if r["device"] == "gpu":
-                size = f"{r['nodes_est']:g} node{'s' if r['nodes_est'] != 1 else ''}, {r['gpus']:g} GPU{'s' if r['gpus'] != 1 else ''}"
-            else:
-                on = [f"{CLUSTER_NAMES[c]} {r[f'nodes_{c}']:g}" for c in ha.candidate_clusters(r["cluster"], "cpu")]
-                size = f"{r['cores']:,.0f} cores (nodes: {', '.join(on)})"
-            return size + f", {hours(r['walltime_h'])}"
-        cl["job"] = cl.apply(_job, axis=1)
-        cl["cluster"] = cl["cluster"].map(lambda c: CLUSTER_NAMES.get(c, "Either"))
-        cl["scaling"] = cl["scaling_class"].map({"high": "scales well", "low": "scales little", "unknown": "not known"})
-        cl["demand"] = [f"{mh(v)} core-h" if dv != "gpu" else f"{n(v)} GPU-h" for v, dv in zip(cl["demand_h"], cl["device"])]
-        d.table(cl, {"cluster": "Cluster named", "job": "Heaviest job, as described", "reason": "Beyond which present limit",
-                     "checkpoint_answer": "Checkpoint/restart reported", "scaling": "Scaling reported", "demand": "Desired per year"})
+        _cannot_start_table(d, cfg, ha.cannot_start(wl, cfg))
         by = ", ".join(f"{v} {k}" for k, v in cs["by_checkpoint"].items())
         d.basis(f"{plural(cs['entries_known'], 'entry', 'entries')} with known job size and wall time, from {plural(cs['groups_known'], 'group')}. "
                 f"Checkpoint/restart answers: {by}. A job that cannot start as described may still run in parts if it can "
@@ -594,23 +658,63 @@ def chapter_queues(d: Doc, ctx: dict):
                 "Nodes are worked out for each cluster from the cores, since numbers from another system describe its nodes. "
                 "No entry or group is named; the convener's notebook (05) lists them.")
 
-    _queue_sections(d, ctx)
+    if has_cand:
+        d.h4("Under the candidate queues")
+        pc = ha.placement_changes(wl, cand["wl"])
+        known = pc[(pc["status_present"] != "unknown")]
+        opened = known[(known["status_present"] == "cannot start") & (known["status_candidate"] == "fits")]
+        closed = known[(known["status_present"] == "fits") & (known["status_candidate"] == "cannot start")]
+        still = known[(known["status_present"] == "cannot start") & (known["status_candidate"] == "cannot start")]
+        def _amount(g):
+            cpu, gpu = g.loc[g["device"] != "gpu", "demand_h"].sum(), g.loc[g["device"] == "gpu", "demand_h"].sum()
+            return f"{mh(cpu)} core-hours" + (f" and {n(gpu)} GPU-hours" if gpu else "") + " a year"
+        items = [f"<strong>Would start</strong> under the candidate queues but cannot now: "
+                 f"{plural(len(opened), 'entry', 'entries')} from {plural(opened['submission_id'].nunique(), 'group')}"
+                 + (f", {_amount(opened)}." if len(opened) else "."),
+                 f"<strong>Could not start</strong> under the candidate queues but can now: "
+                 f"{plural(len(closed), 'entry', 'entries')} from {plural(closed['submission_id'].nunique(), 'group')}"
+                 + (f", {_amount(closed)}." if len(closed) else "."),
+                 f"<strong>Cannot start under either</strong>: {plural(len(still), 'entry', 'entries')}"
+                 + (f", {_amount(still)}." if len(still) else ".")]
+        d.ul(items)
+        moved = known[known["status_candidate"] != "unknown"].copy()
+        moved["from"] = moved["queue"].map(lambda q: "cannot start" if q == "none fits" else _qname(q))
+        moved["to"] = moved["queue_candidate"].map(lambda q: "cannot start" if q == "none fits" else _qname(q))
+        moved["cpu_h"] = moved["demand_h"].where(moved["device"] != "gpu", 0.0)
+        moved["gpu_h"] = moved["demand_h"].where(moved["device"] == "gpu", 0.0)
+        flow = (moved.groupby(["from", "to"]).agg(entries=("entry", "size"), groups=("submission_id", "nunique"),
+                                                   cpu_h=("cpu_h", "sum"), gpu_h=("gpu_h", "sum"))
+                .reset_index().sort_values(["from", "to"]))
+        cols = {"from": "Present queue", "to": "Candidate queue", "entries": "Entries", "groups": "Groups",
+                "cpu_h": "Desired core-hours per year"}
+        if flow["gpu_h"].sum() > 0:
+            cols["gpu_h"] = "Desired GPU-hours per year"
+        d.table(flow, cols, caption="Where each entry's heaviest job is placed",
+                formats={"cpu_h": lambda x: "–" if not x else mh(x), "gpu_h": lambda x: "–" if not x else n(x)})
+        cl = ha.cannot_start(cand["wl"], cand["cfg"])
+        if not cl.empty:
+            d.p("Entries that cannot start under the candidate queues, and the candidate limit each is beyond:")
+            _cannot_start_table(d, cand["cfg"], cl)
+        d.basis("Each entry is placed by its heaviest job, as in 3.2. Entries with unknown job size or wall time are "
+                "left out. " + _candidate_note(cand))
+
+    _queue_sections(d, ctx, cfg, wl, ("3.3", "3.4"))
+    if has_cand:
+        _queue_sections(d, ctx, cand["cfg"], cand["wl"], ("3.5", "3.6"), label="Candidate queues, ", waits=False)
 
     _pending_body(d, ctx, "queues", "The rest of this chapter is not yet written. It will contain:",
-                  ["The same tables under candidate queue tables the committee drafts (limits per group, and ceilings "
-                   "on total nodes and jobs per queue).",
-                   "Long jobs by checkpoint/restart and by how they scale: whether they could run in parts, or wider, "
+                  ["Long jobs by checkpoint/restart and by how they scale: whether they could run in parts, or wider, "
                    "instead of longer.",
                    "Debug and interactive use against the debug queues.",
                    "How usage is spread across groups, for fair-share design."],
-                  ["Candidate queue tables from the committee (entered in the parameter form, notebook 07).",
-                   "The convener's answers to the hardware check on group limits and queue ceilings.",
+                  ["The convener's answers to the hardware check on group limits and queue ceilings.",
                    "Cluster accounting (Slurm) for actual waits and usage per group: the survey can show fit, but not predict waits."])
 
     d.box("limits", "What these data cannot show.",
           "Runnable figures assume each group could keep its allowed jobs running all year; on a busy cluster other "
           "groups' jobs reduce this, which only accounting records or a scheduler simulation can show. Each entry describes "
-          "its heaviest job, so an entry counted as unable to start may include lighter jobs that could.")
+          "its heaviest job, so an entry counted as unable to start may include lighter jobs that could. A candidate "
+          "design is compared on the work described in the survey only; how waits would change needs a scheduler simulation.")
 
 
 def chapter_expansion(d: Doc, ctx: dict):
@@ -742,7 +846,10 @@ def appendices(d: Doc, ctx: dict):
     d.table(pm.summary_table(cfg), {"group": "Group", "parameter": "Evaluation parameter", "value": "Value"})
     queues = pm.param(cfg, "candidateQueues")
     if queues:
-        d.table(pd.DataFrame(queues), {c: c for c in queues[0]}, caption="Candidate queue table")
+        d.table(pd.DataFrame(queues), {c: c for c in queues[0]}, caption="Candidate queue table (the rows for a cluster "
+                "replace all its present queues)")
+        if ctx["cand"]["problems"]:
+            d.ul([esc(p) for p in ctx["cand"]["problems"]])
     cp = {k: v for k, v in cfg["committeeParameters"].items() if not k.startswith("_")}
     d.table(pd.DataFrame([{"parameter": TRIGGER_LABELS.get(k, k), "value": "not yet set" if v is None else v}
                           for k, v in cp.items()]),
@@ -765,7 +872,9 @@ def build(dfs: dict, cfg: dict, records=None) -> str:
     matplotlib.use("Agg")
     hp.SHOW = False
     wl = ha.workloads(dfs, cfg)
-    ctx = {"dfs": dfs, "cfg": cfg, "wl": wl, "cov": ha.coverage(dfs), "records": records}
+    ccfg, problems = ha.with_candidate_queues(cfg)
+    cand = {"cfg": ccfg, "wl": ha.workloads(dfs, ccfg) if ccfg else None, "problems": problems}
+    ctx = {"dfs": dfs, "cfg": cfg, "wl": wl, "cov": ha.coverage(dfs), "records": records, "cand": cand}
     d = Doc()
     d.add(f"<h1>{esc(TITLE)}</h1><p class='subtitle'>HPC Users' Committee · generated {dt.date.today():%d %B %Y} · "
           f"{plural(ctx['cov']['groups'], 'group')} responded · scenario “{esc(cfg['scenario']['name'])}”</p>")

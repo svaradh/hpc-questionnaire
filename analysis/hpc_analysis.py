@@ -49,6 +49,7 @@ Typical use
 
 from __future__ import annotations
 
+import copy
 import json
 import math
 import os
@@ -260,7 +261,14 @@ def standard_memory_gb(cfg: dict, cid: str) -> float:
 
 
 def _queue_kind(q: dict) -> str:
-    return q.get("nodeType", "compute")
+    return q.get("nodeType") or "compute"
+
+
+DEBUG_MAX_H = 0.5  # a queue this short (or named 'debug') is for testing, not production
+
+
+def is_debug(q: dict) -> bool:
+    return q["id"] == "debug" or q["walltimeHours"] <= DEBUG_MAX_H
 
 
 def eligible_queues(cfg: dict, cid: str, device: str, mem_gb: float | None = None, include_debug: bool = False) -> list[dict]:
@@ -269,7 +277,7 @@ def eligible_queues(cfg: dict, cid: str, device: str, mem_gb: float | None = Non
     std = standard_memory_gb(cfg, cid)
     for q in cluster(cfg, cid)["queues"]:
         kind = _queue_kind(q)
-        if q["id"] == "debug" and not include_debug:
+        if is_debug(q) and not include_debug:
             continue
         if device == "gpu":
             if kind != "gpu":
@@ -320,7 +328,7 @@ def fit_queue(cfg: dict, r) -> dict | None:
         nodes, mem = job_on(cfg, cid, r)
         if pd.isna(nodes):
             continue
-        for q in eligible_queues(cfg, cid, r.get("device"), mem, include_debug=wt <= 0.5):
+        for q in eligible_queues(cfg, cid, r.get("device"), mem, include_debug=wt <= DEBUG_MAX_H):
             if q["minNodes"] <= nodes <= q["maxNodes"] and wt <= q["walltimeHours"]:
                 fits.append({**q, "job_nodes": nodes})
     return min(fits, key=lambda q: q["walltimeHours"]) if fits else None
@@ -664,6 +672,107 @@ def queue_pool_nodes(cfg: dict, q: dict) -> int:
     if kind == "gpu":
         return sum(g["count"] for g in c.get("gpuNodes", []))
     return sum(n["count"] for n in c["nodeTypes"] if n["id"] == kind)
+
+
+# ---------------------------------------------------------------------------
+# Candidate queue designs (evaluation parameter 'candidateQueues')
+# ---------------------------------------------------------------------------
+# The committee drafts a queue design as rows of a table. The rows for a cluster replace
+# all of its present queues; a cluster with no rows keeps its present ones. Every analysis
+# that reads cfg['clusters'][...]['queues'] then works unchanged on the copy.
+
+NODE_TYPES = ("compute", "highmem", "gpu")
+
+
+def _candidate_queue(row: dict, cfg: dict, where: str, problems: list) -> dict | None:
+    """One candidate row as a queue dict, or None (with the reasons added to `problems`)."""
+    cid = str(row.get("cluster") or "").strip().lower()
+    qid = str(row.get("queue") or "").strip()
+    bad = []
+    if cid not in CLUSTERS:
+        bad.append(f"cluster “{row.get('cluster') or ''}” is not one of {', '.join(CLUSTERS)}")
+    if not qid or "." in qid:
+        bad.append("a queue name (without dots) is needed")
+    kind = str(row.get("nodeType") or "compute").strip().lower()
+    if kind not in NODE_TYPES:
+        bad.append(f"node type “{row.get('nodeType')}” is not blank, highmem or gpu")
+    vals = {}
+    for k, required in (("minNodes", False), ("maxNodes", True), ("walltimeHours", True), ("maxConcurrentJobs", True),
+                        ("maxTotalNodes", False), ("maxTotalJobs", False)):
+        v = row.get(k)
+        if v is None or (isinstance(v, float) and math.isnan(v)):
+            if required:
+                bad.append(f"{k} is needed")
+            vals[k] = None
+        elif v <= 0:
+            bad.append(f"{k} must be above 0")
+        else:
+            vals[k] = int(v) if float(v).is_integer() else float(v)
+    if not bad:
+        vals["minNodes"] = vals["minNodes"] or 1
+        if vals["minNodes"] > vals["maxNodes"]:
+            bad.append(f"minNodes {vals['minNodes']:g} is above maxNodes {vals['maxNodes']:g}")
+        pool = queue_pool_nodes(cfg, {"cluster": cid, "nodeType": kind})
+        if pool == 0:
+            bad.append(f"{cluster(cfg, cid)['name']} has no {kind} nodes")
+        elif vals["maxNodes"] > pool:
+            bad.append(f"maxNodes {vals['maxNodes']:g} is above the {pool} {kind} nodes of {cluster(cfg, cid)['name']}")
+    if bad:
+        problems.append(f"{where} ({cid or '?'}.{qid or '?'}) left out: " + "; ".join(bad) + ".")
+        return None
+    q = {"id": qid, **vals, "candidate": True}
+    if kind != "compute":
+        q["nodeType"] = kind
+    return q
+
+
+def with_candidate_queues(cfg: dict) -> tuple[dict | None, list[str]]:
+    """
+    (A copy of cfg whose clusters carry the candidate queues, problems found in the table).
+    None when no candidate table is set or none of its rows is usable. The rows for a cluster
+    replace all of its present queues; clusters without rows keep theirs. cfg['candidate'] in the
+    copy names the clusters whose queues were replaced.
+    """
+    rows = (cfg.get("parameters") or {}).get("candidateQueues") or []
+    problems: list[str] = []
+    by_cluster: dict[str, list[dict]] = {}
+    for i, row in enumerate(rows, 1):
+        q = _candidate_queue(row, cfg, f"Row {i}", problems)
+        if q is None:
+            continue
+        cid = str(row["cluster"]).strip().lower()
+        if any(o["id"] == q["id"] for o in by_cluster.get(cid, [])):
+            problems.append(f"Row {i} ({cid}.{q['id']}) left out: the queue name is used twice.")
+            continue
+        by_cluster.setdefault(cid, []).append(q)
+    if not by_cluster:
+        return None, problems
+    out = copy.deepcopy(cfg)
+    for c in out["clusters"]:
+        if c["id"] in by_cluster:
+            c["queues"] = by_cluster[c["id"]]
+            if not any(_queue_kind(q) == "compute" and not is_debug(q) for q in c["queues"]):
+                problems.append(f"{c['name']}: the candidate queues have no production queue on compute nodes, "
+                                "so CPU work that needs no high-memory node cannot run there.")
+    out["candidate"] = sorted(by_cluster)
+    return out, problems
+
+
+def placement_changes(wl_present: pd.DataFrame, wl_candidate: pd.DataFrame) -> pd.DataFrame:
+    """
+    Per entry: the queue its heaviest job lands in now and under the candidate design
+    ('none fits' / 'unknown ...' as in workloads()), with its desired demand. Entries match
+    by (submission_id, entry_index).
+    """
+    key = ["submission_id", "entry_index"]
+    cols = key + ["entry", "device", "queue", "cpu_h_desired", "gpu_h_desired"]
+    a = wl_present[[c for c in cols if c in wl_present]]
+    b = wl_candidate[key + ["queue"]].rename(columns={"queue": "queue_candidate"})
+    m = a.merge(b, on=key, how="left")
+    m["demand_h"] = np.where(m["device"] == "gpu", m["gpu_h_desired"], m["cpu_h_desired"])
+    status = lambda s: np.select([s == "none fits", s.str.startswith("unknown")], ["cannot start", "unknown"], "fits")
+    m["status_present"], m["status_candidate"] = status(m["queue"]), status(m["queue_candidate"])
+    return m
 
 
 def group_limits(cfg: dict, cid: str) -> dict:
@@ -1189,7 +1298,7 @@ def debug_demand(dfs: dict, cfg: dict) -> pd.DataFrame:
         return d
     for c in ("sessions_week", "session_cores", "session_gpus", "session_length_h"):
         d[c] = num(_col(d, c))
-    debug_h = max(q["walltimeHours"] for c in cfg["clusters"] for q in c["queues"] if q["id"] == "debug")
+    debug_h = max((q["walltimeHours"] for c in cfg["clusters"] for q in c["queues"] if is_debug(q)), default=DEBUG_MAX_H)
     d["longer_than_debug_queue"] = known(d["session_length_h"] > debug_h, d["session_length_h"])
     d["core_hours_week"] = d["sessions_week"] * d["session_cores"] * d["session_length_h"]
     return d[["submission_id", "pi_name", "sessions_week", "session_device", "session_cores", "session_gpus",

@@ -22,8 +22,15 @@
 - **HPC Committee menu works** (2026-11-18): a script bound to the response sheet uses the v3 project as a library
   (`apps-script/sheet-menu/`). **Sheet emptied 2026-11-20**: all data rows removed from every tab (headers kept), including the earlier own entry HPC-2026-84ABBB87 (resubmit it through the live form after launch); the two test reports trashed.
 - **Next session: fix the analysis engine.** The user will bring more suggestions. Known open items: hardware-check values in `clusters.json` (group limits, queue
-  ceilings, Raman GPU count, `scratchOnlyOnFastPFS`, downtime); report chapter 3 candidate queue tables and chapters
-  (c, d) on charging.
+  ceilings, Raman GPU count, `scratchOnlyOnFastPFS`, downtime); chapters (c, d) on charging; the rest of chapter 3
+  (long jobs by checkpoint/scaling, debug use, spread across groups).
+- **Candidate queue tables in the report (2026-11-20).** A scenario's `candidateQueues` rows replace all present queues
+  of the clusters they name (`ha.with_candidate_queues`); the report then compares present → candidate in 3.1 and 3.2
+  (would start / would no longer start / where each entry is placed) and adds 3.5–3.6 (queue by queue and group-limit
+  trade-off for the candidate). Unusable rows are listed in the report. Tested on the synthetic data; all notebooks pass.
+- **iCloud offloads the project.** `~/Documents` syncs to iCloud and macOS evicted ~21,000 files in `.venv` and
+  `node_modules` (shown as `dataless`), so imports and `gh-pages` crawl or hang. In Finder, right-click the
+  Questionaire folder → *Keep Downloaded*, or move the project out of `~/Documents`.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 
