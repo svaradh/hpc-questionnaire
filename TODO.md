@@ -28,13 +28,16 @@
   of the clusters they name (`ha.with_candidate_queues`); the report then compares present → candidate in 3.1 and 3.2
   (would start / would no longer start / where each entry is placed) and adds 3.5–3.6 (queue by queue and group-limit
   trade-off for the candidate). Unusable rows are listed in the report. Tested on the synthetic data; all notebooks pass.
-- **Moved and upgraded (2026-11-20).** Working copy is now `~/Codes/Github/HPC/Questionnaire` (out of iCloud); deploy
+- **Moved and upgraded (2026-11-20).** Working copy is now `~/ClaudeProjects/hpc-questionnaire` (out of iCloud); deploy
   from there. Build tools: Vite 8 + `@vitejs/plugin-react` 6 (npm audit clean); checked side by side against the Vite 5
   build (identical page text and saved answers), deployed, and a live test submission, email and report worked. Test
   rows and report removed afterwards: the response sheet is empty again.
 - **iCloud offloads the project.** `~/Documents` syncs to iCloud and macOS evicted ~21,000 files in `.venv` and
   `node_modules` (shown as `dataless`), so imports and `gh-pages` crawl or hang. In Finder, right-click the
   Questionaire folder → *Keep Downloaded*, or move the project out of `~/Documents`.
+- **Hardware check ready to send (2026-11-20).** `docs/hardware-check/cluster-hardware-check.pdf` rebuilt with the
+  last missing question (home on the same fast parallel file system as scratch, per cluster). It now covers every
+  `null` in `clusters.json`. Send it to the convener; enter the answers in `clusters.json`, re-run the notebooks.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 
@@ -152,8 +155,8 @@
 - **Test submission on `/v3-preview/`**, with a code that opens a few Section D panels; check the Workloads and panel
   tabs, the confirmation email, and Generate Report. If no email arrives, see *Confirmation email* below.
 - **Dry run** with a student and a colleague; then the convener's answers to
-  `docs/hardware-check/cluster-hardware-check.pdf` — add whether home is on the same fast parallel file system as
-  scratch (`storage.scratchOnlyOnFastPFS`).
+  `docs/hardware-check/cluster-hardware-check.pdf` (now asks whether home is on the same fast parallel file system
+  as scratch, `storage.scratchOnlyOnFastPFS`; added 2026-11-20).
 
 ## Later
 
@@ -162,7 +165,7 @@
 - **Verify against a live deployment.** Generate one real report and run the notebooks in Colab on real v3 responses.
 - **Committee values**: evaluation parameters through the notebook 07 form (target utilisation 0.8 is the default);
   in `src/config/clusters.json` the home:scratch split (0.5 placeholder) and Raman GPU count (from the hardware check);
-  `storage.scratchOnlyOnFastPFS` per cluster (is home on the same fast PFS as scratch? — add to the hardware check). Re-run `docs/hardware-check/make_hardware_form.py` after edits.
+  `storage.scratchOnlyOnFastPFS` per cluster (is home on the same fast PFS as scratch? — asked in the hardware check). Re-run `docs/hardware-check/make_hardware_form.py` after edits.
 - **Slurm accounting.** Ask the HPC admins for a per-group export (last 12 months) to check reported figures.
 - **Confirmation email.** If none arrives on a test submission, check the execution log. The deployed project picks its
   scopes automatically unless `appsscript.json` was pasted in; the repo manifest now lists `https://mail.google.com/`,

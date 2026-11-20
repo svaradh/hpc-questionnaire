@@ -240,6 +240,8 @@ def main():
     f.row('Parallel storage: system and usable size', f"{g['storage']['system']}, {v(g['storage']['usableTB'])} TB")
     f.row('Home : scratch split of that storage', f"{100 - g['storage']['scratchFraction'] * 100:g} : {g['storage']['scratchFraction'] * 100:g} (assumed)",
           'Or give the two sizes in TB.')
+    f.ask('Is home on this same fast parallel file system as scratch?',
+          'Yes / No (home is on a separate, slower system; name it) / Not known.')
     f.row('Storage bandwidth', f"{v(g['storage']['bandwidthGBs'])} GB/s")
     f.ask('Quotas: home per user / per group; scratch per user', 'Write "none" if there is no quota.')
     f.ask('Scratch clean-up (purge) policy', 'e.g. files older than 30 days deleted; or none.')
@@ -272,6 +274,8 @@ def main():
     f.row('Parallel storage: system and usable size', f"{r['storage']['system']}, {v(r['storage']['usableTB'])} TB")
     f.row('Home : scratch split of that storage', f"{100 - r['storage']['scratchFraction'] * 100:g} : {r['storage']['scratchFraction'] * 100:g} (assumed)",
           'Or give the two sizes in TB.')
+    f.ask('Is home on this same fast parallel file system as scratch?',
+          'Yes / No (home is on a separate, slower system; name it) / Not known.')
     f.row('Storage bandwidth', f"{v(r['storage']['bandwidthGBs'])} GB/s")
     f.ask('Quotas: home per user / per group; scratch per user', 'Write "none" if there is no quota.')
     f.ask('Scratch clean-up (purge) policy')
