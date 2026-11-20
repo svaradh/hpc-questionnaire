@@ -20,7 +20,7 @@
   (`npm run deploy` built fine but `gh-pages` hung before pushing, twice; published by hand from the
   `node_modules/.cache/gh-pages/...` clone: `git rm -r .`, copy `dist/`, commit, push.)
 - **HPC Committee menu works** (2026-11-18): a script bound to the response sheet uses the v3 project as a library
-  (`apps-script/sheet-menu/`). Delete the test rows and the two test reports in "HPC Committee Reports/v3".
+  (`apps-script/sheet-menu/`). **Sheet emptied 2026-11-20**: all data rows removed from every tab (headers kept), including the earlier own entry HPC-2026-84ABBB87 (resubmit it through the live form after launch); the two test reports trashed.
 - **Next session: fix the analysis engine.** The user will bring more suggestions. Known open items: hardware-check values in `clusters.json` (group limits, queue
   ceilings, Raman GPU count, `scratchOnlyOnFastPFS`, downtime); report chapter 3 candidate queue tables and chapters
   (c, d) on charging.
