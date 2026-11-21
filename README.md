@@ -7,10 +7,11 @@ principles are in [`CLAUDE.md`](CLAUDE.md); current status and next steps are in
 | Folder | Contents |
 |---|---|
 | `src/` | the form (React + TypeScript + Vite); questions live in `src/schema/questionnaire.json`, cluster facts in `src/config/clusters.json` |
-| `apps-script/` | backend: sheet writer, committee report, confirmation emails (deployed by copy-paste, see `apps-script/DEPLOY.md`) |
+| `apps-script/` | backend: sheet writer, committee report, confirmation emails (deployed by copy-paste, see `apps-script/DEPLOY.md`); `bound/` holds the setup and menu for a backend built by the handover pipeline |
+| `tools/handover/` | builds the backend in another person's Google account and switches the form to it (see `docs/HANDOVER.md`) |
 | `analysis/` | committee notebooks, helpers and synthetic test data (see `analysis/README.md`) |
 | `slides/` | introductory slide deck (Beamer) and the form screenshots it uses |
-| `docs/` | analysis framework, form plan, archive notes, hardware check for the cluster convener |
+| `docs/` | analysis framework, form plan, archive notes, hardware check for the cluster convener, backend handover |
 
 ## Setting up on a new computer
 
@@ -50,12 +51,14 @@ In Colab nothing needs installing beyond what the first notebook cell does.
 | Task | Command |
 |---|---|
 | Type-check and build | `npm run build` |
-| Publish the review draft (submissions off) | `npm run deploy:layout` → `/v3-draft/` |
-| Publish the preview (submissions on, v3 backend) | `npm run deploy:preview` → `/v3-preview/` |
+| Publish the live form | `npm run deploy` (from `main`) |
+| Test the handover pipeline (no Google account) | `npm run handover:test` |
+| Rehearse / do the backend handover | `npm run handover -- rehearse --email …` / `npm run handover -- handover --email …` (see `docs/HANDOVER.md`) |
 | Regenerate the synthetic test data | `npm run fixtures` |
 | Rebuild the notebooks after editing them | `python analysis/_build_notebooks.py` |
 | Retake the slide screenshots | `npm run slides:figures` (needs Chrome, Brave, Edge or Chromium; `BROWSER_PATH` if not found) |
 
-`npm run deploy` publishes to the main site, which still serves v1: only when going live.
+`npm run deploy` replaces the whole site; the `/v3-preview/` and `/v3-draft/` redirects come from `public/`. Do not use the
+old `deploy:preview` / `deploy:layout` scripts: they would overwrite those redirects.
 After any change to `apps-script/*.gs`, paste the files into the Apps Script project and create a new deployment
 version (see `TODO.md`).

@@ -3,6 +3,9 @@
 This guide walks you through setting up the Google Workspace backend for the
 HPC Questionnaire form. Follow each step in order.
 
+To build the backend in someone else's account (for example, handing it over to the convener),
+use the handover pipeline instead: see `docs/HANDOVER.md`. It automates most of these steps.
+
 ---
 
 ## Step 1: Set up Google Sign-In

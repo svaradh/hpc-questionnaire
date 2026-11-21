@@ -250,13 +250,50 @@ function doPost(e) {
 /**
  * doGet — returns current window status and health check.
  * Called by the React form on load to check if submissions are open.
+ * With ?check=setup it also reports whether the backend is set up (setupStatus);
+ * the handover pipeline (tools/handover/) uses this. It returns no response data.
  */
 function doGet(e) {
-  return jsonResponse({
+  var out = {
     status: 'ok',
     windowOpen: isSubmissionWindowOpen(),
     deadline: getSubmissionDeadline()
-  });
+  };
+  if (e && e.parameter && e.parameter.check === 'setup') out.setup = setupStatus();
+  return jsonResponse(out);
+}
+
+/**
+ * Whether the Script Properties point at a sheet and folder this project can open,
+ * and which tabs are missing. The sheet ID is given only as a SHA-256 digest, so a
+ * caller who already knows the ID can confirm it without the endpoint revealing it.
+ */
+function setupStatus() {
+  var props = PropertiesService.getScriptProperties();
+  var s = {
+    spreadsheet: false,
+    spreadsheetIdSha256: '',
+    folder: false,
+    missingTabs: [],
+    completedAt: props.getProperty('SETUP_COMPLETED_AT') || ''
+  };
+  try {
+    var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    s.spreadsheet = true;
+    s.spreadsheetIdSha256 = sha256Hex(SPREADSHEET_ID);
+    s.missingTabs = dataSheetNames().concat(['CommitteeAssessment'])
+      .filter(function(name) { return !ss.getSheetByName(name); });
+  } catch (err) { /* not set, or not reachable */ }
+  try {
+    s.folder = !DriveApp.getFolderById(COMMITTEE_FOLDER_ID).isTrashed();
+  } catch (err) { /* not set, or not reachable */ }
+  return s;
+}
+
+function sha256Hex(text) {
+  return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(text), Utilities.Charset.UTF_8)
+    .map(function(b) { return ('0' + (b & 0xff).toString(16)).slice(-2); })
+    .join('');
 }
 
 // ---------------------------------------------------------------------------

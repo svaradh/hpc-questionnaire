@@ -38,6 +38,13 @@
 - **Hardware check ready to send (2026-11-20).** `docs/hardware-check/cluster-hardware-check.pdf` rebuilt with the
   last missing question (home on the same fast parallel file system as scratch, per cluster). It now covers every
   `null` in `clusters.json`. Send it to the convener; enter the answers in `clusters.json`, re-run the notebooks.
+- **Backend handover pipeline built (2026-11-20), not yet run against Google.** Builds a fresh backend (sheet with its
+  own script project, web app, reports folder) in the convener's account and switches the live form to it, checking
+  each step; the convener only switches on the Apps Script API, signs in, runs `setupBackend` and confirms an email.
+  `docs/HANDOVER.md`; `npm run handover:test` passes (40 checks against a simulated Google running the real backend
+  code). **Next:** decide whether to hand over; if so, rehearse in a test account (`npm run handover -- rehearse
+  --email …`), commit `tools/handover/rehearsal.json`, then hand over before opening the form. `Code.gs` gained a
+  `?check=setup` health check (no data); the present v3 project does not need it.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 

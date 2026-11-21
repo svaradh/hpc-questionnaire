@@ -13,7 +13,9 @@
     "deploy:preview": "tsc && vite build --base=/hpc-questionnaire/v3-preview/ && gh-pages -d dist --dest v3-preview --add -m 'Deploy v3 preview'",
     "deploy:layout": "tsc && VITE_SUBMIT_DISABLED=true vite build --base=/hpc-questionnaire/v3-draft/ && gh-pages -d dist --dest v3-draft --add -m 'Deploy v3 layout draft'",
     "fixtures": "tsx analysis/fixtures/make_synthetic.ts",
-    "slides:figures": "node slides/make_figures.mjs"
+    "slides:figures": "node slides/make_figures.mjs",
+    "handover": "node tools/handover/handover.mjs",
+    "handover:test": "node tools/handover/test/run-tests.mjs"
   },
   "dependencies": {
     "react": "^18.3.1",
