@@ -28,8 +28,8 @@
   of the clusters they name (`ha.with_candidate_queues`); the report then compares present → candidate in 3.1 and 3.2
   (would start / would no longer start / where each entry is placed) and adds 3.5–3.6 (queue by queue and group-limit
   trade-off for the candidate). Unusable rows are listed in the report. Tested on the synthetic data; all notebooks pass.
-- **Moved and upgraded (2026-11-20).** Working copy is now `~/ClaudeProjects/hpc-questionnaire` (out of iCloud); deploy
-  from there. Build tools: Vite 8 + `@vitejs/plugin-react` 6 (npm audit clean); checked side by side against the Vite 5
+- **Moved and upgraded (2026-11-20).** Keep the working copy outside iCloud-synced folders, in a folder named `hpc-questionnaire`
+  after the repository (the path differs from machine to machine). Build tools: Vite 8 + `@vitejs/plugin-react` 6 (npm audit clean); checked side by side against the Vite 5
   build (identical page text and saved answers), deployed, and a live test submission, email and report worked. Test
   rows and report removed afterwards: the response sheet is empty again.
 - **iCloud offloads the project.** `~/Documents` syncs to iCloud and macOS evicted ~21,000 files in `.venv` and
