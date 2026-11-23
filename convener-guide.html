@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HPC Workload Questionnaire: guide for the convener</title>
+<style>
+:root { --ink:#111827; --muted:#4b5563; --rule:#d1d5db; --accent:#1a4e8a; --tint:#f4f6f9; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--tint); color: var(--ink);
+  font: 16px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+main { max-width: 860px; margin: 2rem auto; padding: 2rem 2.5rem 3rem; background: #fff;
+  border: 1px solid var(--rule); border-radius: 10px; }
+h1 { font-size: 1.7rem; line-height: 1.25; color: #0f2f57; margin: 2.2rem 0 .8rem; }
+h1:first-child { margin-top: 0; }
+h2 { font-size: 1.3rem; color: #0f2f57; margin: 2rem 0 .6rem; padding-bottom: .25rem;
+  border-bottom: 2px solid var(--accent); }
+h3 { font-size: 1.08rem; color: var(--accent); margin: 1.4rem 0 .4rem; }
+a { color: #2563b0; }
+hr { border: 0; border-top: 1px solid var(--rule); margin: 2rem 0; }
+code { font: .88em/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: #f1f3f6;
+  padding: .1em .3em; border-radius: 4px; overflow-wrap: anywhere; }
+table { border-collapse: collapse; width: 100%; margin: .8rem 0 1rem; font-size: .93rem; }
+th, td { border: 1px solid var(--rule); padding: .45rem .6rem; text-align: left; vertical-align: top; }
+th { background: #f4f6f9; }
+li { margin: .25rem 0; }
+li > ol, li > ul { margin: .3rem 0; }
+.diagram { margin: 1.2rem 0; }
+.diagram svg { width: 100%; height: auto; }
+.diagram figcaption { color: var(--muted); font-size: .85rem; text-align: center; }
+.top { position: fixed; right: 1rem; bottom: 1rem; background: #fff; border: 1px solid var(--rule);
+  border-radius: 6px; padding: .3rem .6rem; font-size: .85rem; text-decoration: none; }
+.built { color: var(--muted); font-size: .8rem; margin-top: 2.5rem; }
+@media (max-width: 700px) { main { margin: 0; border-radius: 0; padding: 1.2rem; } }
+@media print { body { background: #fff; } main { border: 0; margin: 0; padding: 0; max-width: none; }
+  .top { display: none; } h2, h3 { break-after: avoid; } tr, .diagram { break-inside: avoid; } }
+</style>
+</head>
+<body>
+<main id="top">
+<h1 id="hpc-workload-questionnaire-guide-for-the-convener">HPC Workload Questionnaire: guide for the convener</h1>
+<p>For the convener of the HPC Users' Committee, who owns the questionnaire's responses.
+Form version 2.7.3, analysis release <code>v3-2026-11-23c</code> (November 2026).
+Online: <a href="https://svaradh.github.io/hpc-questionnaire/convener-guide.html">https://svaradh.github.io/hpc-questionnaire/convener-guide.html</a> (published with the form).</p>
+<ul>
+<li><strong>Part 1</strong> says what the system is made of, how the responses are protected, and what could go wrong.</li>
+<li><strong>Part 2</strong> describes the whole pipeline, from set-up to the committee's decisions, and how to run each part.</li>
+</ul>
+<h2 id="contents">Contents</h2>
+<ul>
+<li>
+<p><a href="#part-1-the-system-data-protection-and-risks">Part 1. The system, data protection and risks</a></p>
+<ul>
+<li><a href="#11-the-pipeline-at-a-glance">1.1 The pipeline at a glance</a></li>
+<li><a href="#12-how-the-data-is-protected">1.2 How the data is protected</a></li>
+<li><a href="#13-risks-and-what-reduces-them">1.3 Risks, and what reduces them</a></li>
+<li><a href="#14-frequently-asked-questions">1.4 Frequently asked questions</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#part-2-the-pipeline-and-how-to-run-it">Part 2. The pipeline and how to run it</a></p>
+<ul>
+<li><a href="#21-from-set-up-to-the-committees-decisions">2.1 From set-up to the committee's decisions</a></li>
+<li><a href="#22-source-of-truth-and-who-to-contact">2.2 Source of truth, and who to contact</a></li>
+<li><a href="#23-the-handover">2.3 The handover</a></li>
+<li><a href="#24-local-and-web-set-up-developer-or-maintainer">2.4 Local and web set-up (developer or maintainer)</a></li>
+<li><a href="#25-running-the-form-and-handling-responses-convener">2.5 Running the form and handling responses (convener)</a></li>
+<li><a href="#26-the-committee-report-in-google-colab-convener">2.6 The committee report in Google Colab (convener)</a></li>
+<li><a href="#27-troubleshooting">2.7 Troubleshooting</a></li>
+<li><a href="#28-at-the-end-of-the-exercise">2.8 At the end of the exercise</a></li>
+</ul>
+</li>
+<li>
+<p><a href="#appendix-a-route-b-building-the-backend-by-hand">Appendix A. Route B: building the backend by hand</a></p>
+</li>
+</ul>
+<p><strong>Ready for the handover?</strong> Go straight to <a href="#23-the-handover">2.3 The handover</a>.</p>
+<hr />
+<h1 id="part-1-the-system-data-protection-and-risks">Part 1. The system, data protection and risks</h1>
+<h2 id="11-the-pipeline-at-a-glance">1.1 The pipeline at a glance</h2>
+<p>Research groups fill in a web form. Their answers go into a Google Sheet in the convener's institute
+Google account. A script attached to that sheet receives the answers and sends confirmations. A notebook
+in Google Colab turns the sheet into the committee report. All code lives in one public repository.</p>
+<table>
+<thead>
+<tr>
+<th>Part</th>
+<th>App</th>
+<th>What it does</th>
+<th>Where it resides</th>
+<th>Owned by</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Web form</td>
+<td>Web page (React) on GitHub Pages</td>
+<td>Respondents fill in and submit the questionnaire</td>
+<td><a href="https://svaradh.github.io/hpc-questionnaire/">https://svaradh.github.io/hpc-questionnaire/</a></td>
+<td>Developer's GitHub account</td>
+</tr>
+<tr>
+<td>Sign-in</td>
+<td>Google sign-in ("Sign in with Google")</td>
+<td>Confirms the respondent has an @iiserb.ac.in account</td>
+<td>Developer's Google Cloud project (holds no data)</td>
+<td>Developer</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>Google Apps Script, attached to the sheet</td>
+<td>Receives submissions, writes them to the sheet, sends emails, adds the HPC Committee menu</td>
+<td>Inside the response sheet</td>
+<td>Convener</td>
+</tr>
+<tr>
+<td>Response sheet</td>
+<td>Google Sheets (14 tabs + Scenarios)</td>
+<td>Stores every answer</td>
+<td>Convener's Google Drive</td>
+<td>Convener</td>
+</tr>
+<tr>
+<td>Per-group reports</td>
+<td>Google Docs</td>
+<td>One group's answers, made on request</td>
+<td>"HPC Committee Reports" folder, convener's Drive</td>
+<td>Convener</td>
+</tr>
+<tr>
+<td>Emails</td>
+<td>Sent through the convener's account (send only)</td>
+<td>Confirmation with a copy of the answers to the respondent and the PI; follow-ups</td>
+<td>Recipients' inboxes; convener's Sent folder</td>
+<td>Convener</td>
+</tr>
+<tr>
+<td>Analysis</td>
+<td>Google Colab notebooks (Python)</td>
+<td>Builds the committee report from the sheet</td>
+<td>Convener's Drive copy of the notebook; code fetched from a fixed release of the repository</td>
+<td>Convener runs it</td>
+</tr>
+<tr>
+<td>Source code and configuration</td>
+<td>GitHub repository</td>
+<td>Form, backend, analysis, cluster configuration, documentation</td>
+<td><a href="https://github.com/svaradh/hpc-questionnaire">https://github.com/svaradh/hpc-questionnaire</a></td>
+<td>Developer (public)</td>
+</tr>
+<tr>
+<td>Respondent's draft</td>
+<td>The respondent's browser</td>
+<td>Keeps unfinished answers until submitted; offers a printable copy afterwards</td>
+<td>That person's computer</td>
+<td>Respondent</td>
+</tr>
+</tbody>
+</table>
+<h2 id="12-how-the-data-is-protected">1.2 How the data is protected</h2>
+<h3 id="a-where-the-responses-are-and-who-can-see-them">A. Where the responses are, and who can see them</h3>
+<ol>
+<li>
+<p>Every response is stored in <strong>one Google Sheet in the convener's account</strong>. Nobody else can open it
+    until the convener shares it.</p>
+</li>
+<li>
+<p>The reports folder and the script are in the same account, and equally private.</p>
+</li>
+<li>
+<p>The developer has <strong>no access</strong> to the sheet, the folder or the script after the handover. The handover
+    checks this and stops if it is not so.</p>
+</li>
+<li>
+<p>The test backend used before the handover stays in the developer's account, <strong>closed and empty</strong>. The
+    handover happens before the form is announced, so it never holds real responses.</p>
+</li>
+<li>
+<p>A respondent's unfinished answers stay in their own browser until they submit.</p>
+</li>
+</ol>
+<h3 id="b-what-the-backend-script-can-and-cannot-do">B. What the backend script can and cannot do</h3>
+<p>Google's permission screen describes access by kind of service ("all your spreadsheets"), because that is
+the only way it can. What the script actually does was checked line by line
+(<code>docs/permissions-audit.md</code> in the repository).</p>
+<ol>
+<li>
+<p>It opens <strong>only</strong> the response sheet and the reports folder, by their IDs. Only the convener can
+    change those IDs.</p>
+</li>
+<li>
+<p>It adds rows for each submission. It replaces a submission only when its own submitter or its PI edits
+    it.</p>
+</li>
+<li>
+<p>It creates a report document <strong>only</strong> when the convener asks for one, inside the reports folder.</p>
+</li>
+<li>
+<p>It <strong>sends</strong> email only: a confirmation with a copy of the answers to the respondent and the PI, a
+    follow-up the convener chooses to send, and one set-up email. It <strong>cannot read, search or delete</strong> mail.</p>
+</li>
+<li>
+<p>It contacts one outside address: Google's own sign-in check.</p>
+</li>
+<li>It <strong>never</strong> shares, copies, lists, searches, bins or deletes any file. It never opens any other
+    sheet, document or folder.</li>
+</ol>
+<h3 id="c-who-can-submit-and-what-they-share">C. Who can submit, and what they share</h3>
+<ol>
+<li>Only people signed in with a verified <strong>@iiserb.ac.in</strong> Google account can submit.</li>
+<li>
+<p>Signing in gives the form only the person's name and email address. It gets no access to their Drive,
+    mail or anything else.</p>
+</li>
+<li>
+<p>The PI's address must also be an @iiserb.ac.in address, so no email goes outside the institute.</p>
+</li>
+<li>One submission per PI address. Each row records who sent it.</li>
+</ol>
+<h3 id="d-what-leaves-the-sheet">D. What leaves the sheet</h3>
+<ol>
+<li><strong>Confirmation emails</strong> carry the group's own answers, to the person who submitted and the PI only.</li>
+<li>
+<p><strong>Per-group reports</strong> (HPC Committee menu) contain one group's answers, with names, except the
+    budget answers. They are shared only if the convener shares them.</p>
+</li>
+<li>
+<p><strong>The committee report</strong> (Colab) shows counts, totals and distributions, <strong>no group names</strong>. Budget
+    answers (Section H) appear <strong>only as totals</strong>, as the form tells respondents.</p>
+</li>
+<li>
+<p><strong>The triage notebook (06)</strong> lists entries needing follow-up by submission ID and PI name. Only
+    whoever runs it sees it.</p>
+</li>
+</ol>
+<h3 id="e-the-analysis-code">E. The analysis code</h3>
+<ol>
+<li>Notebooks run in the convener's own Colab session, from the convener's Drive copy.</li>
+<li>
+<p>They download the analysis code from a <strong>fixed, tested release</strong> of the repository (<code>REPO_REF</code>), not
+    the latest version. New code reaches them only when the convener changes <code>REPO_REF</code>.</p>
+</li>
+<li>
+<p>Each report states the release and its commit, so it can be traced and reproduced.</p>
+</li>
+<li>The code reads the response sheet, and adds one row to its Scenarios tab when a scenario is saved. It
+    writes nothing else.</li>
+</ol>
+<h2 id="13-risks-and-what-reduces-them">1.3 Risks, and what reduces them</h2>
+<ol>
+<li>
+<p><strong>The convener's account is the only key.</strong> Anyone who gets into it can read every response.
+    <em>Reduce:</em> keep 2-step verification on; share the sheet with as few people as needed, with Viewer access.</p>
+</li>
+<li>
+<p><strong>Accidental sharing.</strong> An "Anyone with the link" setting would expose the sheet.
+    <em>Reduce:</em> keep the sheet and folder Restricted, and add named people only.</p>
+</li>
+<li>
+<p><strong>Binning the sheet.</strong> The script keeps writing to a sheet in the Bin (seen in testing), so responses
+    collect out of sight and are lost if the Bin is emptied.
+    <em>Reduce:</em> never bin the sheet while the form is open; give it a distinctive name such as "… LIVE";
+    restore it from Drive's Bin if it happens.</p>
+</li>
+<li>
+<p><strong>Emails come from the convener's account.</strong> Replies come to the convener, and copies sit in the Sent
+    folder. <em>Reduce:</em> expected; filter them into a label if wished.</p>
+</li>
+<li>
+<p><strong>The form's page is published from the developer's GitHub account.</strong> The developer could change future
+    versions of the page. <em>Reduce:</em> every change is public in the repository's history; the committee
+    can ask for the repository to move to an institutional account.</p>
+</li>
+<li>
+<p><strong>Colab's sign-in is broad.</strong> During a session, the notebook could reach the convener's Drive.
+    <em>Reduce:</em> the code is a fixed release that only reads the sheet and writes Scenarios rows; always work
+    in your own Drive copy.</p>
+</li>
+<li>
+<p><strong>Spurious submissions.</strong> Any @iiserb.ac.in user can submit for a PI address.
+    <em>Reduce:</em> one submission per PI; each row records the sender; the PI gets a copy and can object.</p>
+</li>
+<li>
+<p><strong>The sign-in set-up is in the developer's Google Cloud project.</strong> If it were deleted, sign-in would
+    stop. <em>Reduce:</em> it holds no data; the developer keeps it until the exercise ends.</p>
+</li>
+<li>
+<p><strong>Edits only from the same browser.</strong> A respondent who changes computer cannot edit their submission.
+    <em>Reduce:</em> they ask the committee; the convener corrects the sheet or clears the group's rows.</p>
+</li>
+<li>
+<p><strong>Personal data.</strong> Names and institute email addresses of respondents and PIs are stored.
+    <em>Reduce:</em> they stay in the sheet and reports; the committee sets a retention period (section 2.8).</p>
+</li>
+</ol>
+<h2 id="14-frequently-asked-questions">1.4 Frequently asked questions</h2>
+<ol>
+<li>
+<p><strong>Can the developer see the responses?</strong> No. After the handover only the convener's account can open
+    the sheet, and the handover checks this.</p>
+</li>
+<li>
+<p><strong>Why does Google's permission screen ask for so much?</strong> Google names permissions by service, not by
+    file. Section 1.2B lists what the script actually does.</p>
+</li>
+<li>
+<p><strong>Can the script read my email?</strong> No. It has "Send email as you" only.</p>
+</li>
+<li>
+<p><strong>Does the committee see who answered what?</strong> In the committee report, no: only counts and totals.
+    Per-group reports and the triage list name groups, and are seen only if the convener shares them.</p>
+</li>
+<li>
+<p><strong>What if someone submits for the wrong PI?</strong> The PI receives a copy and can object. The convener can
+    delete that group's rows in every tab, so the right person can submit.</p>
+</li>
+<li>
+<p><strong>Is anything decided automatically?</strong> No. The system collects and summarises evidence. Every policy
+    decision is the committee's (section 2.1, stage 7).</p>
+</li>
+</ol>
+<hr />
+<h1 id="part-2-the-pipeline-and-how-to-run-it">Part 2. The pipeline and how to run it</h1>
+<h2 id="21-from-set-up-to-the-committees-decisions">2.1 From set-up to the committee's decisions</h2>
+<figure class="diagram"><svg viewBox="0 0 760 530" role="img" font-size="13" font-family="-apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif" aria-label="Evidence flows from the form to the committee; decisions stay with people"><defs><marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9ca3af"/></marker></defs><text x="24" y="34" font-size="15" font-weight="600" fill="#111827">Evidence flows from the form to the committee; decisions stay with people</text><g fill="none" stroke="#9ca3af" stroke-width="1.25"><path d="M240 110H272" marker-end="url(#a)"/><path d="M488 110H520" marker-end="url(#a)"/><path d="M628 146V170H380V194" marker-end="url(#a)"/><path d="M380 266V290H200V314" marker-end="url(#a)"/><path d="M380 290H560V314" marker-end="url(#a)"/><path d="M200 386V434" marker-end="url(#a)"/><path d="M560 386V434" marker-end="url(#a)"/></g><g fill="none" stroke="#9ca3af" stroke-width="1.25" stroke-dasharray="5 4"><path d="M132 194V146" marker-end="url(#a)"/><path d="M132 266V314" marker-end="url(#a)"/></g><text x="124" y="296" text-anchor="end" font-size="11.5" fill="#4b5563">fixed release</text><rect x="24.0" y="74" width="216" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25"/><text x="132" y="98" text-anchor="middle" font-weight="600" fill="#111827">1 Set-up</text><text x="132" y="118" text-anchor="middle" font-size="11.5" fill="#4b5563">Developer builds, tests,</text><text x="132" y="134" text-anchor="middle" font-size="11.5" fill="#4b5563">rehearses the handover</text><rect x="272.0" y="74" width="216" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25"/><text x="380" y="98" text-anchor="middle" font-weight="600" fill="#111827">2 Handover</text><text x="380" y="118" text-anchor="middle" font-size="11.5" fill="#4b5563">Empty backend built in the</text><text x="380" y="134" text-anchor="middle" font-size="11.5" fill="#4b5563">convener&#x27;s Google account</text><rect x="520.0" y="74" width="216" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25"/><text x="628" y="98" text-anchor="middle" font-weight="600" fill="#111827">3 Launch</text><text x="628" y="118" text-anchor="middle" font-size="11.5" fill="#4b5563">Form link and slides sent</text><text x="628" y="134" text-anchor="middle" font-size="11.5" fill="#4b5563">to research groups</text><rect x="24.0" y="194" width="216" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25" stroke-dasharray="5 4"/><text x="132" y="218" text-anchor="middle" font-weight="600" fill="#111827">GitHub repository</text><text x="132" y="238" text-anchor="middle" font-size="11.5" fill="#4b5563">Source of truth: code,</text><text x="132" y="254" text-anchor="middle" font-size="11.5" fill="#4b5563">cluster details, guide</text><rect x="272.0" y="194" width="216" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25"/><text x="380" y="218" text-anchor="middle" font-weight="600" fill="#111827">4 Responses</text><text x="380" y="238" text-anchor="middle" font-size="11.5" fill="#4b5563">Form to script to sheet;</text><text x="380" y="254" text-anchor="middle" font-size="11.5" fill="#4b5563">answers emailed back</text><rect x="60.0" y="314" width="280" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25"/><text x="200" y="338" text-anchor="middle" font-weight="600" fill="#111827">6 Analysis (Colab)</text><text x="200" y="358" text-anchor="middle" font-size="11.5" fill="#4b5563">Notebook builds the committee</text><text x="200" y="374" text-anchor="middle" font-size="11.5" fill="#4b5563">report: counts, no group names</text><rect x="420.0" y="314" width="280" height="72" rx="8" fill="none" stroke="#9ca3af" stroke-width="1.25"/><text x="560" y="338" text-anchor="middle" font-weight="600" fill="#111827">5 Per-group reports</text><text x="560" y="358" text-anchor="middle" font-size="11.5" fill="#4b5563">HPC Committee menu makes</text><text x="560" y="374" text-anchor="middle" font-size="11.5" fill="#4b5563">a Google Doc for one group</text><rect x="180.0" y="434" width="400" height="72" rx="8" fill="#2563b0" fill-opacity="0.12" stroke="#2563b0" stroke-width="2"/><text x="380" y="458" text-anchor="middle" font-weight="600" fill="#111827">7 Committee decisions</text><text x="380" y="478" text-anchor="middle" font-size="11.5" fill="#111827">Queues, limits, charging, expansion:</text><text x="380" y="494" text-anchor="middle" font-size="11.5" fill="#111827">decided by people, not automated</text></svg><figcaption>The questionnaire pipeline, seven stages. Dashed: the repository the code comes from.</figcaption></figure>
+
+<ol>
+<li>
+<p><strong>Set-up.</strong> The developer builds and tests the form, the backend and the analysis, and rehearses the
+    handover in a test account.</p>
+</li>
+<li>
+<p><strong>Handover.</strong> A tool builds a new, empty backend in the convener's account and points the form at it
+    (section 2.3).</p>
+</li>
+<li>
+<p><strong>Launch.</strong> The form's link and the introductory slides go to the research groups.</p>
+</li>
+<li>
+<p><strong>Responses.</strong> Each submission is written into the response sheet. The respondent and the PI receive
+    a copy of the answers by email.</p>
+</li>
+<li>
+<p><strong>Per-group reports.</strong> The convener makes a report for any group from the sheet's menu (section 2.5).</p>
+</li>
+<li>
+<p><strong>Analysis.</strong> The convener runs the Colab notebook with the committee's chosen parameters. It
+    produces the committee report (section 2.6). It uses the cluster details the convener supplied,
+    recorded in <code>clusters.json</code>.</p>
+</li>
+<li>
+<p><strong>Committee decisions.</strong> The committee reads the evidence and decides queues, limits, charging and
+    expansion. <strong>This step is not automated.</strong> The system never assigns a queue or ranks a group.</p>
+</li>
+</ol>
+<h2 id="22-source-of-truth-and-who-to-contact">2.2 Source of truth, and who to contact</h2>
+<ol>
+<li>
+<p><strong>The repository <a href="https://github.com/svaradh/hpc-questionnaire">https://github.com/svaradh/hpc-questionnaire</a> is the authoritative source</strong> for the
+    form, the backend code, the analysis code, the cluster configuration and this guide. The live form and
+    the backend are built from it.</p>
+</li>
+<li>
+<p><strong>Releases</strong> are git tags on tested versions (now <code>v3-2026-11-23c</code>). The notebooks use a release, so
+    any report can be traced to the exact code that made it.</p>
+</li>
+<li>
+<p><strong>The developer, Varadharajan Srinivasan (vardha@iiserb.ac.in)</strong>, handles improvements, bugs, new
+    functions, new releases and changes to the form.</p>
+</li>
+</ol>
+<h2 id="23-the-handover">2.3 The handover</h2>
+<p>The handover gives the convener a new, empty backend in their own account and points the live form at
+it. There are two routes; both end in the same place.</p>
+<ul>
+<li><strong>Route A, with the tool (recommended):</strong> about 10 minutes of the convener's time. The developer runs a
+  tool that builds and checks everything.</li>
+<li><strong>Route B, by hand:</strong> the convener builds the backend themselves from the repository, without giving
+  the tool any access (Appendix A). It takes 20–30 minutes and has fewer automatic checks.</li>
+</ul>
+<p>In both routes <strong>the developer must switch the live form</strong>: the backend's address is built into the
+form's web page, and only the person who publishes the site can change it. Pushing to the repository does
+not change the live site; republishing it does.</p>
+<h3 id="route-a-what-the-developer-does">Route A. What the developer does</h3>
+<p><strong>Before</strong></p>
+<ol>
+<li>
+<p>Make sure <code>main</code> is up to date with GitHub and has no uncommitted changes, and that the committed
+    rehearsal record matches the backend files. The tool checks all three and refuses to start otherwise.</p>
+</li>
+<li>
+<p>Have the set-up from 2.4 on this computer: Node 20.11 or later, <code>npm ci</code> done, and <code>.env.local</code> with
+    the current web-app address and the Google sign-in client ID. You must be able to publish the site
+    (<code>npm run deploy</code>).</p>
+</li>
+<li>
+<p>Send the convener this guide and agree a time. They can be beside you, or on their own computer
+    while you talk on a call or chat.</p>
+</li>
+</ol>
+<p><strong>During</strong></p>
+<ol start="4">
+<li>
+<p>Run <code>npm run handover -- handover --email &lt;convener&gt;@iiserb.ac.in</code>. Add <code>--remote</code> if the convener is
+    on their own computer: the tool then prints links for you to send them. After signing in, they land on
+    an error page at <code>http://localhost:8888/…</code> (expected) and send you that address, which you paste in.
+    It works once and expires within minutes; send it over a direct channel, not a group chat.</p>
+</li>
+<li>
+<p>Pass on each instruction the tool prints and press Enter when the convener has done it. The tool
+    creates the sheet and its script, uploads the six backend files, checks they are identical to the
+    repository, and deploys the web app.</p>
+</li>
+<li>
+<p>When asked, give your own address: the tool checks that you have <strong>no</strong> access to the new sheet.</p>
+</li>
+<li>
+<p>Confirm the switch. The tool saves your <code>.env.local</code> as <code>.env.before-handover.local</code>, puts the new
+    web-app address in <code>.env.local</code>, republishes the site, and checks that the live page uses the new
+    backend (it retries for about ten minutes while GitHub Pages updates).</p>
+</li>
+<li>
+<p>Close your old backend: in your old script project, <em>Project Settings → Script Properties</em>, set
+    <code>SUBMISSION_DEADLINE</code> to a past date. The tool checks that the old web app now reports submissions
+    closed.</p>
+</li>
+<li>
+<p>The tool signs out, cancels its access at Google, and deletes its session files.</p>
+</li>
+</ol>
+<p><strong>After</strong></p>
+<ol start="10">
+<li>Rename your old sheet, for example "… — OLD, closed", so it is never confused with the convener's.</li>
+<li>
+<p>From now on <code>.env.local</code> points at the convener's backend: a test from <code>npm run dev</code> would land among
+    real responses. For local tests, start the dev server with a test backend
+    (<code>VITE_APPS_SCRIPT_URL=&lt;test web-app URL&gt; npm run dev</code>).</p>
+</li>
+<li>
+<p>Later backend changes are pasted by the convener into their project (2.4, item 5). Rehearse first.</p>
+</li>
+</ol>
+<h3 id="route-a-what-the-convener-does-about-10-minutes">Route A. What the convener does (about 10 minutes)</h3>
+<p>Use a browser in which <strong>only your @iiserb.ac.in account is signed in</strong>. A private window is ideal: with
+several accounts signed in, Google opens pages in the wrong one.</p>
+<ol>
+<li>
+<p><strong>Turn on the Apps Script API.</strong> Open <a href="https://script.google.com/home/usersettings">https://script.google.com/home/usersettings</a> and switch on
+    <em>Google Apps Script API</em>. It lets the tool create the script. You can switch it off afterwards.</p>
+</li>
+<li>
+<p><strong>Sign in once and approve</strong> the tool ("clasp", Google's own Apps Script tool), for this session
+    only. Its permission screen is broad, because clasp's permissions are fixed by Google's tool. The tool
+    cancels this access at the end and checks that it no longer works. You can also remove it at
+    <a href="https://myaccount.google.com/connections">https://myaccount.google.com/connections</a>. (Route B avoids this step.)</p>
+</li>
+<li>
+<p><strong>Run the set-up.</strong> Open the link you are given, click <strong>Setup.gs</strong>, choose <strong>setupBackend</strong>, click
+    <strong>Run</strong> and approve. If Google says "Google hasn't verified this app", that is normal for a script in
+    your own account: choose <strong>Advanced → Go to … (unsafe)</strong>. Tick <strong>Select all</strong> on the permission screen
+    (an unticked permission is not granted). It lists:</p>
+<table>
+<thead>
+<tr>
+<th>It says</th>
+<th>Used for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>See, edit, create and delete your spreadsheets</td>
+<td>Writing responses into the response sheet</td>
+</tr>
+<tr>
+<td>See, edit, create and delete your Google Drive files</td>
+<td>Creating the reports folder and filing reports in it</td>
+</tr>
+<tr>
+<td>See, edit, create and delete your Google Docs</td>
+<td>Writing a per-group report when you ask</td>
+</tr>
+<tr>
+<td>Send email as you</td>
+<td>Confirmations, PI copies, follow-ups (send only)</td>
+</tr>
+<tr>
+<td>Connect to an external service</td>
+<td>Checking respondents' Google sign-in with Google</td>
+</tr>
+<tr>
+<td>Display and run third-party web content in prompts and sidebars</td>
+<td>The HPC Committee menu in the sheet</td>
+</tr>
+</tbody>
+</table>
+</li>
+<li>
+<p><strong>Confirm</strong> that the email "HPC Questionnaire: backend set up" arrived. Check Spam.</p>
+</li>
+</ol>
+<p><strong>Straight after</strong>, rename the sheet to something distinctive, such as "HPC Questionnaire Response v3 —
+LIVE". Renaming is safe: everything finds the sheet by its ID.</p>
+<h2 id="24-local-and-web-set-up-developer-or-maintainer">2.4 Local and web set-up (developer or maintainer)</h2>
+<p>The convener needs no installation. A maintainer of the code needs:</p>
+<ol>
+<li><code>git clone https://github.com/svaradh/hpc-questionnaire.git</code> (branch <code>main</code>).</li>
+<li>
+<p><strong>Form:</strong> Node 20 or later; <code>npm ci</code>; copy <code>.env.example</code> to <code>.env.local</code> and fill in the web-app
+    URL and the Google sign-in client ID; <code>npm run dev</code> for a local copy.</p>
+</li>
+<li>
+<p><strong>Analysis:</strong> Python 3.10 or later; <code>python3 -m venv .venv</code>, then <code>.venv/bin/pip install -r
+    requirements.txt</code>; <code>python analysis/run_notebooks.py</code> runs every notebook on synthetic data.</p>
+</li>
+<li>
+<p><strong>Publishing the form:</strong> <code>npm run deploy</code> from <code>main</code>. It rebuilds the whole site.</p>
+</li>
+<li>
+<p><strong>Backend changes:</strong> paste the changed files into the convener's script project, then <em>Deploy →
+    Manage deployments → Edit → New version</em>. The web-app address stays the same. Rehearse first
+    (<code>docs/HANDOVER.md</code>).</p>
+</li>
+<li>
+<p><strong>A new analysis release:</strong> see <em>Versions</em> in <code>analysis/README.md</code>.</p>
+</li>
+</ol>
+<p>The repository's <code>README.md</code> gives the details.</p>
+<h2 id="25-running-the-form-and-handling-responses-convener">2.5 Running the form and handling responses (convener)</h2>
+<ol>
+<li>
+<p><strong>Watching submissions.</strong> Look at the sheet every few days; there is no email per submission. Each
+    submission adds one row in <strong>Submissions</strong>, and rows in the other tabs (one per code in Workloads
+    and the per-code tabs).</p>
+</li>
+<li>
+<p><strong>Do not edit or sort the header row</strong> (row 1) of any tab. To sort or filter, use <em>Data → Create a
+    filter</em>.</p>
+</li>
+<li>
+<p><strong>The HPC Committee menu</strong> in the sheet:</p>
+<ol>
+<li><em>Generate Report for Selected Row</em>: on Submissions, click a cell in a group's row, then this. A
+   Google Doc of that group's answers appears in the reports folder; its link shows for 10 seconds.</li>
+<li><em>Send Follow-up to Selected</em>: on Submissions, select a row and add an optional note. An email
+   asking for clarification goes to the person who submitted.</li>
+<li><em>Initialize Sheets</em>: rewrites the header rows; not needed in normal use.</li>
+</ol>
+<p>The first use asks for permission once. If the menu is missing, close and reopen the sheet.</p>
+</li>
+<li>
+<p><strong>Requests from respondents:</strong></p>
+<ol>
+<li><em>"I want to change my answers."</em> In the browser they submitted from, open the form and click
+   <strong>Edit your response</strong>. Only the submitter or the PI can replace a submission.</li>
+<li><em>"I submitted from another computer"</em> or <em>"I cleared my browser."</em> Correct the cell yourself
+   (note it in the CommitteeAssessment tab), or delete that group's rows in every tab so they can
+   submit afresh.</li>
+<li><em>"A submission was already received for this PI."</em> One submission per PI address; see the two
+   points above.</li>
+<li><em>"I want a copy."</em> After submitting, the form offers <strong>Save or print your answers</strong> (a PDF from
+   the browser's print dialog). The confirmation email also contains the answers.</li>
+</ol>
+</li>
+<li>
+<p><strong>Closing the form.</strong> In the script (sheet → <em>Extensions → Apps Script</em>), open <em>Project Settings →
+    Script Properties → Add property</em>. Name it <code>SUBMISSION_DEADLINE</code>, with a value such as
+    <code>2026-12-31T23:59:59+05:30</code>. After that moment the form says it is closed. To reopen, delete the
+    property or set a later date.</p>
+</li>
+<li>
+<p><strong>Sharing with committee members.</strong> Share the sheet with named people, Viewer access, or Editor if
+    they need to save analysis scenarios. Keep <em>General access</em> on Restricted. Share the reports folder
+    the same way if needed.</p>
+</li>
+</ol>
+<h2 id="26-the-committee-report-in-google-colab-convener">2.6 The committee report in Google Colab (convener)</h2>
+<p>Colab runs in the browser, so there is nothing to install. The first time takes about ten minutes.</p>
+<p><strong>First time:</strong></p>
+<ol>
+<li>
+<p>Open <a href="https://colab.research.google.com">https://colab.research.google.com</a> → <em>File → Open notebook → GitHub</em>. Enter
+    <code>svaradh/hpc-questionnaire</code> and open <code>analysis/07_committee_report.ipynb</code>.</p>
+</li>
+<li>
+<p><strong>At once</strong>, choose <em>File → Save a copy in Drive</em>, and work only in the copy ("Copy of …"). Saving the
+    original would try to write to the public repository.</p>
+</li>
+<li>
+<p>In the first code cell, replace <code>PASTE_YOUR_SPREADSHEET_ID_HERE</code> with your sheet's ID: the long
+    string in its address between <code>/d/</code> and <code>/edit</code>. <strong>Leave <code>REPO_REF</code> as it is.</strong></p>
+</li>
+<li>
+<p>Choose <em>Runtime → Run all</em>. Colab asks you to sign in and approve access for this session.</p>
+</li>
+<li>
+<p>A form shows the evaluation parameters: availability, usable share of time, storage guides,
+    candidate queue table and charging. Start from the defaults or a saved scenario, name the scenario,
+    and click <strong>Save and build report</strong>. The scenario is saved in the sheet's <strong>Scenarios</strong> tab (never
+    overwritten), and the report downloads as an HTML file.</p>
+</li>
+<li>
+<p>Open the file in a browser. Use <em>Print → Save as PDF</em> to circulate it.</p>
+</li>
+</ol>
+<p><strong>Next times:</strong> open your Drive copy, choose <em>Runtime → Run all</em>, then choose or make a scenario and
+build.</p>
+<p><strong>New releases:</strong> when the developer announces one (for example after the cluster hardware answers are
+entered), change <code>REPO_REF</code> in the first cell to the new tag. Each report's <em>Sources</em> table states its
+release.</p>
+<h2 id="27-troubleshooting">2.7 Troubleshooting</h2>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>What to do</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Respondents report "Submission failed"</td>
+<td>Sheet → <em>Extensions → Apps Script → Executions</em>: the newest <em>doPost</em> shows the error. Send it to the developer.</td>
+</tr>
+<tr>
+<td>No confirmation emails</td>
+<td><em>Executions</em>: look for an error from <code>MailApp</code>. The daily limit is 1,500 recipients, far above this exercise.</td>
+</tr>
+<tr>
+<td>Sheet missing from Drive</td>
+<td>Look in Drive's <strong>Bin</strong> and restore it. Or open it by ID: script <em>Project Settings → Script Properties → SPREADSHEET_ID</em>, then <code>https://docs.google.com/spreadsheets/d/&lt;ID&gt;/edit</code>.</td>
+</tr>
+<tr>
+<td>No HPC Committee menu</td>
+<td>Close and reopen the sheet; use a window signed in only to your institute account.</td>
+</tr>
+<tr>
+<td>"You do not have access to this service" on a Google page</td>
+<td>The page opened in another signed-in account. Add <code>?authuser=&lt;your address&gt;</code> to the link, or use a private window.</td>
+</tr>
+<tr>
+<td>Colab: "Spreadsheet not found" or a permission error</td>
+<td>Check the ID in the first cell, and that Colab signed in with your institute account.</td>
+</tr>
+<tr>
+<td>The report notes a form version "not supported"</td>
+<td>Ask the developer for a newer release, then change <code>REPO_REF</code>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="28-at-the-end-of-the-exercise">2.8 At the end of the exercise</h2>
+<ol>
+<li>Set <code>SUBMISSION_DEADLINE</code> (section 2.5) if not done.</li>
+<li>
+<p>Download a copy of the sheet for the record (<em>File → Download → Microsoft Excel</em>). Store it where the
+    committee keeps its records.</p>
+</li>
+<li>
+<p>Agree how long the responses are kept and who keeps them. When that time comes, delete the sheet,
+    the reports and your Colab copy.</p>
+</li>
+<li>
+<p>Optional: in the script, choose <em>Deploy → Manage deployments → Archive</em> for the web app, so the form
+    can no longer submit at all. Switch off the Apps Script API if you turned it on only for the handover.</p>
+</li>
+</ol>
+<hr />
+<h1 id="appendix-a-route-b-building-the-backend-by-hand">Appendix A. Route B: building the backend by hand</h1>
+<p>The convener builds the backend in their own browser from the repository's files, and the tool is never
+given access to their account. The developer then switches the live form. Allow 20–30 minutes; follow the
+names exactly.</p>
+<h3 id="what-the-convener-does">What the convener does</h3>
+<ol>
+<li>
+<p><strong>Get the files of the current release.</strong> Open
+    <a href="https://github.com/svaradh/hpc-questionnaire/tree/v3-2026-11-23c/apps-script">https://github.com/svaradh/hpc-questionnaire/tree/v3-2026-11-23c/apps-script</a>. Use these six files,
+    and copy each with the <strong>Copy raw file</strong> button on its page:</p>
+<table>
+<thead>
+<tr>
+<th>Repository file</th>
+<th>Name in the script editor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>apps-script/Code.gs</code></td>
+<td><code>Code</code></td>
+</tr>
+<tr>
+<td><code>apps-script/SheetWriter.gs</code></td>
+<td><code>SheetWriter</code></td>
+</tr>
+<tr>
+<td><code>apps-script/ReportGenerator.gs</code></td>
+<td><code>ReportGenerator</code></td>
+</tr>
+<tr>
+<td><code>apps-script/bound/Setup.gs</code></td>
+<td><code>Setup</code></td>
+</tr>
+<tr>
+<td><code>apps-script/bound/BoundMenu.gs</code></td>
+<td><code>BoundMenu</code></td>
+</tr>
+<tr>
+<td><code>apps-script/appsscript.json</code></td>
+<td><code>appsscript.json</code></td>
+</tr>
+</tbody>
+</table>
+<p>Do <strong>not</strong> use <code>apps-script/sheet-menu/Menu.gs</code>: it belongs to the developer's old set-up.</p>
+</li>
+<li>
+<p><strong>Create the sheet.</strong> In Google Drive: <em>New → Google Sheets</em>. Name it "HPC Questionnaire Response v3
+    — LIVE".</p>
+</li>
+<li>
+<p><strong>Open its script.</strong> In the sheet: <em>Extensions → Apps Script</em>. Name the project (top left), for example
+    "HPC Questionnaire Backend".</p>
+</li>
+<li>
+<p><strong>Paste the code.</strong> Select all the text in the existing <code>Code.gs</code> and replace it with <code>Code.gs</code>. Then
+    for each of <code>SheetWriter</code>, <code>ReportGenerator</code>, <code>Setup</code> and <code>BoundMenu</code>: click <strong>+</strong> next to <em>Files</em> →
+    <em>Script</em>, type the name (the editor adds <code>.gs</code>), and paste the matching file. Press ⌘S / Ctrl+S.</p>
+</li>
+<li>
+<p><strong>Paste the settings.</strong> <em>Project Settings</em> (gear) → tick <strong>Show "appsscript.json" manifest file in
+    editor</strong>. Back in the <em>Editor</em>, open <code>appsscript.json</code>, replace its contents with <code>appsscript.json</code>,
+    and save.</p>
+</li>
+<li>
+<p><strong>Run the set-up.</strong> Open <code>Setup.gs</code>, choose <strong>setupBackend</strong> in the function menu, click <strong>Run</strong>, tick
+    <strong>Select all</strong> on Google's permission screen (the six permissions listed in Route A, step 3) and
+    approve. Wait for "Execution completed"; the email "HPC Questionnaire: backend set up" arrives.</p>
+</li>
+<li>
+<p><strong>Deploy the web app.</strong> <em>Deploy → New deployment</em> → the gear next to <em>Select type</em> → <strong>Web app</strong>.
+    Description: "HPC questionnaire web app". <strong>Execute as: Me</strong>. <strong>Who has access: Anyone</strong> (not "Anyone
+    with Google account": the form calls it without a Google sign-in). Click <strong>Deploy</strong>, approve if asked,
+    and copy the <strong>Web app URL</strong> (it ends in <code>/exec</code>).</p>
+</li>
+<li>
+<p><strong>Check the set-up.</strong> Open the web-app URL with <code>?check=setup</code> added at the end. The page should show
+    <code>"spreadsheet":true</code>, <code>"folder":true</code>, <code>"missingTabs":[]</code> and a <code>completedAt</code> time. Reload the sheet:
+    the <strong>HPC Committee</strong> menu appears after a few seconds. <em>Share</em> should list only you.</p>
+</li>
+<li>
+<p><strong>Send the web-app URL to the developer.</strong> It is not a secret (the form's page carries it), but use a
+    direct message.</p>
+</li>
+</ol>
+<h3 id="what-the-developer-does">What the developer does</h3>
+<ol>
+<li>
+<p><strong>Switch the live form.</strong> Copy <code>.env.local</code> to <code>.env.before-handover.local</code>, set
+    <code>VITE_APPS_SCRIPT_URL</code> in <code>.env.local</code> to the convener's URL, and run <code>npm run deploy</code> from an
+    up-to-date, clean <code>main</code>.</p>
+</li>
+<li>
+<p><strong>Check the live page uses it.</strong> After a few minutes, the live form's script should contain the new
+    deployment ID (the long string between <code>/s/</code> and <code>/exec</code>):
+    <code>curl -s https://svaradh.github.io/hpc-questionnaire/ | grep -o 'assets/index-[^"]*\.js'</code>, then
+    <code>curl -s https://svaradh.github.io/hpc-questionnaire/&lt;that file&gt; | grep -c &lt;deployment ID&gt;</code> gives 1.</p>
+</li>
+<li>
+<p><strong>Test once, with the convener.</strong> Submit a short test through the live form with your own address as
+    PI. Check that the row reaches the convener's sheet and both emails arrive with the answers summary,
+    and that the convener can make a report from the menu. The convener then deletes the test rows in
+    every tab and the test report.</p>
+</li>
+<li>
+<p><strong>Close your old backend</strong> (<code>SUBMISSION_DEADLINE</code> in the past) and rename your old sheet, as in
+    Route A, items 8 and 10. Item 11 applies too.</p>
+</li>
+</ol>
+<p><strong>What Route B does not check.</strong> The tool's comparison of the convener's code with the repository is
+lost: a mis-pasted file shows up only when something fails. The <code>?check=setup</code> page, the set-up email,
+the menu and the test submission catch most mistakes. If in doubt, the developer can compare the
+convener's files with the release on a call.</p>
+<p class="built">This page is generated from <code>docs/CONVENER-GUIDE.md</code> in <a href="https://github.com/svaradh/hpc-questionnaire">the repository</a>, which is the authoritative version.</p>
+</main>
+<a class="top" href="#top">Back to top</a>
+</body>
+</html>
