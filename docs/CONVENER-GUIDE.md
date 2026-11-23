@@ -16,14 +16,15 @@ Form version 2.7.3, analysis release `v3-2026-11-23c` (November 2026).
 - [Part 2. The pipeline and how to run it](#part-2-the-pipeline-and-how-to-run-it)
    - [2.1 From set-up to the committee's decisions](#21-from-set-up-to-the-committees-decisions)
    - [2.2 Source of truth, and who to contact](#22-source-of-truth-and-who-to-contact)
-   - [2.3 The handover (convener, about 10 minutes)](#23-the-handover-convener-about-10-minutes)
+   - [2.3 The handover](#23-the-handover)
    - [2.4 Local and web set-up (developer or maintainer)](#24-local-and-web-set-up-developer-or-maintainer)
    - [2.5 Running the form and handling responses (convener)](#25-running-the-form-and-handling-responses-convener)
    - [2.6 The committee report in Google Colab (convener)](#26-the-committee-report-in-google-colab-convener)
    - [2.7 Troubleshooting](#27-troubleshooting)
    - [2.8 At the end of the exercise](#28-at-the-end-of-the-exercise)
+- [Appendix A. Route B: building the backend by hand](#appendix-a-route-b-building-the-backend-by-hand)
 
-**Ready for the handover?** Go straight to [2.3 The handover](#23-the-handover-convener-about-10-minutes).
+**Ready for the handover?** Go straight to [2.3 The handover](#23-the-handover).
 
 ---
 
@@ -189,20 +190,73 @@ flowchart LR
 3. **The developer, Varadharajan Srinivasan (vardha@iiserb.ac.in)**, handles improvements, bugs, new
    functions, new releases and changes to the form.
 
-## 2.3 The handover (convener, about 10 minutes)
+## 2.3 The handover
 
-The developer runs a tool that builds a new, empty backend in your account. Be on a call or in the room.
+The handover gives the convener a new, empty backend in their own account and points the live form at
+it. There are two routes; both end in the same place.
+
+- **Route A, with the tool (recommended):** about 10 minutes of the convener's time. The developer runs a
+  tool that builds and checks everything.
+- **Route B, by hand:** the convener builds the backend themselves from the repository, without giving
+  the tool any access (Appendix A). It takes 20–30 minutes and has fewer automatic checks.
+
+In both routes **the developer must switch the live form**: the backend's address is built into the
+form's web page, and only the person who publishes the site can change it. Pushing to the repository does
+not change the live site; republishing it does.
+
+### Route A. What the developer does
+
+**Before**
+
+1. Make sure `main` is up to date with GitHub and has no uncommitted changes, and that the committed
+   rehearsal record matches the backend files. The tool checks all three and refuses to start otherwise.
+2. Have the set-up from 2.4 on this computer: Node 20.11 or later, `npm ci` done, and `.env.local` with
+   the current web-app address and the Google sign-in client ID. You must be able to publish the site
+   (`npm run deploy`).
+3. Send the convener this guide and agree a time. They can be beside you, or on their own computer
+   while you talk on a call or chat.
+
+**During**
+
+4. Run `npm run handover -- handover --email <convener>@iiserb.ac.in`. Add `--remote` if the convener is
+   on their own computer: the tool then prints links for you to send them. After signing in, they land on
+   an error page at `http://localhost:8888/…` (expected) and send you that address, which you paste in.
+   It works once and expires within minutes; send it over a direct channel, not a group chat.
+5. Pass on each instruction the tool prints and press Enter when the convener has done it. The tool
+   creates the sheet and its script, uploads the six backend files, checks they are identical to the
+   repository, and deploys the web app.
+6. When asked, give your own address: the tool checks that you have **no** access to the new sheet.
+7. Confirm the switch. The tool saves your `.env.local` as `.env.before-handover.local`, puts the new
+   web-app address in `.env.local`, republishes the site, and checks that the live page uses the new
+   backend (it retries for about ten minutes while GitHub Pages updates).
+8. Close your old backend: in your old script project, *Project Settings → Script Properties*, set
+   `SUBMISSION_DEADLINE` to a past date. The tool checks that the old web app now reports submissions
+   closed.
+9. The tool signs out, cancels its access at Google, and deletes its session files.
+
+**After**
+
+10. Rename your old sheet, for example "… — OLD, closed", so it is never confused with the convener's.
+11. From now on `.env.local` points at the convener's backend: a test from `npm run dev` would land among
+    real responses. For local tests, start the dev server with a test backend
+    (`VITE_APPS_SCRIPT_URL=<test web-app URL> npm run dev`).
+12. Later backend changes are pasted by the convener into their project (2.4, item 5). Rehearse first.
+
+### Route A. What the convener does (about 10 minutes)
+
 Use a browser in which **only your @iiserb.ac.in account is signed in**. A private window is ideal: with
 several accounts signed in, Google opens pages in the wrong one.
 
 1. **Turn on the Apps Script API.** Open <https://script.google.com/home/usersettings> and switch on
    *Google Apps Script API*. It lets the tool create the script. You can switch it off afterwards.
 2. **Sign in once and approve** the tool ("clasp", Google's own Apps Script tool), for this session
-   only. The tool cancels this access at the end and checks that it no longer works. You can also remove
-   it at <https://myaccount.google.com/connections>.
+   only. Its permission screen is broad, because clasp's permissions are fixed by Google's tool. The tool
+   cancels this access at the end and checks that it no longer works. You can also remove it at
+   <https://myaccount.google.com/connections>. (Route B avoids this step.)
 3. **Run the set-up.** Open the link you are given, click **Setup.gs**, choose **setupBackend**, click
    **Run** and approve. If Google says "Google hasn't verified this app", that is normal for a script in
-   your own account: choose **Advanced → Go to … (unsafe)**. The permission screen lists:
+   your own account: choose **Advanced → Go to … (unsafe)**. Tick **Select all** on the permission screen
+   (an unticked permission is not granted). It lists:
 
    | It says | Used for |
    |---|---|
@@ -212,15 +266,10 @@ several accounts signed in, Google opens pages in the wrong one.
    | Send email as you | Confirmations, PI copies, follow-ups (send only) |
    | Connect to an external service | Checking respondents' Google sign-in with Google |
    | Display and run third-party web content in prompts and sidebars | The HPC Committee menu in the sheet |
-   | See your primary email address | Sending the set-up email to you |
 
 4. **Confirm** that the email "HPC Questionnaire: backend set up" arrived. Check Spam.
 
-The tool then checks that only you can open the sheet, and switches the live form to your backend. The
-developer closes the old backend. The tool signs out and prints the links to your sheet, script and
-reports folder.
-
-**Straight after**, rename the sheet to something distinctive, such as "HPC Questionnaire Response v3
+**Straight after**, rename the sheet to something distinctive, such as "HPC Questionnaire Response v3 —
 LIVE". Renaming is safe: everything finds the sheet by its ID.
 
 ## 2.4 Local and web set-up (developer or maintainer)
@@ -320,3 +369,71 @@ release.
    the reports and your Colab copy.
 4. Optional: in the script, choose *Deploy → Manage deployments → Archive* for the web app, so the form
    can no longer submit at all. Switch off the Apps Script API if you turned it on only for the handover.
+
+---
+
+# Appendix A. Route B: building the backend by hand
+
+The convener builds the backend in their own browser from the repository's files, and the tool is never
+given access to their account. The developer then switches the live form. Allow 20–30 minutes; follow the
+names exactly.
+
+### What the convener does
+
+1. **Get the files of the current release.** Open
+   <https://github.com/svaradh/hpc-questionnaire/tree/v3-2026-11-23c/apps-script>. Use these six files,
+   and copy each with the **Copy raw file** button on its page:
+
+   | Repository file | Name in the script editor |
+   |---|---|
+   | `apps-script/Code.gs` | `Code` |
+   | `apps-script/SheetWriter.gs` | `SheetWriter` |
+   | `apps-script/ReportGenerator.gs` | `ReportGenerator` |
+   | `apps-script/bound/Setup.gs` | `Setup` |
+   | `apps-script/bound/BoundMenu.gs` | `BoundMenu` |
+   | `apps-script/appsscript.json` | `appsscript.json` |
+
+   Do **not** use `apps-script/sheet-menu/Menu.gs`: it belongs to the developer's old set-up.
+2. **Create the sheet.** In Google Drive: *New → Google Sheets*. Name it "HPC Questionnaire Response v3
+   — LIVE".
+3. **Open its script.** In the sheet: *Extensions → Apps Script*. Name the project (top left), for example
+   "HPC Questionnaire Backend".
+4. **Paste the code.** Select all the text in the existing `Code.gs` and replace it with `Code.gs`. Then
+   for each of `SheetWriter`, `ReportGenerator`, `Setup` and `BoundMenu`: click **+** next to *Files* →
+   *Script*, type the name (the editor adds `.gs`), and paste the matching file. Press ⌘S / Ctrl+S.
+5. **Paste the settings.** *Project Settings* (gear) → tick **Show "appsscript.json" manifest file in
+   editor**. Back in the *Editor*, open `appsscript.json`, replace its contents with `appsscript.json`,
+   and save.
+6. **Run the set-up.** Open `Setup.gs`, choose **setupBackend** in the function menu, click **Run**, tick
+   **Select all** on Google's permission screen (the six permissions listed in Route A, step 3) and
+   approve. Wait for "Execution completed"; the email "HPC Questionnaire: backend set up" arrives.
+7. **Deploy the web app.** *Deploy → New deployment* → the gear next to *Select type* → **Web app**.
+   Description: "HPC questionnaire web app". **Execute as: Me**. **Who has access: Anyone** (not "Anyone
+   with Google account": the form calls it without a Google sign-in). Click **Deploy**, approve if asked,
+   and copy the **Web app URL** (it ends in `/exec`).
+8. **Check the set-up.** Open the web-app URL with `?check=setup` added at the end. The page should show
+   `"spreadsheet":true`, `"folder":true`, `"missingTabs":[]` and a `completedAt` time. Reload the sheet:
+   the **HPC Committee** menu appears after a few seconds. *Share* should list only you.
+9. **Send the web-app URL to the developer.** It is not a secret (the form's page carries it), but use a
+   direct message.
+
+### What the developer does
+
+1. **Switch the live form.** Copy `.env.local` to `.env.before-handover.local`, set
+   `VITE_APPS_SCRIPT_URL` in `.env.local` to the convener's URL, and run `npm run deploy` from an
+   up-to-date, clean `main`.
+2. **Check the live page uses it.** After a few minutes, the live form's script should contain the new
+   deployment ID (the long string between `/s/` and `/exec`):
+   `curl -s https://svaradh.github.io/hpc-questionnaire/ | grep -o 'assets/index-[^"]*\.js'`, then
+   `curl -s https://svaradh.github.io/hpc-questionnaire/<that file> | grep -c <deployment ID>` gives 1.
+3. **Test once, with the convener.** Submit a short test through the live form with your own address as
+   PI. Check that the row reaches the convener's sheet and both emails arrive with the answers summary,
+   and that the convener can make a report from the menu. The convener then deletes the test rows in
+   every tab and the test report.
+4. **Close your old backend** (`SUBMISSION_DEADLINE` in the past) and rename your old sheet, as in
+   Route A, items 8 and 10. Item 11 applies too.
+
+**What Route B does not check.** The tool's comparison of the convener's code with the repository is
+lost: a mis-pasted file shows up only when something fails. The `?check=setup` page, the set-up email,
+the menu and the test submission catch most mistakes. If in doubt, the developer can compare the
+convener's files with the release on a call.
