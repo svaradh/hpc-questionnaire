@@ -431,6 +431,43 @@ export function QuestionRenderer({
   // text (default)
   // -------------------------------------------------------------------------
   const textUnknown = value === UNKNOWN
+
+  // Email address restricted to one domain: type the part before "@", the domain is fixed.
+  if (question.emailDomain) {
+    const domain = question.emailDomain
+    const full = typeof value === 'string' ? value : ''
+    const local = full.toLowerCase().endsWith('@' + domain.toLowerCase())
+      ? full.slice(0, -(domain.length + 1))
+      : full.split('@')[0]
+    return (
+      <div className="question-block">
+        {renderLabel()}
+        {renderHelpText()}
+        <div className="input-with-unit">
+          <input
+            id={fieldId}
+            type="text"
+            inputMode="email"
+            autoComplete="off"
+            spellCheck={false}
+            value={local}
+            onChange={e => {
+              // A pasted full address keeps only the part before "@".
+              const v = e.target.value.split('@')[0].trim()
+              onChange(v === '' ? undefined : `${v}@${domain}`)
+            }}
+            placeholder={question.placeholder}
+            className={`question-input${disabled ? ' input-disabled' : ''}`}
+            required={question.required}
+            disabled={disabled}
+            aria-describedby={`${fieldId}-domain`}
+          />
+          <span className="input-unit" id={`${fieldId}-domain`}>@{domain}</span>
+        </div>
+      </div>
+    )
+  }
+
   const strVal = typeof value === 'string' && !textUnknown ? value : ''
   const textInput = (
     <input

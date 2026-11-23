@@ -86,6 +86,21 @@ async function testSimulation() {
   p.run('setupBackend', [], { editor: true });
   check(world.folders.size === 1, 'running setupBackend again reuses the reports folder');
 
+  p.run('writeToSheets', ['SUM-1', 'x@iiserb.ac.in', 'X', {
+    A_group_name: 'Summary test group', A_pi_email: 'pi@iiserb.ac.in', H_budget_band: 'band_2',
+    W_workloads: [{ W_code: 'CodeA', W_cores: '64', W_walltime: { value: 2, unit: 'hours' }, W_jobs_year: '10' }]
+  }, '2.7.1']);
+  const summary = p.run('submissionSummaryText', ['SUM-1']);
+  check(/Summary test group/.test(summary) && /CodeA/.test(summary) && /A — ABOUT THE GROUP/.test(summary),
+    'answers summary for the emails lists the recorded answers by section');
+  check(!/computed/.test(summary) && /band 2/.test(summary), 'summary leaves out computed values, includes the group\'s own budget answer');
+  p.run('deleteAllRowsForSubmission', ['SUM-1']);
+
+  const inst = a => p.run('isInstituteAddress', [a]);
+  check(inst('pi@iiserb.ac.in') && inst(' PI@IISERB.AC.IN '), 'PI address check: institute addresses accepted');
+  check(!inst('pi@gmail.com') && !inst('pi@iiserb.ac.in.evil.org') && !inst('a@iiserb.ac.in, b@x.org') && !inst('a@b@iiserb.ac.in') && !inst('') && !inst('@iiserb.ac.in'),
+    'PI address check: other domains, lists and malformed addresses refused');
+
   const standalone = new Project(world, { owner: 'c@iiserb.ac.in', files });
   let threw = false; try { standalone.run('setupBackend', [], { editor: true }); } catch { threw = true; }
   check(threw, 'setupBackend refuses to run in a standalone project');
@@ -223,6 +238,8 @@ async function testPipeline() {
 function testScopes() {
   const files = Object.fromEntries(BACKEND_FILES.map(([src, name]) => [name, fs.readFileSync(path.join(CONFIG.repo, src), 'utf8')]));
   check(missingScopes(files).length === 0, 'appsscript.json lists every permission the backend code uses');
+  check(!Object.values(files).some(t => /\bGmailApp\./.test(t)) && !JSON.parse(files['appsscript.json']).oauthScopes.includes('https://mail.google.com/'),
+    'email is send-only (MailApp, script.send_mail; no full Gmail access)');
   const m = JSON.parse(files['appsscript.json']);
   m.oauthScopes = m.oauthScopes.filter(x => !/userinfo\.email|container\.ui/.test(x));
   const gaps = missingScopes({ ...files, 'appsscript.json': JSON.stringify(m) }).map(g => g.scope);

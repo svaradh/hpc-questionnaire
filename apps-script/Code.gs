@@ -87,6 +87,13 @@ function findSubmission(submissionId) {
   return null;
 }
 
+/** A single address of the form name@iiserb.ac.in (no other domain, no list of addresses). */
+function isInstituteAddress(email) {
+  var e = String(email || '').trim().toLowerCase();
+  var at = e.lastIndexOf('@');
+  return at > 0 && e.indexOf('@') === at && e.slice(at + 1) === ALLOWED_DOMAIN && !/[\s,;<>"]/.test(e);
+}
+
 /** Only the person who submitted, or the PI named in the submission, may replace it. */
 function mayEdit(original, email) {
   var e = String(email || '').toLowerCase();
@@ -177,7 +184,17 @@ function doPost(e) {
 
     var submitterEmail = tokenInfo.email;
     var submitterName  = tokenInfo.name || submitterEmail;
-    var piEmail        = answers['A_pi_email'] || '';
+    var piEmail        = String(answers['A_pi_email'] || '').trim();
+
+    // The PI is sent a notice, so only an institute address is accepted (the form shows
+    // the domain as a fixed suffix; this also covers older drafts and direct calls).
+    if (!isInstituteAddress(piEmail)) {
+      return jsonResponse({
+        success: false,
+        error: 'The PI\'s email address must be an @' + ALLOWED_DOMAIN + ' address. ' +
+               'Please correct it in Section A and submit again; your answers are kept.'
+      });
+    }
 
     // One submission at a time, so two cannot pass the duplicate check together
     // and an edit's delete-and-rewrite is not interleaved with another write.
@@ -314,6 +331,15 @@ function sendConfirmationEmail(submissionId, email, name, answers, isEdit) {
   var action    = isEdit ? 'updated' : 'received';
   var subject   = 'HPC Questionnaire — Submission ' + (isEdit ? 'Updated' : 'Received') + ' [' + submissionId + ']';
 
+  // The answers as recorded, so the PI can review a submission made on their behalf.
+  var summary = '';
+  try { summary = submissionSummaryText(submissionId); } catch (err) { Logger.log('Summary failed for ' + submissionId + ': ' + err.message); }
+  var summaryBlock = summary
+    ? ['', '----------------------------------------------------------------------',
+       'YOUR ANSWERS AS RECORDED', '', summary,
+       '----------------------------------------------------------------------']
+    : [];
+
   var body = [
     'Dear ' + name + ',',
     '',
@@ -328,13 +354,15 @@ function sendConfirmationEmail(submissionId, email, name, answers, isEdit) {
     'The HPC Users\' Committee will review your submission and may contact you',
     'if clarification is needed.',
     '',
+    'To change any answer, open the form in the same browser and choose "Edit your response".',
+    '',
     'This is an automated message. Please do not reply directly to this email.',
     '',
     'IISER HPC Users\' Committee',
     'Indian Institute of Science Education and Research Bhopal'
-  ].join('\n');
+  ].concat(summaryBlock).join('\n');
 
-  GmailApp.sendEmail(email, subject, body);
+  MailApp.sendEmail(email, subject, body);
 
   if (piEmail && piEmail !== email) {
     var piBody = [
@@ -347,6 +375,10 @@ function sendConfirmationEmail(submissionId, email, name, answers, isEdit) {
       'Submission ID : ' + submissionId,
       (isEdit ? 'Updated' : 'Submitted') + ' at  : ' + new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
       '',
+      'The answers as recorded are below, for you to review. If anything should be',
+      'changed, please ask ' + name + ' to open the form in the browser they used and',
+      'choose "Edit your response", or contact the HPC Users\' Committee.',
+      '',
       'The HPC Users\' Committee will review the submission and contact you',
       'if further information is needed.',
       '',
@@ -354,8 +386,8 @@ function sendConfirmationEmail(submissionId, email, name, answers, isEdit) {
       '',
       'IISER HPC Users\' Committee',
       'Indian Institute of Science Education and Research Bhopal'
-    ].join('\n');
-    GmailApp.sendEmail(piEmail, subject, piBody);
+    ].concat(summaryBlock).join('\n');
+    MailApp.sendEmail(piEmail, subject, piBody);
   }
 }
 
@@ -399,7 +431,7 @@ function sendFollowUpEmail() {
   lines = lines.concat(['', 'Please reply to this email at your earliest convenience.', '',
     'IISER HPC Users\' Committee', 'Indian Institute of Science Education and Research Bhopal']);
 
-  GmailApp.sendEmail(submitterEmail, subject, lines.join('\n'));
+  MailApp.sendEmail(submitterEmail, subject, lines.join('\n'));
   ui.alert('Follow-up email sent to ' + submitterEmail);
 }
 

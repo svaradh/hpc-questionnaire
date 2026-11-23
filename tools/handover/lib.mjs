@@ -56,6 +56,7 @@ export const SCOPE_RULES = [
   [/\bDriveApp\./, 'https://www.googleapis.com/auth/drive'],
   [/\bDocumentApp\./, 'https://www.googleapis.com/auth/documents'],
   [/\bGmailApp\./, 'https://mail.google.com/'],
+  [/\bMailApp\./, 'https://www.googleapis.com/auth/script.send_mail'],
   [/\bUrlFetchApp\./, 'https://www.googleapis.com/auth/script.external_request'],
   [/\bSession\.(getEffectiveUser|getActiveUser)\b/, 'https://www.googleapis.com/auth/userinfo.email'],
 ];

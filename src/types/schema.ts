@@ -98,6 +98,12 @@ export interface Question {
   /** Physical unit label displayed after a number input (e.g. "hours", "GB"). */
   unit?: string
   /**
+   * For 'text' questions holding an email address: the only domain allowed (e.g. "iiserb.ac.in").
+   * The respondent types the part before "@"; "@domain" is shown after the box. The answer is
+   * stored as the full address, so the backend, sheet and analysis see the same values as before.
+   */
+  emailDomain?: string
+  /**
    * Simple single-condition predicate for progressive disclosure.
    * The question is shown only when the referenced question's current
    * value is one of the listed values.

@@ -273,7 +273,7 @@ const STEPS = [
 
       await untilPasses('setup-email', async () => {
         const got = await confirm('setup-email', `  Did ${s.email} receive the email "HPC Questionnaire: backend set up"?`, s);
-        if (!got) throw new Gate('No email: look in Spam, and in the editor\'s Executions list for an error from GmailApp. Run setupBackend again after fixing it.');
+        if (!got) throw new Gate('No email: look in Spam, and in the editor\'s Executions list for an error from MailApp. Run setupBackend again after fixing it.');
         ok('Email received');
       }, s);
     },

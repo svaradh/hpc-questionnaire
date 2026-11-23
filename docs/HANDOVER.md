@@ -202,7 +202,7 @@ This revokes it and removes the session files. The convener can also remove "cla
   `npm run handover -- status` shows how far a run got. Running the same command again continues.
 - **`setupBackend` failed:** the error is in the editor's log (also under Executions). Fix it, run it
   again (it is safe to repeat), and press Enter.
-- **No setup email:** look in Spam, and in Executions for an error from `GmailApp`.
+- **No setup email:** look in Spam, and in Executions for an error from `MailApp`.
 - **No HPC Committee menu in the sheet:** close the sheet's tab and open the sheet again; the menu
   appears a few seconds after the sheet loads. A tab opened before a restore from the Bin never gets
   it. If it is still missing, open the sheet in a window signed in only to the institute account:
@@ -223,7 +223,10 @@ This revokes it and removes the session files. The convener can also remove "cla
 **For the convener**
 - **Analysis:** open `analysis/07_committee_report.ipynb` from GitHub in Colab, then *File → Save a
   copy in Drive* at once, and work only in the copy. In the first cell set `SPREADSHEET_ID` to the new
-  sheet's ID (the long string in its address). Saving a scenario writes to its `Scenarios` tab.
+  sheet's ID (the long string in its address). Leave `REPO_REF` as it is: it names the tested release of
+  the analysis code, and is changed only when a newer release is announced (`analysis/README.md`,
+  *Versions*). Each report records the release it was made with. Saving a scenario writes to its
+  `Scenarios` tab.
 - **HPC Committee menu:** it is in the sheet itself. The script project is attached to the sheet, so
   the library set-up in `apps-script/sheet-menu/` is not needed.
 - **Sharing:** the sheet and the reports folder are private until the convener shares them.

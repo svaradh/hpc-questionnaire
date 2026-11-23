@@ -67,7 +67,7 @@ function setupBackend() {
   if (left.length) throw new Error('Setup test: the test submission could not be removed from: ' + left.join(', '));
 
   // 5. Email
-  GmailApp.sendEmail(me, 'HPC Questionnaire: backend set up',
+  MailApp.sendEmail(me, 'HPC Questionnaire: backend set up',
     [
       'The HPC questionnaire backend in your Google account is set up.',
       '',

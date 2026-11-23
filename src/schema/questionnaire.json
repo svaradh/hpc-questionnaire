@@ -1,5 +1,5 @@
 {
-  "version": "2.7.0",
+  "version": "2.7.1",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -104,8 +104,9 @@
           "type": "text",
           "label": "PI email address",
           "required": true,
-          "placeholder": "pi@iiserb.ac.in",
-          "helpText": "Used for correspondence from the HPC Users' Committee. The PI will be sent a summary to review before the submission is finalised."
+          "placeholder": "name",
+          "emailDomain": "iiserb.ac.in",
+          "helpText": "Used for correspondence from the HPC Users' Committee. When the form is submitted, the PI is emailed the submission ID and a summary of the answers to review; changes can be made with \"Edit your response\" in the browser used to submit."
         },
         {
           "id": "A_pi_is_respondent",
@@ -137,7 +138,8 @@
           "type": "text",
           "label": "Email address of person completing this form",
           "required": true,
-          "placeholder": "name@iiserb.ac.in",
+          "placeholder": "name",
+          "emailDomain": "iiserb.ac.in",
           "mirrorFromPI": true
         },
         {

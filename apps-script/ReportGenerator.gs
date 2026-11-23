@@ -184,6 +184,52 @@ function generateReport(submissionId) {
 }
 
 // ---------------------------------------------------------------------------
+// Plain-text summary of one submission, for the confirmation emails
+// ---------------------------------------------------------------------------
+
+/**
+ * The group's own answers as plain text, read back from the sheet after they were written
+ * (so it shows exactly what was recorded). Goes to the submitter and the PI, so the PI can
+ * review a submission made on their behalf. Answers only: computed columns and committee
+ * notes are left out. The Charging section is included here, unlike the committee report,
+ * because these emails go only to the group itself.
+ *
+ * @param  {string} submissionId
+ * @return {string}
+ */
+function submissionSummaryText(submissionId) {
+  var ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  var sections = REPORT_SECTIONS.concat([{ tab: 'Charging', title: 'H — Premium services and budget' }]);
+  var out = [];
+  sections.forEach(function(sec) {
+    var def = SHEET_DEFINITIONS.filter(function(d) { return d.name === sec.tab; })[0];
+    if (!def) return;
+    var rows = getRowsForSubmission(ss, sec.tab, submissionId);
+    if (rows.length === 0) return;
+    var answersOnly = function(row) {
+      return rowPairs(def, row).filter(function(p) { return !/ — computed$/.test(p[0]); });
+    };
+    var blocks = [];
+    rows.forEach(function(row) {
+      var pairs = answersOnly(row);
+      if (!pairs.length) return;
+      var lines = [];
+      if (def.source !== 'top') {
+        var titleCols = [].concat(sec.titleCol || []);
+        var title = titleCols.map(function(c) { return readableValue(row[c]); }).filter(Boolean).join(' — ');
+        lines.push('  Entry ' + row['entry_index'] + (title ? ': ' + title : ''));
+        var titleLabels = titleCols.map(readableLabel);
+        pairs = pairs.filter(function(p) { return titleLabels.indexOf(p[0]) < 0; });
+      }
+      pairs.forEach(function(p) { lines.push('    ' + p[0] + ': ' + p[1]); });
+      blocks.push(lines.join('\n'));
+    });
+    if (blocks.length) out.push(sec.title.toUpperCase() + '\n' + blocks.join('\n\n'));
+  });
+  return out.join('\n\n');
+}
+
+// ---------------------------------------------------------------------------
 // Data retrieval helpers
 // ---------------------------------------------------------------------------
 

@@ -88,7 +88,7 @@ export class Project {
         getFolderById(id) { const f = id && world.folders.get(id); if (!f) throw new Error('No item with the given ID could be found.'); return f; },
       },
       Session: { getEffectiveUser: () => ({ getEmail: () => project.owner }) },
-      GmailApp: { sendEmail: (to, subject, body) => world.mail.push({ from: project.owner, to, subject, body }) },
+      MailApp: { sendEmail: (to, subject, body) => world.mail.push({ from: project.owner, to, subject, body }) },
       Utilities: {
         getUuid: () => crypto.randomUUID(),
         DigestAlgorithm: { SHA_256: 'sha256' }, Charset: { UTF_8: 'utf8' },
