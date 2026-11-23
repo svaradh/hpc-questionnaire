@@ -13,6 +13,10 @@ stopped at any prompt (`q`) and continued later with the same command.
 The form, the questions, the schema and the analysis code do not change. Only where the form sends its
 responses changes.
 
+If the convener prefers not to give the tool any access to their account, they can build the backend by
+hand instead: `docs/CONVENER-GUIDE.md`, Appendix A (Route B). The developer then switches the live form as
+described there.
+
 ## In short
 
 | | Who | Time |
