@@ -18,7 +18,7 @@ principles are in [`CLAUDE.md`](CLAUDE.md); current status and next steps are in
 ```bash
 git clone https://github.com/svaradh/hpc-questionnaire.git
 cd hpc-questionnaire
-git checkout progressive-disclosure-v2      # v3 work; main still carries v1
+# main is the working branch (v3 since 2026-11-16)
 ```
 
 **Form (Node 20 or later; `.nvmrc` names the version used):**
