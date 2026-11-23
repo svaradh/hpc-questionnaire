@@ -45,6 +45,13 @@
   code). **Next:** decide whether to hand over; if so, rehearse in a test account (`npm run handover -- rehearse
   --email …`), commit `tools/handover/rehearsal.json`, then hand over before opening the form. `Code.gs` gained a
   `?check=setup` health check (no data); the present v3 project does not need it.
+- **Handover rehearsed (2026-11-23), all 13 steps passed** in the operator's own account, including a test
+  submission through the local form (ID, row and email). The first try stopped in `setupBackend`:
+  `appsscript.json` lacked `userinfo.email` (for `Session.getEffectiveUser`) and `script.container.ui` (for the HPC
+  Committee menu); both added (a045e69), and the pipeline's first step now checks the manifest against the code.
+  `tools/handover/rehearsal.json` committed. **Next:** the handover itself with the convener (`npm run handover --
+  handover --email …`), before the form is opened. Left by hand: the trial "HPC Committee Reports" folder created on
+  2026-11-23 (not the live `…/v3` one) and the test emails.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 

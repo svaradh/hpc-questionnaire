@@ -1,0 +1,27 @@
+{
+  "_comment": "Written by tools/handover/handover.mjs rehearse. The handover refuses to run unless the backend files have this fingerprint. No account details are kept here.",
+  "date": "2026-11-23",
+  "commit": "a045e69ae80ff60127cfc8acdd4222d88e10de2f",
+  "fingerprint": "7054a999c373d04a2e2808452fd5587962b14fa81440eb4296b642b6db7f2b45",
+  "files": {
+    "BoundMenu.gs": "18136fc8897225759640200b2b105c1e30df3ca5a8bcd0dff7b4deef8efe6d8b",
+    "Code.gs": "8585a5afeb3c8e0daebf321be373a97098011cb46aa5354e2984a6a3a96fed48",
+    "ReportGenerator.gs": "fbd27c5186650ade6d09faa46a80a6fe0a920e58d37d1edeb45dd46965b89552",
+    "Setup.gs": "75b90cf19740a0698874945e0c1e1ff10ac76943556cc799428526378b0a3742",
+    "SheetWriter.gs": "9d58e52b3250bb6e509de3a7fc371a560f97cfd959b36f88874d979c1674da82",
+    "appsscript.json": "37d834f07eb651ad4e2a946db708278e1cffe46f033c43537b807931bf4f35b7"
+  },
+  "checks": [
+    "preflight",
+    "api-setting",
+    "sign-in",
+    "api-check",
+    "create",
+    "upload",
+    "deploy",
+    "setup",
+    "test-submission",
+    "access"
+  ],
+  "testSubmission": true
+}
