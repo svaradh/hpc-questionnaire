@@ -19,3 +19,6 @@ ipykernel>=6.29
 
 # Hardware-check PDF for the cluster convener (docs/hardware-check/make_hardware_form.py)
 reportlab>=4.0
+
+# HTML version of the convener guide (docs/build_guide_html.py)
+markdown>=3.6
