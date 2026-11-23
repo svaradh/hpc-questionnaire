@@ -1,7 +1,7 @@
 # HPC Workload Questionnaire: guide for the convener
 
 For the convener of the HPC Users' Committee, who owns the questionnaire's responses.
-Form version 2.7.2, analysis release `v3-2026-11-23b` (November 2026).
+Form version 2.7.3, analysis release `v3-2026-11-23c` (November 2026).
 
 - **Part 1** says what the system is made of, how the responses are protected, and what could go wrong.
 - **Part 2** describes the whole pipeline, from set-up to the committee's decisions, and how to run each part.
@@ -165,7 +165,7 @@ flowchart LR
 1. **The repository <https://github.com/svaradh/hpc-questionnaire> is the authoritative source** for the
    form, the backend code, the analysis code, the cluster configuration and this guide. The live form and
    the backend are built from it.
-2. **Releases** are git tags on tested versions (now `v3-2026-11-23b`). The notebooks use a release, so
+2. **Releases** are git tags on tested versions (now `v3-2026-11-23c`). The notebooks use a release, so
    any report can be traced to the exact code that made it.
 3. **The developer, Varadharajan Srinivasan (vardha@iiserb.ac.in)**, handles improvements, bugs, new
    functions, new releases and changes to the form.

@@ -70,6 +70,10 @@
   "Send email as you" (tick *Select all*: Google's screen starts with every box unticked), PI summary in the email,
   printable copy, menu and report. Record committed (8a779ce). Rehearsal leftovers binned; the pipeline now names the
   trial sheet "REHEARSAL (bin me) — …" and checks that the trial reports folder is binned (0e9aca6).
+- **Form 2.7.3 (2026-11-23), release `v3-2026-11-23c`:** home area now/in 3 years, how long outputs stay, and
+  expected demand in 3 years are required (Don't know allowed); they feed the storage and expansion analysis and had
+  never been marked required. Testing questions stay required only after a debug-wait problem; benchmarking offers
+  stay optional. Front end only: no rehearsal needed.
 - **Next:** the handover with the convener (`npm run handover -- handover --email …`), before the form is announced;
   give them `docs/CONVENER-GUIDE.md` (or the shared doc) first.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,

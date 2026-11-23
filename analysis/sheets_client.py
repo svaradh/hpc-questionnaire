@@ -50,10 +50,10 @@ REPO_API = "https://api.github.com/repos/svaradh/hpc-questionnaire"
 # and cluster configuration. Later changes to the repository do not reach a notebook until its
 # REPO_REF is set to a newer tag. To release: change this, run _build_notebooks.py, commit, then
 # `git tag <name> && git push origin <name>` (docs: analysis/README.md, "Versions").
-DEFAULT_REF = "v3-2026-11-23b"
+DEFAULT_REF = "v3-2026-11-23c"
 
 # Form versions whose sheet columns this analysis code was written and tested for.
-SUPPORTED_FORM_VERSIONS = {"2.7.0", "2.7.1", "2.7.2"}
+SUPPORTED_FORM_VERSIONS = {"2.7.0", "2.7.1", "2.7.2", "2.7.3"}
 
 
 def code_version() -> str:

@@ -1,5 +1,5 @@
 {
-  "version": "2.7.2",
+  "version": "2.7.3",
   "title": "HPC Workload Characterisation Questionnaire",
   "description": "This questionnaire collects factual information about your group's computing workloads. It helps the HPC Users' Committee assess how well the present clusters (Gargi and Raman) meet current needs, and plan for growth. You describe what you observe; the committee applies the agreed tests.",
   "coreNotice": "Users provide facts and evidence. The committee applies the agreed tests. You are not being asked to assess your own priority, entitlement, or queue. Incomplete technical knowledge does not disadvantage your submission — 'Don't know' is always a valid answer.",
@@ -3189,7 +3189,7 @@
           "id": "S_home_now",
           "type": "quantity",
           "label": "Home-area working space your group needs at any one time",
-          "required": false,
+          "required": true,
           "dimension": "size",
           "defaultUnit": "GB",
           "allowUnknown": true,
@@ -3202,7 +3202,7 @@
           "id": "S_home_3y",
           "type": "quantity",
           "label": "The same, expected in 3 years",
-          "required": false,
+          "required": true,
           "dimension": "size",
           "defaultUnit": "GB",
           "allowUnknown": true,
@@ -3214,7 +3214,7 @@
           "id": "S_output_stay",
           "type": "radio",
           "label": "How long do final outputs usually stay on the cluster before they are moved to your group's own storage?",
-          "required": false,
+          "required": true,
           "options": [
             {
               "value": "lt_1w",
@@ -3747,7 +3747,7 @@
           "id": "Z_growth_3y",
           "type": "number",
           "label": "Expected computing demand of your group in 3 years, relative to now",
-          "required": false,
+          "required": true,
           "helpText": "1 = same as now; 2 = twice as much.",
           "integer": false,
           "allowUnknown": true,
