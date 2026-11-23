@@ -59,6 +59,14 @@
   did not exist). Notebooks pinned to release tags (`REPO_REF = 'v3-2026-11-23'`, `sheets_client.DEFAULT_REF`); each
   report records release + commit; unsupported form versions warn. **The backend changed, so rehearse again**
   (check the PI email's summary and Generate Report), commit the new `rehearsal.json`, then hand over.
+- **Live backend updated (2026-11-23)** by hand: `Code.gs`, `ReportGenerator.gs`, manifest `gmail.send` →
+  `script.send_mail` (live project only, no container.ui/userinfo.email); web-app deployment (ID ending `NntJmXeA`)
+  moved to version 7; tested on the live form (summary in email, Generate Report). The live sheet had been binned by
+  mistake during the rehearsal clean-up (same name as the trial sheets); restored and renamed "… — LIVE". Test rows
+  and report removed.
+- **Form 2.7.2 live, release `v3-2026-11-23b`** (printable copy of answers replaces the JSON download).
+- **Convener guide**: `docs/CONVENER-GUIDE.md`, also as a shareable doc (operator's claude.ai account). Keep both in step.
+- **Next:** re-run the rehearsal (backend changed since the last one), then the handover with the convener.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 

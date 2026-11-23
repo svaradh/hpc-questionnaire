@@ -220,6 +220,9 @@ This revokes it and removes the session files. The convener can also remove "cla
 
 ## After the handover
 
+The convener's own guide (their part of the handover, data protection, risks, day-to-day use, the
+report) is `docs/CONVENER-GUIDE.md`; give it to them before the handover.
+
 **For the convener**
 - **Analysis:** open `analysis/07_committee_report.ipynb` from GitHub in Colab, then *File → Save a
   copy in Drive* at once, and work only in the copy. In the first cell set `SPREADSHEET_ID` to the new
