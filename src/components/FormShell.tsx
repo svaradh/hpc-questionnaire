@@ -22,6 +22,7 @@ import { SectionsContext } from './SectionsContext'
 import type { MissingAnswer } from '../utils/conditions'
 import { GoogleSignIn } from './GoogleSignIn'
 import { SubmissionConfirmation } from './SubmissionConfirmation'
+import { AnswersPrintout } from './AnswersPrintout'
 import { useGoogleAuth } from '../hooks/useGoogleAuth'
 import { submitForm, checkWindow } from '../utils/submitForm'
 import type { SubmittedRecord } from '../hooks/useFormState'
@@ -70,6 +71,8 @@ export function FormShell({
 
   // Edit mode — set when user chooses to edit a previous submission
   const [editingSubmissionId, setEditingSubmissionId] = useState<string | null>(null)
+  // The submission shown as a printable copy, if any
+  const [printRecord, setPrintRecord] = useState<SubmittedRecord | null>(null)
 
   // Window status
   const [windowOpen, setWindowOpen]   = useState(true)
@@ -171,27 +174,31 @@ export function FormShell({
     }
   }
 
-  const handleDownload = () => {
-    const snapshot = submissionResult ? answers : answers
-    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `hpc-submission-${submissionResult?.submissionId ?? 'draft'}.json`
-    a.click()
-    URL.revokeObjectURL(url)
+  // ── Printable copy of the submission (saved as PDF from the print dialog) ──
+  if (printRecord) {
+    return (
+      <AnswersPrintout
+        schema={schema}
+        answers={printRecord.answers}
+        submissionId={printRecord.submissionId}
+        submittedAt={printRecord.submittedAt}
+        onClose={() => setPrintRecord(null)}
+      />
+    )
   }
 
   // ── Post-submission confirmation ──────────────────────────────────────────
+  // The working answers are cleared on submit; the saved copy of the submission has them.
   if (submissionResult) {
+    const submitted = previousSubmission?.submissionId === submissionResult.submissionId ? previousSubmission : null
     return (
       <SubmissionConfirmation
         submissionId={submissionResult.submissionId}
-        piEmail={String(answers['A_pi_email'] ?? '')}
-        groupName={String(answers['A_group_name'] ?? '')}
+        piEmail={String(submitted?.answers['A_pi_email'] ?? '')}
+        groupName={String(submitted?.answers['A_group_name'] ?? '')}
         isEdit={submissionResult.isEdit}
         onEdit={handleEditPrevious}
-        onDownload={handleDownload}
+        onPrint={submitted ? () => setPrintRecord(submitted) : undefined}
       />
     )
   }
@@ -255,6 +262,9 @@ export function FormShell({
             <strong>{previousSubmission.submissionId}</strong>
             {' '}(submitted {new Date(previousSubmission.submittedAt).toLocaleDateString('en-IN')}).
           </span>
+          <button type="button" className="btn-edit-previous" onClick={() => setPrintRecord(previousSubmission)}>
+            Save or print your answers
+          </button>
           <button type="button" className="btn-edit-previous" onClick={handleEditPrevious}>
             Edit your response
           </button>

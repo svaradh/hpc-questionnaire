@@ -9,7 +9,8 @@ interface SubmissionConfirmationProps {
   groupName: string
   isEdit: boolean
   onEdit: () => void
-  onDownload: () => void
+  /** Opens the printable copy of the answers; absent when the copy is not available. */
+  onPrint?: () => void
 }
 
 export function SubmissionConfirmation({
@@ -18,7 +19,7 @@ export function SubmissionConfirmation({
   groupName,
   isEdit,
   onEdit,
-  onDownload,
+  onPrint,
 }: SubmissionConfirmationProps) {
   return (
     <div className="submission-confirmation">
@@ -39,11 +40,10 @@ export function SubmissionConfirmation({
         <div className="submission-id-box" title="Submission ID">{submissionId}</div>
         <p className="confirmation-hint">Please save this reference number for your records.</p>
 
-        {piEmail && (
-          <p className="confirmation-email-note">
-            A confirmation email has been sent to <strong>{piEmail}</strong>.
-          </p>
-        )}
+        <p className="confirmation-email-note">
+          A confirmation email with a summary of the answers has been sent to you
+          {piEmail ? <> and to the PI (<strong>{piEmail}</strong>)</> : null}.
+        </p>
 
         <p className="confirmation-record-note">
           Your response has been saved to the IISER HPC Users' Committee records.
@@ -59,9 +59,11 @@ export function SubmissionConfirmation({
         </div>
 
         <div className="confirmation-actions">
-          <button type="button" className="btn-confirmation btn-download" onClick={onDownload}>
-            Download a copy
-          </button>
+          {onPrint && (
+            <button type="button" className="btn-confirmation btn-download" onClick={onPrint}>
+              Save or print your answers (PDF)
+            </button>
+          )}
           <button type="button" className="btn-confirmation btn-reset" onClick={onEdit}>
             Edit your response
           </button>
