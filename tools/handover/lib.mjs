@@ -27,6 +27,9 @@ export const CONFIG = {
   sitePollTries: Number(env.HANDOVER_SITE_POLL_TRIES || 20),
   domain: 'iiserb.ac.in',
   sheetTitle: 'HPC Questionnaire Response v3',
+  // A rehearsal's sheet must never be mistaken for a live one (it shares the Drive).
+  rehearsalTitle: 'REHEARSAL (bin me) — HPC Questionnaire Response v3',
+  reportsFolderName: 'HPC Committee Reports',
 };
 
 /**
@@ -221,6 +224,21 @@ export async function driveFile(id) {
   });
   if (!res.ok) throw new Gate(`Drive could not read the sheet's details (${res.status}).`);
   return res.json();
+}
+
+/**
+ * Files matching a Drive query (q), with name, link, trashed and creation time. Uses the
+ * session's read-only view of file details, so it also finds files the backend created
+ * (which this session may not change).
+ */
+export async function listDriveFiles(q) {
+  const token = await accessToken();
+  const fields = 'files(id,name,mimeType,trashed,createdTime,webViewLink)';
+  const res = await fetch(`${CONFIG.driveBase}/files?q=${encodeURIComponent(q)}&fields=${encodeURIComponent(fields)}&pageSize=100`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Gate(`Drive could not list files (${res.status}).`);
+  return (await res.json()).files || [];
 }
 
 export async function trashDriveFile(id) {

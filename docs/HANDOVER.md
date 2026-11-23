@@ -97,29 +97,28 @@ npm run handover -- rehearse --email your.test.account@iiserb.ac.in
 ```
 
 Your own account works as the test account. Follow the prompts, which are the same as in the handover
-below. At the end the pipeline:
+below. The rehearsal's sheet is named **"REHEARSAL (bin me) — HPC Questionnaire Response v3"**, so it is
+never confused with a live sheet in the same Drive. At the start the pipeline lists any such sheets left
+from earlier rehearsals. At the end it:
 
 - writes `tools/handover/rehearsal.json`;
-- offers to move the rehearsal sheet (with its script and web app) to the bin;
+- moves the rehearsal sheet (with its script and web app) to the bin, by its ID;
+- shows the link to the **HPC Committee Reports** folder this rehearsal's `setupBackend` created (only
+  folders created since the run began, so never the live one), and waits until you have moved it to the
+  bin: it may see that folder but not change it, because the backend made it;
 - revokes its sign-in.
 
-Two things are left for you to delete by hand: the **HPC Committee Reports** folder that `setupBackend`
-created, and the test email.
+Only the test emails are left to delete by hand.
 
 Do the optional **test submission** here. A local copy of the form is started that sends to the
 rehearsal backend. Fill in a short response and check that the row appears and the confirmation email
-arrives.
+(with the answers summary) arrives.
 
 While the trial sheet is open, also **test the HPC Committee menu**, which the pipeline cannot check:
 click a cell in the test row on the Submissions tab, then *HPC Committee → Generate Report for Selected
-Row*. A message with the report's link appears for ten seconds; the report is in the new **HPC
+Row*. A message with the report's link appears for ten seconds; the report is in this rehearsal's **HPC
 Committee Reports** folder. If the menu is missing, see *If something goes wrong*. Do this before
-answering the question about moving the sheet to the bin. (A binned sheet can be restored from Drive's
-Bin with its script, and binned again afterwards.)
-
-The trial sheet, its reports folder and the live ones have the **same names** ("HPC Questionnaire
-Response v3", "HPC Committee Reports"). The pipeline bins the trial sheet by its ID; when deleting the
-folder by hand, check that it was created on the day of the rehearsal.
+answering the question about moving the sheet to the bin.
 
 Then commit and push the record:
 

@@ -61,7 +61,7 @@ export function startFakeGoogle() {
       const scriptId = 'script-' + crypto.randomUUID().slice(0, 8);
       const files = { 'Code.gs': 'function myFunction() {\n}\n', 'appsscript.json': JSON.stringify({ timeZone: 'America/New_York', runtimeVersion: 'V8' }) };
       st.scripts.set(scriptId, { project: new Project(world, { owner: u, containerId: ss.id, files }), sheetId: ss.id, owner: u, authorised: false, deployments: [] });
-      st.drive.set(ss.id, { owner: u, permissions: [{ type: 'user', role: 'owner', emailAddress: u }], trashed: false });
+      st.drive.set(ss.id, { owner: u, name: b.title || 'Untitled', permissions: [{ type: 'user', role: 'owner', emailAddress: u }], trashed: false });
       st.creates++;
       return [200, { scriptId, parentId: ss.id, files }];
     },
@@ -106,6 +106,8 @@ export function startFakeGoogle() {
       return [200, {}];
     },
     'POST /_control/corruptPush': b => { st.corruptPush = !!b.on; return [200, {}]; },
+    'POST /_control/trashFolders': b => { for (const f of world.folders.values()) if (f.owner === b.email) f.trashed = true; return [200, {}]; },
+    'POST /_control/oldRehearsalSheet': b => { st.drive.set('old-' + crypto.randomUUID().slice(0, 6), { owner: b.email, name: 'REHEARSAL (bin me) — HPC Questionnaire Response v3', permissions: [], trashed: false }); return [200, {}]; },
     'POST /_control/closeOld': () => { st.old.windowOpen = false; return [200, {}]; },
     'POST /_control/site': b => { st.site.backend = b.backend; return [200, {}]; },
     'GET /_control/state': () => [200, {
@@ -141,7 +143,21 @@ export function startFakeGoogle() {
         return json(res, 200, s.project.doGet(Object.fromEntries(url.searchParams)));
       }
 
-      // Drive
+      // Drive: a list (only the queries the pipeline makes), then single files
+      if (url.pathname === '/drive/files' && req.method === 'GET') {
+        const u = bearerUser(req); if (!u) return json(res, 401, { error: 'unauthenticated' });
+        const q = url.searchParams.get('q') || '';
+        let files = [];
+        if (q.includes("mimeType = 'application/vnd.google-apps.folder'")) {
+          const since = (q.match(/createdTime > '([^']+)'/) || [])[1] || '';
+          files = [...world.folders.values()].filter(f => f.owner === u && !f.trashed && f.createdTime > since)
+            .map(f => ({ id: f.id, name: f.name, mimeType: 'application/vnd.google-apps.folder', trashed: f.trashed, createdTime: f.createdTime, webViewLink: f.getUrl() }));
+        } else if (q.includes('REHEARSAL (bin me)')) {
+          files = [...st.drive.entries()].filter(([, d]) => d.owner === u && !d.trashed && (d.name || '').includes('REHEARSAL (bin me)'))
+            .map(([id, d]) => ({ id, name: d.name, trashed: false, webViewLink: `https://docs.google.com/spreadsheets/d/${id}/edit` }));
+        }
+        return json(res, 200, { files });
+      }
       const drv = url.pathname.match(/^\/drive\/files\/([^/]+)$/);
       if (drv) {
         const u = bearerUser(req); const d = st.drive.get(drv[1]);

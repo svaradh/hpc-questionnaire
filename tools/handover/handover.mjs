@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   CONFIG, BACKEND_FILES, REHEARSAL_RECORD, say, ok, bad, Gate, Stop, ask, confirm, waitFor, untilPasses,
-  openUrl, git, clasp, shell, background, readSignIn, accessToken, driveFile, trashDriveFile, revokeSignIn,
+  openUrl, git, clasp, shell, background, readSignIn, accessToken, driveFile, trashDriveFile, listDriveFiles, revokeSignIn,
   webAppGet, webAppUrl, scriptEditorUrl, sheetUrl, fingerprint, repoBackendFiles, folderFiles,
   diffFingerprints, sha256Hex, missingScopes,
 } from './lib.mjs';
@@ -178,6 +178,14 @@ const STEPS = [
         }
         ok('Apps Script API is on');
       }, s);
+      if (s.mode === 'rehearse') {
+        // Earlier rehearsals' sheets still outside the Bin: say so, so they are not left to pile up.
+        const left = await listDriveFiles(`name contains 'REHEARSAL (bin me)' and trashed = false and 'me' in owners`).catch(() => []);
+        if (left.length) {
+          say(`  Note: ${left.length} sheet(s) from earlier rehearsals are still in this Drive. Move them to the bin when convenient:`);
+          for (const f of left) say(`     ${f.name}  ${f.webViewLink || ''}`);
+        }
+      }
     },
   },
   {
@@ -186,12 +194,13 @@ const STEPS = [
       if (!s.scriptId) {
         fs.rmSync(PROJECT_DIR(), { recursive: true, force: true });
         fs.mkdirSync(PROJECT_DIR(), { recursive: true });
-        const r = clasp(['create-script', '--type', 'sheets', '--title', CONFIG.sheetTitle, '--rootDir', '.'], { cwd: PROJECT_DIR() });
+        s.sheetTitle = s.mode === 'rehearse' ? CONFIG.rehearsalTitle : CONFIG.sheetTitle;
+        const r = clasp(['create-script', '--type', 'sheets', '--title', s.sheetTitle, '--rootDir', '.'], { cwd: PROJECT_DIR() });
         if (r.status !== 0 || !r.data || !r.data.scriptId || !r.data.parentId) throw new Gate(`Creating the sheet failed: ${(r.err || r.out).trim()}`);
         s.scriptId = r.data.scriptId; s.sheetId = r.data.parentId;
         saveState(s);
       }
-      ok(`Sheet "${CONFIG.sheetTitle}" with its script project`);
+      ok(`Sheet "${s.sheetTitle || CONFIG.sheetTitle}" with its script project`);
       const f = await driveFile(s.sheetId);
       const owners = (f.owners || []).map(o => (o.emailAddress || '').toLowerCase());
       if (!owners.includes(s.email.toLowerCase())) throw new Gate(`The sheet is owned by ${owners.join(', ') || 'nobody known'}, not ${s.email}.`);
@@ -251,8 +260,9 @@ const STEPS = [
         `1. Open ${editor}`,
         '2. In the file list, click Setup.gs. In the toolbar, choose setupBackend in the function menu and click Run.',
         '3. Google asks for permission: Review permissions → choose ' + s.email + ' → Allow.',
-        '   (It lists Sheets, Drive, Gmail and Docs: the backend writes the responses, saves reports',
-        '    and sends confirmation emails, all as this account.)',
+        '   Tick "Select all": an unticked permission is not granted. It lists Sheets, Drive and Docs,',
+        '   "Send email as you" (send only) and the sheet menu: the backend writes the responses, saves',
+        '   reports and sends confirmation emails, all as this account.',
         '4. Wait for "Execution completed" in the log at the bottom (about half a minute).',
       ]);
       if (!s.remote) openUrl(editor);
@@ -402,7 +412,25 @@ const STEPS = [
       if (!(await confirm('teardown', `  Move the rehearsal sheet (with its script and web app) in ${s.email}'s Drive to the bin?`, s))) { say('  Kept.'); return; }
       await trashDriveFile(s.sheetId);
       ok('Sheet moved to the bin');
-      say(`     Also remove by hand in ${s.email}'s Drive: the folder "HPC Committee Reports" that setupBackend created.`);
+      // The reports folder (and any reports in it) was made by the backend, not by this session, so
+      // the session may not bin it; it can see it. Only folders created since this run began are
+      // considered, so the live reports folder, made long before, is never touched.
+      const since = s.startedAt;
+      const mine = () => listDriveFiles(`name = '${CONFIG.reportsFolderName}' and mimeType = 'application/vnd.google-apps.folder' and createdTime > '${since}' and trashed = false and 'me' in owners`);
+      const folders = await mine();
+      if (folders.length === 0) { ok('No reports folder from this rehearsal left'); return; }
+      for (const f of folders) {
+        const inside = await listDriveFiles(`'${f.id}' in parents and trashed = false`).catch(() => []);
+        say(`  This rehearsal's reports folder (made by setupBackend${inside.length ? `, with ${inside.length} report(s)` : ''}):`);
+        say(`     ${f.webViewLink || f.id}`);
+      }
+      say('  Open the link, then move that folder to the bin (right-click it in Drive → Move to bin).');
+      say('  Only this folder: it was created after this run began, so it is not the live reports folder.');
+      await untilPasses('teardown-folder', async () => {
+        const still = await mine();
+        if (still.length) throw new Gate(`Not in the bin yet: ${still.map(f => f.webViewLink || f.id).join(', ')}`);
+        ok('Reports folder from this rehearsal moved to the bin');
+      }, s);
     },
   },
   {

@@ -82,7 +82,7 @@ export class Project {
       DriveApp: {
         createFolder(name) {
           const id = 'folder-' + crypto.randomUUID().slice(0, 8);
-          const f = { id, name, trashed: false, getId: () => id, getUrl: () => `https://drive.google.com/drive/folders/${id}`, isTrashed: () => f.trashed };
+          const f = { id, name, trashed: false, owner: project.owner, createdTime: new Date().toISOString(), getId: () => id, getUrl: () => `https://drive.google.com/drive/folders/${id}`, isTrashed: () => f.trashed };
           world.folders.set(id, f); return f;
         },
         getFolderById(id) { const f = id && world.folders.get(id); if (!f) throw new Error('No item with the given ID could be found.'); return f; },

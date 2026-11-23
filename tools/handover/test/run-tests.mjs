@@ -136,6 +136,7 @@ async function testPipeline() {
     console.log('\nRehearsal (wrong account first, API off, setupBackend not yet run)');
     await control(base, '/_control/nextLogin', { email: 'someone.else@iiserb.ac.in' });
     await control(base, '/_control/api', { email: TEST, on: false });
+    await control(base, '/_control/oldRehearsalSheet', { email: TEST });
     let r = await runPipeline(env, ['rehearse', '--email', TEST], {
       'api-setting': [{}],
       'sign-in': [{ control: [['/_control/nextLogin', { email: TEST }]] }],
@@ -150,6 +151,7 @@ async function testPipeline() {
       'setup-email': [{ answer: 'y' }],
       'test-submission-want': [{ answer: 'n' }],
       teardown: [{ answer: 'y' }],
+      'teardown-folder': [{}, { control: [['/_control/trashFolders', { email: TEST }]] }],
     });
     let st = await getState(base);
     check(r.code === 0, 'rehearsal completes');
@@ -169,6 +171,10 @@ async function testPipeline() {
     check(st.scripts.length === 1 && st.scripts[0].owner === TEST, 'one sheet, owned by the test account');
     check(Object.values(st.scripts[0].tabs).every(n => n === 0) && Object.keys(st.scripts[0].tabs).length === 14, 'sheet has 14 empty tabs after the self-test');
     check(st.drive[st.scripts[0].sheetId].trashed === true, 'rehearsal sheet moved to the bin');
+    check(st.drive[st.scripts[0].sheetId].name.startsWith('REHEARSAL (bin me)'), 'rehearsal sheet is named so it cannot be mistaken for a live one');
+    check(/sheet\(s\) from earlier rehearsals are still in this Drive/.test(r.out), 'leftover rehearsal sheets are listed at the start');
+    check(/Not in the bin yet/.test(r.out) && /Reports folder from this rehearsal moved to the bin/.test(r.out),
+      "the rehearsal's reports folder must be binned before the run ends (checked, not just reminded)");
     check(st.tokens === 0, 'every sign-in revoked (the wrong one and the test one)');
     check(!fs.existsSync(handoverDir), 'session files removed');
 
