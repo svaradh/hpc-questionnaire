@@ -2,6 +2,7 @@
 
 For the convener of the HPC Users' Committee, who owns the questionnaire's responses.
 Form version 2.7.3, analysis release `v3-2026-11-23c` (November 2026).
+Online: <https://svaradh.github.io/hpc-questionnaire/convener-guide.html> (published with the form).
 
 - **Part 1** says what the system is made of, how the responses are protected, and what could go wrong.
 - **Part 2** describes the whole pipeline, from set-up to the committee's decisions, and how to run each part.

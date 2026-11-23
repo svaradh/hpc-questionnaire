@@ -9,7 +9,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "deploy": "npm run build && gh-pages -d dist",
+    "deploy": "npm run build && cp docs/CONVENER-GUIDE.html dist/convener-guide.html && gh-pages -d dist",
     "deploy:preview": "tsc && vite build --base=/hpc-questionnaire/v3-preview/ && gh-pages -d dist --dest v3-preview --add -m 'Deploy v3 preview'",
     "deploy:layout": "tsc && VITE_SUBMIT_DISABLED=true vite build --base=/hpc-questionnaire/v3-draft/ && gh-pages -d dist --dest v3-draft --add -m 'Deploy v3 layout draft'",
     "fixtures": "tsx analysis/fixtures/make_synthetic.ts",
