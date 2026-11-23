@@ -66,7 +66,12 @@
   and report removed.
 - **Form 2.7.2 live, release `v3-2026-11-23b`** (printable copy of answers replaces the JSON download).
 - **Convener guide**: `docs/CONVENER-GUIDE.md`, also as a shareable doc (operator's claude.ai account). Keep both in step.
-- **Next:** re-run the rehearsal (backend changed since the last one), then the handover with the convener.
+- **Rehearsed again (2026-11-23, after the backend changes), all steps passed**: permission screen shows
+  "Send email as you" (tick *Select all*: Google's screen starts with every box unticked), PI summary in the email,
+  printable copy, menu and report. Record committed (8a779ce). Rehearsal leftovers binned; the pipeline now names the
+  trial sheet "REHEARSAL (bin me) — …" and checks that the trial reports folder is binned (0e9aca6).
+- **Next:** the handover with the convener (`npm run handover -- handover --email …`), before the form is announced;
+  give them `docs/CONVENER-GUIDE.md` (or the shared doc) first.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 
