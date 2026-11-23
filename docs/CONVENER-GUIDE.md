@@ -6,6 +6,25 @@ Form version 2.7.3, analysis release `v3-2026-11-23c` (November 2026).
 - **Part 1** says what the system is made of, how the responses are protected, and what could go wrong.
 - **Part 2** describes the whole pipeline, from set-up to the committee's decisions, and how to run each part.
 
+## Contents
+
+- [Part 1. The system, data protection and risks](#part-1-the-system-data-protection-and-risks)
+   - [1.1 The pipeline at a glance](#11-the-pipeline-at-a-glance)
+   - [1.2 How the data is protected](#12-how-the-data-is-protected)
+   - [1.3 Risks, and what reduces them](#13-risks-and-what-reduces-them)
+   - [1.4 Frequently asked questions](#14-frequently-asked-questions)
+- [Part 2. The pipeline and how to run it](#part-2-the-pipeline-and-how-to-run-it)
+   - [2.1 From set-up to the committee's decisions](#21-from-set-up-to-the-committees-decisions)
+   - [2.2 Source of truth, and who to contact](#22-source-of-truth-and-who-to-contact)
+   - [2.3 The handover (convener, about 10 minutes)](#23-the-handover-convener-about-10-minutes)
+   - [2.4 Local and web set-up (developer or maintainer)](#24-local-and-web-set-up-developer-or-maintainer)
+   - [2.5 Running the form and handling responses (convener)](#25-running-the-form-and-handling-responses-convener)
+   - [2.6 The committee report in Google Colab (convener)](#26-the-committee-report-in-google-colab-convener)
+   - [2.7 Troubleshooting](#27-troubleshooting)
+   - [2.8 At the end of the exercise](#28-at-the-end-of-the-exercise)
+
+**Ready for the handover?** Go straight to [2.3 The handover](#23-the-handover-convener-about-10-minutes).
+
 ---
 
 # Part 1. The system, data protection and risks
