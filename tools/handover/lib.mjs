@@ -44,6 +44,34 @@ export const BACKEND_FILES = [
 
 export const REHEARSAL_RECORD = 'tools/handover/rehearsal.json';
 
+/**
+ * Permissions the backend code needs, by the Apps Script calls that need them. appsscript.json
+ * lists its oauthScopes explicitly, so Google grants only those: a call whose permission is
+ * missing fails when it runs (e.g. "Specified permissions are not sufficient to call
+ * Session.getEffectiveUser"). Extend this table when the backend starts using another service.
+ */
+export const SCOPE_RULES = [
+  [/\bSpreadsheetApp\.(openById|getActiveSpreadsheet|create|flush)\b/, 'https://www.googleapis.com/auth/spreadsheets'],
+  [/\bSpreadsheetApp\.getUi\b/, 'https://www.googleapis.com/auth/script.container.ui'],
+  [/\bDriveApp\./, 'https://www.googleapis.com/auth/drive'],
+  [/\bDocumentApp\./, 'https://www.googleapis.com/auth/documents'],
+  [/\bGmailApp\./, 'https://mail.google.com/'],
+  [/\bUrlFetchApp\./, 'https://www.googleapis.com/auth/script.external_request'],
+  [/\bSession\.(getEffectiveUser|getActiveUser)\b/, 'https://www.googleapis.com/auth/userinfo.email'],
+];
+
+/** Permissions the code in a { name: text } map uses but its appsscript.json does not list: [{ scope, file }]. */
+export function missingScopes(files) {
+  const listed = new Set((JSON.parse(files['appsscript.json']).oauthScopes) || []);
+  const missing = [];
+  for (const [re, scope] of SCOPE_RULES) {
+    if (listed.has(scope)) continue;
+    const file = Object.keys(files).find(n => n.endsWith('.gs') && re.test(files[n]));
+    if (file) missing.push({ scope, file });
+  }
+  return missing;
+}
+
 // ---------------------------------------------------------------------------
 // Output and prompts
 // ---------------------------------------------------------------------------

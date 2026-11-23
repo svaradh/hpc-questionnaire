@@ -17,7 +17,7 @@ import {
   CONFIG, BACKEND_FILES, REHEARSAL_RECORD, say, ok, bad, Gate, Stop, ask, confirm, waitFor, untilPasses,
   openUrl, git, clasp, shell, background, readSignIn, accessToken, driveFile, trashDriveFile, revokeSignIn,
   webAppGet, webAppUrl, scriptEditorUrl, sheetUrl, fingerprint, repoBackendFiles, folderFiles,
-  diffFingerprints, sha256Hex,
+  diffFingerprints, sha256Hex, missingScopes,
 } from './lib.mjs';
 
 const STATE_FILE = () => path.join(CONFIG.dir, 'state.json');
@@ -71,6 +71,13 @@ const STEPS = [
         throw new Gate('apps-script/appsscript.json: webapp must have "executeAs": "USER_DEPLOYING" and "access": "ANYONE_ANONYMOUS" (the form calls it without a Google sign-in).');
       }
       ok('Web app settings: runs as its owner, callable without a Google sign-in');
+
+      const gaps = missingScopes(repoBackendFiles());
+      if (gaps.length) {
+        throw new Gate('apps-script/appsscript.json lacks permissions the code uses: ' +
+          gaps.map(g => `${g.scope} (${g.file})`).join('; ') + '. Add them to oauthScopes and commit.');
+      }
+      ok('Permissions in appsscript.json cover every Google service the code uses');
 
       if (!fs.existsSync(ENV_FILE()) || !envValue(fs.readFileSync(ENV_FILE(), 'utf8'), 'VITE_GOOGLE_CLIENT_ID')) {
         throw new Gate('.env.local with VITE_GOOGLE_CLIENT_ID is needed (README: Setting up on a new computer).');

@@ -10,7 +10,7 @@ import path from 'node:path';
 import { spawn, execFileSync } from 'node:child_process';
 import { startFakeGoogle } from './fake-google.mjs';
 import { World, Project } from './gas-sim.mjs';
-import { fingerprint, BACKEND_FILES } from '../lib.mjs';
+import { fingerprint, BACKEND_FILES, missingScopes, CONFIG } from '../lib.mjs';
 
 const HERE = import.meta.dirname;
 const REAL_REPO = path.resolve(HERE, '..', '..', '..');
@@ -220,6 +220,17 @@ async function testPipeline() {
   }
 }
 
+function testScopes() {
+  const files = Object.fromEntries(BACKEND_FILES.map(([src, name]) => [name, fs.readFileSync(path.join(CONFIG.repo, src), 'utf8')]));
+  check(missingScopes(files).length === 0, 'appsscript.json lists every permission the backend code uses');
+  const m = JSON.parse(files['appsscript.json']);
+  m.oauthScopes = m.oauthScopes.filter(x => !/userinfo\.email|container\.ui/.test(x));
+  const gaps = missingScopes({ ...files, 'appsscript.json': JSON.stringify(m) }).map(g => g.scope);
+  check(gaps.some(x => /userinfo\.email/.test(x)) && gaps.some(x => /container\.ui/.test(x)),
+    'a missing permission (Session.getEffectiveUser, SpreadsheetApp.getUi) is caught');
+}
+
+testScopes();
 try { await testSimulation(); } catch (e) { check(false, 'simulation ran without error: ' + e.message); }
 await testPipeline();
 console.log(`\n${passes} passed, ${failures} failed`);
