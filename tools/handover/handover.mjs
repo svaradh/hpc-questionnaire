@@ -300,7 +300,7 @@ const STEPS = [
         say('     (Sign-in fails if http://localhost:5173 is not an authorised origin of the form\'s Google client.)');
         openUrl(CONFIG.devUrl);
         await untilPasses('test-submission-check', async () => {
-          if (!(await confirm('test-submission-done', '  Did the form show a submission ID, and did the row appear in the new sheet and the email arrive?', s))) {
+          if (!(await confirm('test-submission-done', '  Did the form show a submission ID, and did the row appear in the new sheet and the email arrive?\n  (While the sheet is open: HPC Committee → Generate Report for Selected Row should make a report.)', s))) {
             throw new Gate('Not confirmed. The browser console and the editor\'s Executions list show errors.');
           }
           ok('Test submission received');

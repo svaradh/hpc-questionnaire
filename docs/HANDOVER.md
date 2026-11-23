@@ -108,7 +108,20 @@ created, and the test email.
 
 Do the optional **test submission** here. A local copy of the form is started that sends to the
 rehearsal backend. Fill in a short response and check that the row appears and the confirmation email
-arrives. Then commit and push the record:
+arrives.
+
+While the trial sheet is open, also **test the HPC Committee menu**, which the pipeline cannot check:
+click a cell in the test row on the Submissions tab, then *HPC Committee → Generate Report for Selected
+Row*. A message with the report's link appears for ten seconds; the report is in the new **HPC
+Committee Reports** folder. If the menu is missing, see *If something goes wrong*. Do this before
+answering the question about moving the sheet to the bin. (A binned sheet can be restored from Drive's
+Bin with its script, and binned again afterwards.)
+
+The trial sheet, its reports folder and the live ones have the **same names** ("HPC Questionnaire
+Response v3", "HPC Committee Reports"). The pipeline bins the trial sheet by its ID; when deleting the
+folder by hand, check that it was created on the day of the rehearsal.
+
+Then commit and push the record:
 
 ```
 git add tools/handover/rehearsal.json && git commit -m "Handover: rehearsal record" && git push
@@ -190,6 +203,14 @@ This revokes it and removes the session files. The convener can also remove "cla
 - **`setupBackend` failed:** the error is in the editor's log (also under Executions). Fix it, run it
   again (it is safe to repeat), and press Enter.
 - **No setup email:** look in Spam, and in Executions for an error from `GmailApp`.
+- **No HPC Committee menu in the sheet:** close the sheet's tab and open the sheet again; the menu
+  appears a few seconds after the sheet loads. A tab opened before a restore from the Bin never gets
+  it. If it is still missing, open the sheet in a window signed in only to the institute account:
+  menus of attached scripts often fail to load when several Google accounts are signed in at once.
+  *Extensions → Apps Script → Executions* shows whether `onOpen` ran and any error.
+- **"You do not have access to this service"** on script.google.com: the page opened in another
+  signed-in account. Add `?authuser=<address>` to the link, or use a private window signed in only to
+  the institute account.
 - **`npm run deploy` hangs or fails** (`gh-pages`): publish `dist/` by hand as in `TODO.md` (the
   `node_modules/.cache/gh-pages` clone), then press Enter. The check only looks at the live site.
 - **The live check keeps failing:** GitHub Pages can take a few minutes. The check retries for about
