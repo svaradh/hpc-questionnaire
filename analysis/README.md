@@ -32,6 +32,8 @@ responses changes only when someone sets `REPO_REF` to a newer release on purpos
   configuration") beside the form versions of the responses, so a report can be traced and reproduced.
 - **Form versions.** `SUPPORTED_FORM_VERSIONS` in `sheets_client.py` lists the form versions whose columns the code
   was written for. Responses from any other version give a warning when loaded and a note in the report.
+- **After the hardware check** returns: `tools/cluster-update/` reads the PDF, applies the agreed changes and makes
+  the release (its `release` step does items 1–2 below).
 - **Making a release** (for example after the hardware answers are entered in `clusters.json`):
   1. set `DEFAULT_REF` in `sheets_client.py` to the new tag name (`v3-YYYY-MM-DD`), and add any new form version to
      `SUPPORTED_FORM_VERSIONS`;

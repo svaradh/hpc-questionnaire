@@ -36,3 +36,6 @@ venv/
 # Committee reports contain response data; never commit them (the repository is public)
 committee_report*.html
 committee_report*.pdf
+
+# Working files of the hardware-check update (convener name and comments): not in git
+tools/cluster-update/work/

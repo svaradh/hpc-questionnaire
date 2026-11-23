@@ -16,6 +16,8 @@ from reportlab.pdfgen import canvas
 HERE = Path(__file__).resolve().parent
 CFG = json.loads((HERE.parents[1] / 'src/config/clusters.json').read_text())
 OUT = HERE / 'cluster-hardware-check.pdf'
+# Which form field holds which fact: read back by tools/cluster-update/ when the filled PDF returns.
+MAP = HERE / 'field-map.json'
 
 W, H = A4
 M = 15 * mm
@@ -43,6 +45,7 @@ class Form:
         self.c.setAuthor('IISER Bhopal HPC Users\' Committee questionnaire')
         self.page = 0
         self.n = 0
+        self.fields = []   # field map: one entry per row / question, in order
         self.new_page()
 
     # ---- layout helpers -------------------------------------------------
@@ -91,9 +94,11 @@ class Form:
             x += w
         self.y -= h
 
-    def row(self, item, current, note=None):
+    def row(self, item, current, note=None, key=None):
         """One fact to confirm: a tick box if correct, a field for the correction."""
         self.n += 1
+        self.fields.append({'n': self.n, 'kind': 'row', 'ok': f'ok_{self.n}', 'fix': f'fix_{self.n}',
+                            'item': item, 'current': current, 'key': key})
         wi, wc = COLS[0] - 3 * mm, COLS[1] - 3 * mm
         il = simpleSplit(item, FONT, 8.5, wi)
         nl = simpleSplit(note, FONT, 7, wi) if note else []
@@ -137,9 +142,10 @@ class Form:
         self.c.setLineWidth(0.4)
         self.c.line(M, self.y, W - M, self.y)
 
-    def ask(self, item, note=None, height=9 * mm):
+    def ask(self, item, note=None, height=9 * mm, key=None):
         """A question with no current value: just an answer field across the full width."""
         self.n += 1
+        self.fields.append({'n': self.n, 'kind': 'ask', 'ans': f'ans_{self.n}', 'item': item, 'key': key})
         il = simpleSplit(item, FONT, 8.5, COLS[0] - 3 * mm)
         nl = simpleSplit(note, FONT, 7, COLS[0] - 3 * mm) if note else []
         h = max(height, len(il) * 10.5 + len(nl) * 8.5 + 6)
@@ -171,6 +177,9 @@ class Form:
 
     def save(self):
         self.c.save()
+        MAP.write_text(json.dumps({'_comment': 'Written by make_hardware_form.py with the PDF. key = what the answer '
+                                   'updates (tools/cluster-update/update_clusters.py); null = for the record only.',
+                                   'pdf': OUT.name, 'fields': self.fields}, indent=1, ensure_ascii=False) + '\n')
 
 
 def queue_text(q):
@@ -182,24 +191,24 @@ def queue_text(q):
             f"ceiling for all groups together: {total}")
 
 
-def queue_binding(f):
+def queue_binding(f, cid):
     """Asked before the queue rows: whether compute queues have nodes of their own."""
     f.ask('Apart from the high-memory and GPU queues, are any queues bound to particular nodes?',
-          'Yes / No. We assume No: the other queues share all compute nodes. If Yes, say which nodes each queue can use.')
+          'Yes / No. We assume No: the other queues share all compute nodes. If Yes, say which nodes each queue can use.', key=f'{cid}.queuesBoundToNodes')
 
 
 def group_limits(f, c, highmem_note):
     """Limits on one research group across a cluster's queues (clusters.json: groupLimits)."""
     gl = c.get('groupLimits') or {}
     yn = {True: 'Yes', False: 'No', None: 'not known'}
-    f.row('Limits apply to', 'Each research group (faculty member and one group member), not each user')
+    f.row('Limits apply to', 'Each research group (faculty member and one group member), not each user', key=f"{c['id']}.limitsApplyTo")
     f.ask('Do the per-queue job limits add up across queues?',
-          'E.g. can a group run 3 jobs in short and 3 in medium at the same time? Yes / No / Not known.')
-    f.row('Jobs one group may have running at once, all queues together', v(gl.get('maxRunningJobs')), 'Or "none".')
-    f.row('Nodes one group\'s running jobs may occupy in total', v(gl.get('maxRunningNodes')), 'Or "none".')
-    f.row('Jobs one group may have waiting in the queue', v(gl.get('maxQueuedJobs')), 'Or "none".')
-    f.row('Fair-share policy in use', yn[gl.get('fairShare')], 'If yes, briefly: the share per group and the decay period, if known.')
-    f.ask(highmem_note, 'Yes / No / Not known.')
+          'E.g. can a group run 3 jobs in short and 3 in medium at the same time? Yes / No / Not known.', key=f"{c['id']}.limitsAddUp")
+    f.row('Jobs one group may have running at once, all queues together', v(gl.get('maxRunningJobs')), 'Or "none".', key=f"{c['id']}.groupLimits.maxRunningJobs")
+    f.row('Nodes one group\'s running jobs may occupy in total', v(gl.get('maxRunningNodes')), 'Or "none".', key=f"{c['id']}.groupLimits.maxRunningNodes")
+    f.row('Jobs one group may have waiting in the queue', v(gl.get('maxQueuedJobs')), 'Or "none".', key=f"{c['id']}.groupLimits.maxQueuedJobs")
+    f.row('Fair-share policy in use', yn[gl.get('fairShare')], 'If yes, briefly: the share per group and the decay period, if known.', key=f"{c['id']}.groupLimits.fairShare")
+    f.ask(highmem_note, 'Yes / No / Not known.', key=f"{c['id']}.specialNodesShared")
 
 
 def main():
@@ -230,27 +239,27 @@ def main():
     # ---- Gargi -----------------------------------------------------------
     gc, gh = node(g, 'compute'), node(g, 'highmem')
     f.heading('1. Gargi')
-    f.row('Standard compute nodes in service', f"{gc['count']} nodes", 'Nodes users can actually run on today.')
+    f.row('Standard compute nodes in service', f"{gc['count']} nodes", 'Nodes users can actually run on today.', key='gargi.compute.count')
     f.row('CPU and cores per standard node', f"{gc['cpu']}, {gc['coresPerNode']} cores",
-          'Cores available to jobs (after any reserved for the system).')
-    f.row('Memory per standard node', f"{gc['memoryGB']} GB")
-    f.row('High-memory nodes: count, cores, memory', f"{gh['count']} nodes, {gh['coresPerNode']} cores, {gh['memoryGB']} GB")
-    f.row('GPU nodes', 'None')
-    f.row('Interconnect', g['interconnect'])
-    f.row('Parallel storage: system and usable size', f"{g['storage']['system']}, {v(g['storage']['usableTB'])} TB")
+          'Cores available to jobs (after any reserved for the system).', key='gargi.compute.cpuCores')
+    f.row('Memory per standard node', f"{gc['memoryGB']} GB", key='gargi.compute.memoryGB')
+    f.row('High-memory nodes: count, cores, memory', f"{gh['count']} nodes, {gh['coresPerNode']} cores, {gh['memoryGB']} GB", key='gargi.highmem')
+    f.row('GPU nodes', 'None', key='gargi.gpuNodes')
+    f.row('Interconnect', g['interconnect'], key='gargi.interconnect')
+    f.row('Parallel storage: system and usable size', f"{g['storage']['system']}, {v(g['storage']['usableTB'])} TB", key='gargi.storage.systemSize')
     f.row('Home : scratch split of that storage', f"{100 - g['storage']['scratchFraction'] * 100:g} : {g['storage']['scratchFraction'] * 100:g} (assumed)",
-          'Or give the two sizes in TB.')
+          'Or give the two sizes in TB.', key='gargi.storage.split')
     f.ask('Is home on this same fast parallel file system as scratch?',
-          'Yes / No (home is on a separate, slower system; name it) / Not known.')
-    f.row('Storage bandwidth', f"{v(g['storage']['bandwidthGBs'])} GB/s")
-    f.ask('Quotas: home per user / per group; scratch per user', 'Write "none" if there is no quota.')
-    f.ask('Scratch clean-up (purge) policy', 'e.g. files older than 30 days deleted; or none.')
-    f.ask('Local disk on compute nodes (size usable by jobs)', 'e.g. /tmp on SSD, 400 GB; or none.')
+          'Yes / No (home is on a separate, slower system; name it) / Not known.', key='gargi.storage.homeOnFastPFS')
+    f.row('Storage bandwidth', f"{v(g['storage']['bandwidthGBs'])} GB/s", key='gargi.storage.bandwidthGBs')
+    f.ask('Quotas: home per user / per group; scratch per user', 'Write "none" if there is no quota.', key='gargi.quotas')
+    f.ask('Scratch clean-up (purge) policy', 'e.g. files older than 30 days deleted; or none.', key='gargi.purge')
+    f.ask('Local disk on compute nodes (size usable by jobs)', 'e.g. /tmp on SSD, 400 GB; or none.', key='gargi.localDisk')
 
     f.heading('2. Gargi queues')
-    queue_binding(f)
+    queue_binding(f, 'gargi')
     for q in g['queues']:
-        f.row(f"Queue: {q['id']}" + (' (high-memory nodes)' if q.get('nodeType') == 'highmem' else ''), queue_text(q))
+        f.row(f"Queue: {q['id']}" + (' (high-memory nodes)' if q.get('nodeType') == 'highmem' else ''), queue_text(q), key=f"gargi.queues.{q['id']}")
     group_limits(f, g, 'Can jobs from other queues run on the high-memory nodes when they are free?')
 
     # ---- Raman -----------------------------------------------------------
@@ -258,47 +267,47 @@ def main():
     gpu = (r.get('gpuNodes') or [{}])[0]
     f.heading('3. Raman')
     f.row('Standard compute nodes in service', f"{rc['count']} nodes",
-          'Nodes users can actually run on today (some older nodes may be down).')
+          'Nodes users can actually run on today (some older nodes may be down).', key='raman.compute.count')
     f.row('CPU and cores per standard node', f"{rc['cpu']}, {rc['coresPerNode']} cores",
-          'We assumed 2 sockets x 12 cores = 24. Please confirm.')
-    f.row('Memory per standard node', f"{rc['memoryGB']} GB")
+          'We assumed 2 sockets x 12 cores = 24. Please confirm.', key='raman.compute.cpuCores')
+    f.row('Memory per standard node', f"{rc['memoryGB']} GB", key='raman.compute.memoryGB')
     f.row('High-memory node(s): count, CPU, cores, memory',
           f"{rh['count']} node, {rh['cpu']}, {rh['coresPerNode']} cores, {rh['memoryGB']} GB",
-          'Cores assumed; please confirm the number of sockets.')
-    f.row('GPU nodes: count', f"{v(gpu.get('count'))} node")
-    f.row('GPUs per GPU node', v(gpu.get('gpusPerNode')))
-    f.row('GPU model and memory per GPU', v(gpu.get('gpuModel')), 'e.g. NVIDIA V100 32 GB.')
-    f.row('GPU node: CPU cores and memory', f"{gpu.get('coresPerNode')} cores, {gpu.get('memoryGB')} GB")
-    f.ask('GPU node: NVLink between GPUs?', 'Yes / No / Not known.')
-    f.row('Interconnect', r['interconnect'])
-    f.row('Parallel storage: system and usable size', f"{r['storage']['system']}, {v(r['storage']['usableTB'])} TB")
+          'Cores assumed; please confirm the number of sockets.', key='raman.highmem')
+    f.row('GPU nodes: count', f"{v(gpu.get('count'))} node", key='raman.gpu.count')
+    f.row('GPUs per GPU node', v(gpu.get('gpusPerNode')), key='raman.gpu.gpusPerNode')
+    f.row('GPU model and memory per GPU', v(gpu.get('gpuModel')), 'e.g. NVIDIA V100 32 GB.', key='raman.gpu.model')
+    f.row('GPU node: CPU cores and memory', f"{gpu.get('coresPerNode')} cores, {gpu.get('memoryGB')} GB", key='raman.gpu.coresMemory')
+    f.ask('GPU node: NVLink between GPUs?', 'Yes / No / Not known.', key='raman.gpu.nvlink')
+    f.row('Interconnect', r['interconnect'], key='raman.interconnect')
+    f.row('Parallel storage: system and usable size', f"{r['storage']['system']}, {v(r['storage']['usableTB'])} TB", key='raman.storage.systemSize')
     f.row('Home : scratch split of that storage', f"{100 - r['storage']['scratchFraction'] * 100:g} : {r['storage']['scratchFraction'] * 100:g} (assumed)",
-          'Or give the two sizes in TB.')
+          'Or give the two sizes in TB.', key='raman.storage.split')
     f.ask('Is home on this same fast parallel file system as scratch?',
-          'Yes / No (home is on a separate, slower system; name it) / Not known.')
-    f.row('Storage bandwidth', f"{v(r['storage']['bandwidthGBs'])} GB/s")
-    f.ask('Quotas: home per user / per group; scratch per user', 'Write "none" if there is no quota.')
-    f.ask('Scratch clean-up (purge) policy')
-    f.ask('Local disk on compute nodes (size usable by jobs)')
-    f.ask('Expected remaining service life of Raman', 'e.g. warranty end, planned retirement year, or not known.')
+          'Yes / No (home is on a separate, slower system; name it) / Not known.', key='raman.storage.homeOnFastPFS')
+    f.row('Storage bandwidth', f"{v(r['storage']['bandwidthGBs'])} GB/s", key='raman.storage.bandwidthGBs')
+    f.ask('Quotas: home per user / per group; scratch per user', 'Write "none" if there is no quota.', key='raman.quotas')
+    f.ask('Scratch clean-up (purge) policy', key='raman.purge')
+    f.ask('Local disk on compute nodes (size usable by jobs)', key='raman.localDisk')
+    f.ask('Expected remaining service life of Raman', 'e.g. warranty end, planned retirement year, or not known.', key='raman.serviceLife')
 
     f.heading('4. Raman queues')
-    queue_binding(f)
+    queue_binding(f, 'raman')
     for q in r['queues']:
         tag = {'highmem': ' (high-memory node)', 'gpu': ' (GPU node)'}.get(q.get('nodeType'), '')
-        f.row(f"Queue: {q['id']}{tag}", queue_text(q))
+        f.row(f"Queue: {q['id']}{tag}", queue_text(q), key=f"raman.queues.{q['id']}")
     group_limits(f, r, 'Can jobs from other queues run on the high-memory and GPU nodes when they are free?')
 
     # ---- Both ------------------------------------------------------------
     ch = CFG['charges']
     f.heading('5. Both clusters')
     f.row('Usage charges', f"CPU INR {ch['cpuPerCoreHour']:.2f}/core-h (7-day queue {ch['cpuPerCoreHourSevenDayQueue']:.2f}); "
-          f"GPU INR {ch['gpuPerCardHour']:.2f}/card-h")
-    f.ask('Planned downtime per year (days), each cluster', 'Maintenance, power shutdowns, nodes out of service. Sets the committee\'s availability figure (0.95 assumed, about 18 days).')
-    f.ask('Average utilisation over the last 12 months (%), each cluster', 'From Slurm accounting, if available; otherwise not known.')
+          f"GPU INR {ch['gpuPerCardHour']:.2f}/card-h", key='charges')
+    f.ask('Planned downtime per year (days), each cluster', 'Maintenance, power shutdowns, nodes out of service. Sets the committee\'s availability figure (0.95 assumed, about 18 days).', key='both.downtimeDays')
+    f.ask('Average utilisation over the last 12 months (%), each cluster', 'From Slurm accounting, if available; otherwise not known.', key='both.utilisation')
     f.ask('Can a Slurm accounting export be shared (per group, last 12 months)?',
-          'Core-hours, GPU-hours, job sizes and waits per group. Used only to check reported figures against records.')
-    f.ask('Anything else the committee should know', height=22 * mm)
+          'Core-hours, GPU-hours, job sizes and waits per group. Used only to check reported figures against records.', key='both.slurmExport')
+    f.ask('Anything else the committee should know', height=22 * mm, key='both.other')
 
     f.save()
     print(f'wrote {OUT} ({f.page} pages, {f.n} fields)')

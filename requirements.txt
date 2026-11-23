@@ -22,3 +22,5 @@ reportlab>=4.0
 
 # HTML version of the convener guide (docs/build_guide_html.py)
 markdown>=3.6
+# Reading the filled hardware-check PDF (tools/cluster-update/)
+pypdf>=4.0

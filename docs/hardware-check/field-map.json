@@ -1,0 +1,542 @@
+{
+ "_comment": "Written by make_hardware_form.py with the PDF. key = what the answer updates (tools/cluster-update/update_clusters.py); null = for the record only.",
+ "pdf": "cluster-hardware-check.pdf",
+ "fields": [
+  {
+   "n": 2,
+   "kind": "row",
+   "ok": "ok_2",
+   "fix": "fix_2",
+   "item": "Standard compute nodes in service",
+   "current": "17 nodes",
+   "key": "gargi.compute.count"
+  },
+  {
+   "n": 3,
+   "kind": "row",
+   "ok": "ok_3",
+   "fix": "fix_3",
+   "item": "CPU and cores per standard node",
+   "current": "2x AMD EPYC 9554, 128 cores",
+   "key": "gargi.compute.cpuCores"
+  },
+  {
+   "n": 4,
+   "kind": "row",
+   "ok": "ok_4",
+   "fix": "fix_4",
+   "item": "Memory per standard node",
+   "current": "768 GB",
+   "key": "gargi.compute.memoryGB"
+  },
+  {
+   "n": 5,
+   "kind": "row",
+   "ok": "ok_5",
+   "fix": "fix_5",
+   "item": "High-memory nodes: count, cores, memory",
+   "current": "3 nodes, 128 cores, 2304 GB",
+   "key": "gargi.highmem"
+  },
+  {
+   "n": 6,
+   "kind": "row",
+   "ok": "ok_6",
+   "fix": "fix_6",
+   "item": "GPU nodes",
+   "current": "None",
+   "key": "gargi.gpuNodes"
+  },
+  {
+   "n": 7,
+   "kind": "row",
+   "ok": "ok_7",
+   "fix": "fix_7",
+   "item": "Interconnect",
+   "current": "200 Gbps Mellanox InfiniBand HDR",
+   "key": "gargi.interconnect"
+  },
+  {
+   "n": 8,
+   "kind": "row",
+   "ok": "ok_8",
+   "fix": "fix_8",
+   "item": "Parallel storage: system and usable size",
+   "current": "DDN EXAScaler 200NVX2, 120 TB",
+   "key": "gargi.storage.systemSize"
+  },
+  {
+   "n": 9,
+   "kind": "row",
+   "ok": "ok_9",
+   "fix": "fix_9",
+   "item": "Home : scratch split of that storage",
+   "current": "50 : 50 (assumed)",
+   "key": "gargi.storage.split"
+  },
+  {
+   "n": 10,
+   "kind": "ask",
+   "ans": "ans_10",
+   "item": "Is home on this same fast parallel file system as scratch?",
+   "key": "gargi.storage.homeOnFastPFS"
+  },
+  {
+   "n": 11,
+   "kind": "row",
+   "ok": "ok_11",
+   "fix": "fix_11",
+   "item": "Storage bandwidth",
+   "current": "15 GB/s",
+   "key": "gargi.storage.bandwidthGBs"
+  },
+  {
+   "n": 12,
+   "kind": "ask",
+   "ans": "ans_12",
+   "item": "Quotas: home per user / per group; scratch per user",
+   "key": "gargi.quotas"
+  },
+  {
+   "n": 13,
+   "kind": "ask",
+   "ans": "ans_13",
+   "item": "Scratch clean-up (purge) policy",
+   "key": "gargi.purge"
+  },
+  {
+   "n": 14,
+   "kind": "ask",
+   "ans": "ans_14",
+   "item": "Local disk on compute nodes (size usable by jobs)",
+   "key": "gargi.localDisk"
+  },
+  {
+   "n": 15,
+   "kind": "ask",
+   "ans": "ans_15",
+   "item": "Apart from the high-memory and GPU queues, are any queues bound to particular nodes?",
+   "key": "gargi.queuesBoundToNodes"
+  },
+  {
+   "n": 16,
+   "kind": "row",
+   "ok": "ok_16",
+   "fix": "fix_16",
+   "item": "Queue: debug",
+   "current": "1–2 node(s), 0.5 h, 4 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "gargi.queues.debug"
+  },
+  {
+   "n": 17,
+   "kind": "row",
+   "ok": "ok_17",
+   "fix": "fix_17",
+   "item": "Queue: short",
+   "current": "1–3 node(s), 36 h, 3 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "gargi.queues.short"
+  },
+  {
+   "n": 18,
+   "kind": "row",
+   "ok": "ok_18",
+   "fix": "fix_18",
+   "item": "Queue: medium",
+   "current": "1–3 node(s), 72 h, 3 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "gargi.queues.medium"
+  },
+  {
+   "n": 19,
+   "kind": "row",
+   "ok": "ok_19",
+   "fix": "fix_19",
+   "item": "Queue: long",
+   "current": "1 node(s), 120 h, 1 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "gargi.queues.long"
+  },
+  {
+   "n": 20,
+   "kind": "row",
+   "ok": "ok_20",
+   "fix": "fix_20",
+   "item": "Queue: xlong",
+   "current": "1 node(s), 168 h, 1 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "gargi.queues.xlong"
+  },
+  {
+   "n": 21,
+   "kind": "row",
+   "ok": "ok_21",
+   "fix": "fix_21",
+   "item": "Queue: hmq (high-memory nodes)",
+   "current": "1 node(s), 168 h, 1 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "gargi.queues.hmq"
+  },
+  {
+   "n": 22,
+   "kind": "row",
+   "ok": "ok_22",
+   "fix": "fix_22",
+   "item": "Limits apply to",
+   "current": "Each research group (faculty member and one group member), not each user",
+   "key": "gargi.limitsApplyTo"
+  },
+  {
+   "n": 23,
+   "kind": "ask",
+   "ans": "ans_23",
+   "item": "Do the per-queue job limits add up across queues?",
+   "key": "gargi.limitsAddUp"
+  },
+  {
+   "n": 24,
+   "kind": "row",
+   "ok": "ok_24",
+   "fix": "fix_24",
+   "item": "Jobs one group may have running at once, all queues together",
+   "current": "not known",
+   "key": "gargi.groupLimits.maxRunningJobs"
+  },
+  {
+   "n": 25,
+   "kind": "row",
+   "ok": "ok_25",
+   "fix": "fix_25",
+   "item": "Nodes one group's running jobs may occupy in total",
+   "current": "not known",
+   "key": "gargi.groupLimits.maxRunningNodes"
+  },
+  {
+   "n": 26,
+   "kind": "row",
+   "ok": "ok_26",
+   "fix": "fix_26",
+   "item": "Jobs one group may have waiting in the queue",
+   "current": "not known",
+   "key": "gargi.groupLimits.maxQueuedJobs"
+  },
+  {
+   "n": 27,
+   "kind": "row",
+   "ok": "ok_27",
+   "fix": "fix_27",
+   "item": "Fair-share policy in use",
+   "current": "No",
+   "key": "gargi.groupLimits.fairShare"
+  },
+  {
+   "n": 28,
+   "kind": "ask",
+   "ans": "ans_28",
+   "item": "Can jobs from other queues run on the high-memory nodes when they are free?",
+   "key": "gargi.specialNodesShared"
+  },
+  {
+   "n": 29,
+   "kind": "row",
+   "ok": "ok_29",
+   "fix": "fix_29",
+   "item": "Standard compute nodes in service",
+   "current": "64 nodes",
+   "key": "raman.compute.count"
+  },
+  {
+   "n": 30,
+   "kind": "row",
+   "ok": "ok_30",
+   "fix": "fix_30",
+   "item": "CPU and cores per standard node",
+   "current": "2x Xeon Gold 6126, 24 cores",
+   "key": "raman.compute.cpuCores"
+  },
+  {
+   "n": 31,
+   "kind": "row",
+   "ok": "ok_31",
+   "fix": "fix_31",
+   "item": "Memory per standard node",
+   "current": "96 GB",
+   "key": "raman.compute.memoryGB"
+  },
+  {
+   "n": 32,
+   "kind": "row",
+   "ok": "ok_32",
+   "fix": "fix_32",
+   "item": "High-memory node(s): count, CPU, cores, memory",
+   "current": "1 node, Xeon Platinum 8160, 24 cores, 1152 GB",
+   "key": "raman.highmem"
+  },
+  {
+   "n": 33,
+   "kind": "row",
+   "ok": "ok_33",
+   "fix": "fix_33",
+   "item": "GPU nodes: count",
+   "current": "1 node",
+   "key": "raman.gpu.count"
+  },
+  {
+   "n": 34,
+   "kind": "row",
+   "ok": "ok_34",
+   "fix": "fix_34",
+   "item": "GPUs per GPU node",
+   "current": "not known",
+   "key": "raman.gpu.gpusPerNode"
+  },
+  {
+   "n": 35,
+   "kind": "row",
+   "ok": "ok_35",
+   "fix": "fix_35",
+   "item": "GPU model and memory per GPU",
+   "current": "Volta generation (unconfirmed)",
+   "key": "raman.gpu.model"
+  },
+  {
+   "n": 36,
+   "kind": "row",
+   "ok": "ok_36",
+   "fix": "fix_36",
+   "item": "GPU node: CPU cores and memory",
+   "current": "24 cores, 96 GB",
+   "key": "raman.gpu.coresMemory"
+  },
+  {
+   "n": 37,
+   "kind": "ask",
+   "ans": "ans_37",
+   "item": "GPU node: NVLink between GPUs?",
+   "key": "raman.gpu.nvlink"
+  },
+  {
+   "n": 38,
+   "kind": "row",
+   "ok": "ok_38",
+   "fix": "fix_38",
+   "item": "Interconnect",
+   "current": "100 Gbps Intel Omni-Path + 1 Gbps Ethernet",
+   "key": "raman.interconnect"
+  },
+  {
+   "n": 39,
+   "kind": "row",
+   "ok": "ok_39",
+   "fix": "fix_39",
+   "item": "Parallel storage: system and usable size",
+   "current": "NetApp E5700, 104 TB",
+   "key": "raman.storage.systemSize"
+  },
+  {
+   "n": 40,
+   "kind": "row",
+   "ok": "ok_40",
+   "fix": "fix_40",
+   "item": "Home : scratch split of that storage",
+   "current": "50 : 50 (assumed)",
+   "key": "raman.storage.split"
+  },
+  {
+   "n": 41,
+   "kind": "ask",
+   "ans": "ans_41",
+   "item": "Is home on this same fast parallel file system as scratch?",
+   "key": "raman.storage.homeOnFastPFS"
+  },
+  {
+   "n": 42,
+   "kind": "row",
+   "ok": "ok_42",
+   "fix": "fix_42",
+   "item": "Storage bandwidth",
+   "current": "6 GB/s",
+   "key": "raman.storage.bandwidthGBs"
+  },
+  {
+   "n": 43,
+   "kind": "ask",
+   "ans": "ans_43",
+   "item": "Quotas: home per user / per group; scratch per user",
+   "key": "raman.quotas"
+  },
+  {
+   "n": 44,
+   "kind": "ask",
+   "ans": "ans_44",
+   "item": "Scratch clean-up (purge) policy",
+   "key": "raman.purge"
+  },
+  {
+   "n": 45,
+   "kind": "ask",
+   "ans": "ans_45",
+   "item": "Local disk on compute nodes (size usable by jobs)",
+   "key": "raman.localDisk"
+  },
+  {
+   "n": 46,
+   "kind": "ask",
+   "ans": "ans_46",
+   "item": "Expected remaining service life of Raman",
+   "key": "raman.serviceLife"
+  },
+  {
+   "n": 47,
+   "kind": "ask",
+   "ans": "ans_47",
+   "item": "Apart from the high-memory and GPU queues, are any queues bound to particular nodes?",
+   "key": "raman.queuesBoundToNodes"
+  },
+  {
+   "n": 48,
+   "kind": "row",
+   "ok": "ok_48",
+   "fix": "fix_48",
+   "item": "Queue: debug",
+   "current": "1–4 node(s), 0.5 h, 4 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "raman.queues.debug"
+  },
+  {
+   "n": 49,
+   "kind": "row",
+   "ok": "ok_49",
+   "fix": "fix_49",
+   "item": "Queue: short",
+   "current": "5–8 node(s), 48 h, 8 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "raman.queues.short"
+  },
+  {
+   "n": 50,
+   "kind": "row",
+   "ok": "ok_50",
+   "fix": "fix_50",
+   "item": "Queue: medium",
+   "current": "2–4 node(s), 72 h, 4 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "raman.queues.medium"
+  },
+  {
+   "n": 51,
+   "kind": "row",
+   "ok": "ok_51",
+   "fix": "fix_51",
+   "item": "Queue: long",
+   "current": "1 node(s), 120 h, 1 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "raman.queues.long"
+  },
+  {
+   "n": 52,
+   "kind": "row",
+   "ok": "ok_52",
+   "fix": "fix_52",
+   "item": "Queue: gpu (GPU node)",
+   "current": "1 node(s), 24 h, 1 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "raman.queues.gpu"
+  },
+  {
+   "n": 53,
+   "kind": "row",
+   "ok": "ok_53",
+   "fix": "fix_53",
+   "item": "Queue: hmq (high-memory node)",
+   "current": "1 node(s), 72 h, 1 job(s) at once per group; ceiling for all groups together: not known",
+   "key": "raman.queues.hmq"
+  },
+  {
+   "n": 54,
+   "kind": "row",
+   "ok": "ok_54",
+   "fix": "fix_54",
+   "item": "Limits apply to",
+   "current": "Each research group (faculty member and one group member), not each user",
+   "key": "raman.limitsApplyTo"
+  },
+  {
+   "n": 55,
+   "kind": "ask",
+   "ans": "ans_55",
+   "item": "Do the per-queue job limits add up across queues?",
+   "key": "raman.limitsAddUp"
+  },
+  {
+   "n": 56,
+   "kind": "row",
+   "ok": "ok_56",
+   "fix": "fix_56",
+   "item": "Jobs one group may have running at once, all queues together",
+   "current": "not known",
+   "key": "raman.groupLimits.maxRunningJobs"
+  },
+  {
+   "n": 57,
+   "kind": "row",
+   "ok": "ok_57",
+   "fix": "fix_57",
+   "item": "Nodes one group's running jobs may occupy in total",
+   "current": "not known",
+   "key": "raman.groupLimits.maxRunningNodes"
+  },
+  {
+   "n": 58,
+   "kind": "row",
+   "ok": "ok_58",
+   "fix": "fix_58",
+   "item": "Jobs one group may have waiting in the queue",
+   "current": "not known",
+   "key": "raman.groupLimits.maxQueuedJobs"
+  },
+  {
+   "n": 59,
+   "kind": "row",
+   "ok": "ok_59",
+   "fix": "fix_59",
+   "item": "Fair-share policy in use",
+   "current": "Yes",
+   "key": "raman.groupLimits.fairShare"
+  },
+  {
+   "n": 60,
+   "kind": "ask",
+   "ans": "ans_60",
+   "item": "Can jobs from other queues run on the high-memory and GPU nodes when they are free?",
+   "key": "raman.specialNodesShared"
+  },
+  {
+   "n": 61,
+   "kind": "row",
+   "ok": "ok_61",
+   "fix": "fix_61",
+   "item": "Usage charges",
+   "current": "CPU INR 0.10/core-h (7-day queue 0.20); GPU INR 1.00/card-h",
+   "key": "charges"
+  },
+  {
+   "n": 62,
+   "kind": "ask",
+   "ans": "ans_62",
+   "item": "Planned downtime per year (days), each cluster",
+   "key": "both.downtimeDays"
+  },
+  {
+   "n": 63,
+   "kind": "ask",
+   "ans": "ans_63",
+   "item": "Average utilisation over the last 12 months (%), each cluster",
+   "key": "both.utilisation"
+  },
+  {
+   "n": 64,
+   "kind": "ask",
+   "ans": "ans_64",
+   "item": "Can a Slurm accounting export be shared (per group, last 12 months)?",
+   "key": "both.slurmExport"
+  },
+  {
+   "n": 65,
+   "kind": "ask",
+   "ans": "ans_65",
+   "item": "Anything else the committee should know",
+   "key": "both.other"
+  }
+ ]
+}

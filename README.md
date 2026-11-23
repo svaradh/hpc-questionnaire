@@ -56,6 +56,7 @@ In Colab nothing needs installing beyond what the first notebook cell does.
 | Rehearse / do the backend handover | `npm run handover -- rehearse --email …` / `npm run handover -- handover --email …` (see `docs/HANDOVER.md`) |
 | Regenerate the synthetic test data | `npm run fixtures` |
 | Rebuild the notebooks after editing them | `python analysis/_build_notebooks.py` |
+| Update the cluster details from the returned hardware-check PDF | `tools/cluster-update/README.md` (read → review → apply → release) |
 | Rebuild the convener guide's HTML after editing `docs/CONVENER-GUIDE.md` | `python docs/build_guide_html.py` (commit both files; also update the shared copy) |
 | Retake the slide screenshots | `npm run slides:figures` (needs Chrome, Brave, Edge or Chromium; `BROWSER_PATH` if not found) |
 

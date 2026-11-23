@@ -74,6 +74,9 @@
   expected demand in 3 years are required (Don't know allowed); they feed the storage and expansion analysis and had
   never been marked required. Testing questions stay required only after a debug-wait problem; benchmarking offers
   stay optional. Front end only: no rehearsal needed.
+- **Hardware-check update pipeline ready (2026-11-23):** `tools/cluster-update/` (read the returned PDF → report and
+  proposal → apply → release); `docs/hardware-check/field-map.json` maps every form field (the sent PDF was rebuilt
+  and checked identical). 21 tests.
 - **Next:** the handover with the convener (`npm run handover -- handover --email …`), before the form is announced;
   give them `docs/CONVENER-GUIDE.md` (or the shared doc) first.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
