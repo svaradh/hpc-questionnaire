@@ -222,7 +222,13 @@ not change the live site; republishing it does.
 4. Run `npm run handover -- handover --email <convener>@iiserb.ac.in`. Add `--remote` if the convener is
    on their own computer: the tool then prints links for you to send them. After signing in, they land on
    an error page at `http://localhost:8888/…` (expected) and send you that address, which you paste in.
-   It works once and expires within minutes; send it over a direct channel, not a group chat.
+   The sign-in itself happens in the convener's browser, directly with Google; only this one address
+   travels to you. It carries a one-time code that the tool exchanges with Google for the session's
+   access. The code is protected by PKCE (the `code_challenge` in the sign-in link): it can be used only
+   together with a secret held inside the tool running on your computer, so someone who intercepted
+   the address could not use it. It also works once and expires within minutes. A one-to-one chat is
+   tidiest; email works but leaves a copy in two mailboxes; avoid group chats. To send nothing at all,
+   do the handover in person (no `--remote`), or use Route B.
 5. Pass on each instruction the tool prints and press Enter when the convener has done it. The tool
    creates the sheet and its script, uploads the six backend files, checks they are identical to the
    repository, and deploys the web app.
