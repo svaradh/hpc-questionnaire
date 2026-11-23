@@ -9,19 +9,23 @@ there, and the reasoning behind them in docs/analysis-framework.md.
 """
 
 import os
+import re
 import nbformat as nbf
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FRAMEWORK = "https://github.com/svaradh/hpc-questionnaire/blob/main/docs/analysis-framework.md"
 
 SETUP = '''SPREADSHEET_ID = 'PASTE_YOUR_SPREADSHEET_ID_HERE'   # <- the long string in the sheet URL
-REPO_REF = 'main'                                   # git branch/tag for the helper code and cluster config
-
+REPO_REF = '%(ref)s'                       # release of the analysis code and cluster configuration
+                                                    # (change only to a newer release tag; see analysis/README.md)
 import os, urllib.request
 if not os.path.exists('hpc_analysis.py'):            # in Colab: fetch the helper modules once per session
     for f in ['sheets_client.py', 'hpc_analysis.py', 'hpc_plots.py', 'committee_report.py', 'code_capabilities.json',
               'parameters.py', 'parameters.json', 'param_form.py']:
         urllib.request.urlretrieve(f'https://raw.githubusercontent.com/svaradh/hpc-questionnaire/{REPO_REF}/analysis/{f}', f)
+    import sheets_client
+    os.environ['HPC_CODE_REF'] = REPO_REF            # recorded in the committee report
+    os.environ['HPC_CODE_COMMIT'] = sheets_client.resolve_commit(REPO_REF) or ''
 
 import pandas as pd
 from sheets_client import load_data, load_config
@@ -35,6 +39,9 @@ wl = ha.workloads(dfs, cfg)
 cov = ha.coverage(dfs)
 print(f"Groups responded: {cov['groups']}; workloads described: {cov['workloads']} "
       f"({cov['groups_with_workloads']} groups with at least one).")'''
+# The release tag is kept in one place, sheets_client.DEFAULT_REF.
+_REF = re.search(r'^DEFAULT_REF = "([^"]+)"', open(os.path.join(HERE, 'sheets_client.py')).read(), re.M).group(1)
+SETUP = SETUP.replace('%(ref)s', _REF)
 
 
 def md(s):

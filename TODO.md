@@ -52,6 +52,13 @@
   `tools/handover/rehearsal.json` committed. **Next:** the handover itself with the convener (`npm run handover --
   handover --email …`), before the form is opened. Left by hand: the trial "HPC Committee Reports" folder created on
   2026-11-23 (not the live `…/v3` one) and the test emails.
+- **After the rehearsal, same day (2026-11-23): permissions audit and changes** (`docs/permissions-audit.md`).
+  Email is send-only (`MailApp`, `script.send_mail`); PI addresses must be `@iiserb.ac.in` (fixed suffix in the form,
+  check in the backend; form 2.7.1); both confirmation emails carry a plain-text summary of the answers as recorded,
+  so the PI can review a delegated submission (CLAUDE.md §4); help text corrected (it promised a review step that
+  did not exist). Notebooks pinned to release tags (`REPO_REF = 'v3-2026-11-23'`, `sheets_client.DEFAULT_REF`); each
+  report records release + commit; unsupported form versions warn. **The backend changed, so rehearse again**
+  (check the PI email's summary and Generate Report), commit the new `rehearsal.json`, then hand over.
 - **Before collecting responses:** go through a step-by-step launch checklist (empty sheet, share with the convener,
   v1 closed, optional v3 `SUBMISSION_DEADLINE`, send link and slides, watch the first responses).
 

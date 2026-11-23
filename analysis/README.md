@@ -19,8 +19,26 @@ flags are prompts for the committee, which makes all decisions.
    `https://github.com/svaradh/hpc-questionnaire` → `analysis/`.
 4. **Paste the ID** into the first code cell, then *Runtime → Run all*. Colab asks once per session to sign in.
 
-Each notebook fetches the helper modules and the cluster configuration from GitHub. `REPO_REF` in the first cell chooses
-the branch or tag: `main` normally, or `progressive-disclosure-v2` until v3 is merged.
+Each notebook fetches the helper modules and the cluster configuration from GitHub, at the **release** named by
+`REPO_REF` in its first cell (a git tag such as `v3-2026-11-23`), not the latest `main`. So the code that analyses the
+responses changes only when someone sets `REPO_REF` to a newer release on purpose.
+
+## Versions
+
+- **What a release is.** A git tag on a commit where the form, the backend, the analysis code and
+  `src/config/clusters.json` were tested together. The current one is `DEFAULT_REF` in `sheets_client.py`; the
+  generated notebooks carry it.
+- **What each report records.** The *Sources* table names the release and its commit ("Analysis code and cluster
+  configuration") beside the form versions of the responses, so a report can be traced and reproduced.
+- **Form versions.** `SUPPORTED_FORM_VERSIONS` in `sheets_client.py` lists the form versions whose columns the code
+  was written for. Responses from any other version give a warning when loaded and a note in the report.
+- **Making a release** (for example after the hardware answers are entered in `clusters.json`):
+  1. set `DEFAULT_REF` in `sheets_client.py` to the new tag name (`v3-YYYY-MM-DD`), and add any new form version to
+     `SUPPORTED_FORM_VERSIONS`;
+  2. `python analysis/_build_notebooks.py`, then run the notebooks (`run_notebooks.py`);
+  3. commit and push, then `git tag v3-YYYY-MM-DD && git push origin v3-YYYY-MM-DD`;
+  4. tell the convener the new tag: they change `REPO_REF` in the first cell of their Drive copy of notebook 07.
+- Never move or delete a published tag; make a new one.
 
 ## Notebooks
 

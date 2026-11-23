@@ -44,7 +44,58 @@ SHEET_TABS = [
 
 # Where notebooks fetch the cluster config and helper modules from in Colab.
 REPO_RAW = "https://raw.githubusercontent.com/svaradh/hpc-questionnaire"
-DEFAULT_REF = "main"
+REPO_API = "https://api.github.com/repos/svaradh/hpc-questionnaire"
+
+# The release the notebooks use: a git tag on a tested combination of form, backend, analysis
+# and cluster configuration. Later changes to the repository do not reach a notebook until its
+# REPO_REF is set to a newer tag. To release: change this, run _build_notebooks.py, commit, then
+# `git tag <name> && git push origin <name>` (docs: analysis/README.md, "Versions").
+DEFAULT_REF = "v3-2026-11-23"
+
+# Form versions whose sheet columns this analysis code was written and tested for.
+SUPPORTED_FORM_VERSIONS = {"2.7.0", "2.7.1"}
+
+
+def code_version() -> str:
+    """Which analysis code is running, for the report: the release tag and its commit.
+
+    In Colab the notebook's first cell records REPO_REF (HPC_CODE_REF) and the commit GitHub
+    resolves it to (HPC_CODE_COMMIT). Run locally, the git checkout is described instead.
+    """
+    ref, commit = os.environ.get("HPC_CODE_REF"), os.environ.get("HPC_CODE_COMMIT")
+    if ref:
+        return f"{ref} (commit {commit[:7]})" if commit else f"{ref} (commit not resolved)"
+    try:
+        import subprocess
+        here = os.path.dirname(os.path.abspath(__file__))
+        git = lambda *a: subprocess.run(["git", "-C", here, *a], capture_output=True, text=True, timeout=5).stdout.strip()
+        sha = git("rev-parse", "--short", "HEAD")
+        if not sha:
+            return "unknown"
+        tag = git("describe", "--tags", "--exact-match", "HEAD")
+        dirty = " with uncommitted changes" if git("status", "--porcelain", "--", ".") else ""
+        return f"local copy at {tag or 'commit'} {sha}{dirty}" if tag else f"local copy at commit {sha}{dirty}"
+    except Exception:
+        return "unknown"
+
+
+def resolve_commit(ref: str) -> str | None:
+    """The commit a branch or tag points to on GitHub (None if it cannot be reached)."""
+    try:
+        req = urllib.request.Request(f"{REPO_API}/commits/{ref}", headers={"Accept": "application/vnd.github.sha"})
+        with urllib.request.urlopen(req, timeout=10) as r:
+            return r.read().decode().strip() or None
+    except Exception:
+        return None
+
+
+def unsupported_form_versions(dfs: dict) -> list[str]:
+    """Form versions present in the responses that this analysis code was not written for."""
+    sub = dfs.get("Submissions")
+    if sub is None or sub.empty or "questionnaire_version" not in sub:
+        return []
+    found = {str(v) for v in sub["questionnaire_version"].dropna().unique() if str(v).strip()}
+    return sorted(found - SUPPORTED_FORM_VERSIONS)
 
 
 # ---------------------------------------------------------------------------
@@ -109,10 +160,16 @@ def load_data(source: str) -> dict[str, pd.DataFrame]:
     """Spreadsheet ID (Colab) or a local folder of CSVs. HPC_DATA_DIR overrides."""
     folder = os.environ.get("HPC_DATA_DIR")
     if folder:
-        return load_local(folder)
-    if os.path.isdir(source):
-        return load_local(source)
-    return load_sheets(source)
+        dfs = load_local(folder)
+    elif os.path.isdir(source):
+        dfs = load_local(source)
+    else:
+        dfs = load_sheets(source)
+    other = unsupported_form_versions(dfs)
+    if other:
+        print(f"  [Warning] Responses from form version(s) {', '.join(other)}, which this analysis code "
+              f"({code_version()}) was not written for. Use a newer release (REPO_REF) before relying on the results.")
+    return dfs
 
 
 # ---------------------------------------------------------------------------

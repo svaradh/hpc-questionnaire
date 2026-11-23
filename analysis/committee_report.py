@@ -42,6 +42,7 @@ import pandas as pd
 import hpc_analysis as ha
 import hpc_plots as hp
 import parameters as pm
+import sheets_client as sc
 from sheets_client import load_config, load_data
 
 TITLE = "HPC workload survey: committee report"
@@ -276,11 +277,15 @@ def chapter_about(d: Doc, ctx: dict):
     dates = pd.to_datetime(sub["submitted_at"], errors="coerce") if "submitted_at" in sub else pd.Series(dtype="datetime64[ns]")
     versions = ", ".join(sorted(sub["questionnaire_version"].dropna().unique())) if "questionnaire_version" in sub else "–"
     span = f"{dates.min():%d %b %Y} to {dates.max():%d %b %Y}" if dates.notna().any() else "–"
+    other = sc.unsupported_form_versions(dfs)
     src = pd.DataFrame([
         {"source": "Reported: questionnaire responses",
-         "status": f"{plural(cov['groups'], 'group')}, {plural(cov['workloads'], 'job entry', 'job entries')}; submitted {span}; form version {versions}"},
+         "status": f"{plural(cov['groups'], 'group')}, {plural(cov['workloads'], 'job entry', 'job entries')}; submitted {span}; form version {versions}"
+                   + (f" (not supported by this analysis code: {', '.join(other)})" if other else "")},
         {"source": "Recorded: cluster accounting (Slurm)",
          "status": "Not yet available" if ctx.get("records") is None else "Included"},
+        {"source": "Analysis code and cluster configuration",
+         "status": sc.code_version()},
     ])
     d.table(src, {"source": "Source", "status": "Status"})
 
